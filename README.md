@@ -1,5 +1,9 @@
 # ResolveMEI
 
+## Design system
+
+A fundação visual, critérios de componentes e padrões de acessibilidade estão documentados em [`docs/design-system/README.md`](docs/design-system/README.md). Em desenvolvimento, o catálogo técnico está disponível na rota `/design-system`.
+
 Aplicativo mobile para profissionais autonomos, construido com Expo SDK 57, React Native, TypeScript estrito e Supabase hospedado. A Fase 2 inclui autenticacao, perfil profissional, onboarding e logotipo privado. Funcionalidades comerciais ainda nao fazem parte desta etapa.
 
 ## Requisitos no Windows

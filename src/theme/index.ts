@@ -1,36 +1,24 @@
-import type { TextStyle, ViewStyle } from 'react-native';
+import type { ViewStyle } from 'react-native';
 
-export const colors = {
-  background: '#F5F7F8',
-  surface: '#FFFFFF',
-  primary: '#087F5B',
-  primaryPressed: '#066649',
-  textOnPrimary: '#FFFFFF',
-  text: '#172126',
-  textMuted: '#59656B',
-  border: '#CDD5D8',
-  danger: '#B42318',
-  disabled: '#D8DEDF',
-  disabledText: '#6D787D',
-  focus: '#2563EB',
-} as const;
+export { colors } from './colors';
+export type { ColorToken } from './colors';
+export { motion } from './motion';
+export { opacity, radii, sizes, spacing } from './spacing';
+export { fontFamilies, typography } from './typography';
+export type { TypographyVariant } from './typography';
 
-export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32 } as const;
-export const radii = { sm: 4, md: 8 } as const;
-export const sizes = {
-  controlHeight: 48,
-  touchTarget: 44,
-  contentMaxWidth: 560,
-} as const;
-export const typography = {
-  body: { fontSize: 16, lineHeight: 24, fontWeight: '400' },
-  label: { fontSize: 14, lineHeight: 20, fontWeight: '600' },
-  title: { fontSize: 24, lineHeight: 32, fontWeight: '700' },
-  caption: { fontSize: 13, lineHeight: 18, fontWeight: '400' },
-} satisfies Record<string, TextStyle>;
 export const shadows = {
+  none: {},
   card: {
-    boxShadow: '0 2px 8px rgba(23, 33, 38, 0.08)',
+    boxShadow: '0 2px 8px rgba(32, 37, 34, 0.07)',
     elevation: 2,
+  },
+  floating: {
+    boxShadow: '0 6px 18px rgba(32, 37, 34, 0.11)',
+    elevation: 5,
+  },
+  modal: {
+    boxShadow: '0 12px 32px rgba(32, 37, 34, 0.16)',
+    elevation: 8,
   },
 } satisfies Record<string, ViewStyle>;

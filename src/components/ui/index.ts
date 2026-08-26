@@ -1,9 +1,15 @@
 export { Button } from './Button';
 export type { ButtonProps } from './Button';
 export { Card } from './Card';
+export type { CardProps, CardVariant } from './Card';
+export { Badge } from './Badge';
 export { Checkbox } from './Checkbox';
+export { IconButton } from './IconButton';
+export { InlineFeedback } from './InlineFeedback';
+export type { FeedbackVariant } from './InlineFeedback';
 export { Input } from './Input';
 export type { InputProps } from './Input';
 export { Screen } from './Screen';
+export { Skeleton } from './Skeleton';
 export { Text } from './Text';
 export type { TextProps } from './Text';

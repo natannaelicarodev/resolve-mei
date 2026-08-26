@@ -7,6 +7,9 @@ settings:
 importers:
   .:
     dependencies:
+      '@expo-google-fonts/manrope':
+        specifier: ^0.4.2
+        version: 0.4.2
       '@hookform/resolvers':
         specifier: ^5.9.1
         version: 5.9.1(@sinclair/typebox@0.34.52)(react-hook-form@7.86.0(react@19.2.3))(zod@4.4.3)
@@ -31,6 +34,12 @@ importers:
       expo-file-system:
         specifier: ~57.0.5
         version: 57.0.5(expo@57.0.16)(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))
+      expo-font:
+        specifier: ~57.0.1
+        version: 57.0.1(expo@57.0.16)(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
+      expo-haptics:
+        specifier: ~57.0.1
+        version: 57.0.1(expo@57.0.16)
       expo-image-picker:
         specifier: ~57.0.13
         version: 57.0.13(expo@57.0.16)
@@ -40,6 +49,9 @@ importers:
       expo-router:
         specifier: ~57.0.16
         version: 57.0.16(02d92a328216a5aabb648c6564234a29)
+      expo-splash-screen:
+        specifier: ~57.0.8
+        version: 57.0.8(expo@57.0.16)(supports-color@8.1.1)(typescript@6.0.3)
       expo-status-bar:
         specifier: ~57.0.1
         version: 57.0.1(expo@57.0.16)(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)
@@ -921,6 +933,12 @@ packages:
         integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==,
       }
     engines: { node: ^18.18.0 || ^20.9.0 || >=21.1.0 }
+
+  '@expo-google-fonts/manrope@0.4.2':
+    resolution:
+      {
+        integrity: sha512-BZsKe8d9BJrVnIQIZcTS7/Kac0TbXnqs/+8EBSiQxrmK6GoCO6eTkmr50D1weIk/EoF20pTmAkpWICnovATr/g==,
+      }
 
   '@expo-google-fonts/material-symbols@0.4.44':
     resolution:
@@ -3971,6 +3989,14 @@ packages:
       react: '*'
       react-native: '*'
 
+  expo-haptics@57.0.1:
+    resolution:
+      {
+        integrity: sha512-8VhbnxlIrfXjP0syZr1JT197nafYicQu9119adOJnX62osU9Cw+PdDnAx/6LxuKJRzQdwxOMq7b7eWjhNL5zAQ==,
+      }
+    peerDependencies:
+      expo: '*'
+
   expo-image-loader@57.0.1:
     resolution:
       {
@@ -4074,6 +4100,14 @@ packages:
         integrity: sha512-aK+LdKzauHSGmsOStZtyxdzv0zWssCkxTw3m4QuOhfDSJsZaMRTd9O41d8ixU/QfELTbaJ0oRNcF7JFV/7O9YQ==,
       }
     engines: { node: '>=20.16.0' }
+
+  expo-splash-screen@57.0.8:
+    resolution:
+      {
+        integrity: sha512-BEsrKg4niYBZa5AFzWRyGqxA4ZemtBOPwbCy+C336iGYYPuZYLEgWJGmm2xD1gRfCdrM/TP+l2ONd86Zvk3KyA==,
+      }
+    peerDependencies:
+      expo: '*'
 
   expo-status-bar@57.0.1:
     resolution:
@@ -8570,6 +8604,8 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
+  '@expo-google-fonts/manrope@0.4.2': {}
+
   '@expo-google-fonts/material-symbols@0.4.44': {}
 
   '@expo/cli@57.0.18(@expo/dom-webview@57.0.1)(@expo/metro-runtime@57.0.13)(expo-constants@57.0.14)(expo-font@57.0.1)(expo-router@57.0.16)(expo@57.0.16)(react-dom@19.2.3(react@19.2.3))(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1)(typescript@6.0.3)':
@@ -10944,6 +10980,10 @@ snapshots:
       react: 19.2.3
       react-native: 0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1)
 
+  expo-haptics@57.0.1(expo@57.0.16):
+    dependencies:
+      expo: 57.0.16(734355f5c1b3b98da711dcb019e36cae)
+
   expo-image-loader@57.0.1(expo@57.0.16):
     dependencies:
       expo: 57.0.16(734355f5c1b3b98da711dcb019e36cae)
@@ -11042,6 +11082,16 @@ snapshots:
       - supports-color
 
   expo-server@57.0.3: {}
+
+  expo-splash-screen@57.0.8(expo@57.0.16)(supports-color@8.1.1)(typescript@6.0.3):
+    dependencies:
+      '@expo/config-plugins': 57.0.9(supports-color@8.1.1)(typescript@6.0.3)
+      '@expo/image-utils': 0.11.5(supports-color@8.1.1)(typescript@6.0.3)
+      expo: 57.0.16(734355f5c1b3b98da711dcb019e36cae)
+      xml2js: 0.6.0
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
 
   expo-status-bar@57.0.1(expo@57.0.16)(react-native@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(@react-native/jest-preset@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(react@19.2.3)(supports-color@8.1.1))(@react-native/metro-config@0.86.2(@babel/core@7.29.7(supports-color@8.1.1))(supports-color@8.1.1))(@types/react@19.2.18)(react@19.2.3)(supports-color@8.1.1))(react@19.2.3):
     dependencies:

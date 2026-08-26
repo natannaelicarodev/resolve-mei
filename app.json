@@ -29,7 +29,9 @@
         {
           "photosPermission": "Permita que o ResolveMEI acesse suas fotos para selecionar o logotipo do negócio."
         }
-      ]
+      ],
+      "expo-font",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
