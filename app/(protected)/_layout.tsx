@@ -1,0 +1,49 @@
+import { useEffect } from 'react';
+import { Redirect, Stack, usePathname } from 'expo-router';
+
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { ErrorFallback } from '@/components/ErrorFallback';
+import { decideProtectedRoute } from '@/features/auth/routeGuards';
+import { useMyBusiness } from '@/features/business/hooks';
+import { logDevelopmentError } from '@/lib/errors';
+import { useAuth } from '@/providers/AuthProvider';
+
+export default function ProtectedLayout() {
+  const pathname = usePathname();
+  const { isLoading, user } = useAuth();
+  const business = useMyBusiness(Boolean(user));
+
+  useEffect(() => {
+    if (business.isError) {
+      logDevelopmentError('Business query failed', business.error);
+    }
+  }, [business.error, business.isError]);
+
+  const decision = decideProtectedRoute({
+    authLoading: isLoading,
+    hasUser: Boolean(user),
+    businessLoading: business.isLoading,
+    businessError: business.isError,
+    onboardingCompleted: business.data?.onboarding_completed === true,
+    pathname,
+  });
+  if (decision === 'loading')
+    return <LoadingScreen label="Preparando seu perfil..." />;
+  if (decision === 'sign-in') return <Redirect href="/sign-in" />;
+  if (decision === 'error')
+    return <ErrorFallback onRetry={() => void business.refetch()} />;
+  if (decision === 'onboarding') return <Redirect href="/onboarding" />;
+  if (decision === 'home') return <Redirect href="/home" />;
+
+  return (
+    <Stack>
+      <Stack.Screen name="home" options={{ title: 'ResolveMEI' }} />
+      <Stack.Screen
+        name="onboarding"
+        options={{ title: 'Perfil profissional', headerBackVisible: false }}
+      />
+      <Stack.Screen name="profile" options={{ title: 'Meu perfil' }} />
+      <Stack.Screen name="settings" options={{ title: 'Configurações' }} />
+    </Stack>
+  );
+}
