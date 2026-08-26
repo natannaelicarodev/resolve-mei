@@ -5,12 +5,16 @@ import type { BusinessFormData } from './schemas';
 
 export type Business = Database['public']['Tables']['businesses']['Row'];
 
-export async function getMyBusiness(): Promise<Business | null> {
-  const { data, error } = await supabase
-    .from('businesses')
-    .select('*')
-    .maybeSingle();
+export async function getMyBusiness(
+  userId: string,
+  signal?: AbortSignal,
+): Promise<Business | null> {
+  let query = supabase.from('businesses').select('*').eq('owner_id', userId);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query.maybeSingle();
   if (error) throw error;
+  if (data && data.owner_id !== userId)
+    throw new Error('BUSINESS_IDENTITY_MISMATCH');
   return data ?? null;
 }
 
@@ -61,5 +65,7 @@ export async function updateExistingBusiness(
   if (error) {
     throw error;
   }
+  if (data.id !== businessId || data.owner_id !== userId)
+    throw new Error('BUSINESS_IDENTITY_MISMATCH');
   return data;
 }

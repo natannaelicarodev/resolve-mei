@@ -95,7 +95,10 @@ export function OnboardingScreen() {
     },
     onSuccess: async () => {
       void triggerHaptic('success');
-      await queryClient.invalidateQueries({ queryKey: businessQueryKey });
+      if (user)
+        await queryClient.invalidateQueries({
+          queryKey: businessQueryKey(user.id),
+        });
     },
     onError: (error) =>
       setError('root', { message: normalizeError(error).message }),

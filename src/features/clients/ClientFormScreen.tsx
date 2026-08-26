@@ -19,6 +19,7 @@ import type { Client } from './api';
 import { createClient, updateClient } from './api';
 import { formatClientDocument, formatPhone } from './format';
 import { clientsQueryKey } from './hooks';
+import { useAuth } from '@/providers/AuthProvider';
 import { clientSchema, emptyClientForm } from './schemas';
 import type { ClientFormData } from './schemas';
 
@@ -29,6 +30,8 @@ export function ClientFormScreen({
   businessId: string;
   client?: Client;
 }) {
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
   const queryClient = useQueryClient();
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
@@ -51,11 +54,11 @@ export function ClientFormScreen({
         : createClient(businessId, input),
     onSuccess: async (saved) => {
       queryClient.setQueryData(
-        [...clientsQueryKey(businessId), 'detail', saved.id],
+        [...clientsQueryKey(userId, businessId), 'detail', saved.id],
         saved,
       );
       await queryClient.invalidateQueries({
-        queryKey: clientsQueryKey(businessId),
+        queryKey: clientsQueryKey(userId, businessId),
       });
       router.replace({
         pathname: '/clients/[id]',

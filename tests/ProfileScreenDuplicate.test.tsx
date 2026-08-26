@@ -7,7 +7,7 @@ import { renderProfile } from './helpers/renderProfile';
 
 jest.mock('@/features/profile/api', () => ({
   getMyProfile: jest.fn(),
-  profileQueryKey: ['profile', 'mine'],
+  profileQueryKey: (userId: string) => ['private', userId, 'profile'],
   updateMyProfile: jest.fn(),
 }));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));

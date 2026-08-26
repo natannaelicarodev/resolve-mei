@@ -6,15 +6,18 @@ import { removeAvatar, uploadAvatar } from './avatar';
 import type { ProfileFormData } from './schemas';
 
 export type Profile = Database['public']['Tables']['profiles']['Row'];
-export const profileQueryKey = ['profile', 'mine'] as const;
+export const profileQueryKey = (userId: string) =>
+  ['private', userId, 'profile'] as const;
 
-export async function getMyProfile(userId: string): Promise<Profile> {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
+export async function getMyProfile(
+  userId: string,
+  signal?: AbortSignal,
+): Promise<Profile> {
+  let query = supabase.from('profiles').select('*').eq('id', userId);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query.single();
   if (error) throw error;
+  if (data.id !== userId) throw new Error('PROFILE_IDENTITY_MISMATCH');
   return data;
 }
 
@@ -27,20 +30,26 @@ export async function updateMyProfile(
   const uploadedAvatarPath = avatar
     ? await uploadAvatar(userId, avatar)
     : undefined;
+  const values: Database['public']['Tables']['profiles']['Insert'] = {
+    id: userId,
+    full_name: input.fullName.trim(),
+    phone: input.phone ? digitsOnly(input.phone) : null,
+    ...(uploadedAvatarPath ? { avatar_path: uploadedAvatarPath } : {}),
+  };
   const { data, error } = await supabase
     .from('profiles')
-    .update({
-      full_name: input.fullName.trim(),
-      phone: input.phone ? digitsOnly(input.phone) : null,
-      ...(uploadedAvatarPath ? { avatar_path: uploadedAvatarPath } : {}),
-    })
-    .eq('id', userId)
+    .upsert(values, { onConflict: 'id' })
     .select('*')
     .single();
   if (error) {
     if (uploadedAvatarPath)
       await removeAvatar(uploadedAvatarPath).catch(() => undefined);
     throw error;
+  }
+  if (data.id !== userId) {
+    if (uploadedAvatarPath)
+      await removeAvatar(uploadedAvatarPath).catch(() => undefined);
+    throw new Error('PROFILE_IDENTITY_MISMATCH');
   }
   if (uploadedAvatarPath && currentAvatarPath)
     await removeAvatar(currentAvatarPath).catch(() => undefined);

@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -34,6 +35,7 @@ export function SettingsScreen() {
     setError(undefined);
     try {
       await signOut();
+      router.replace('/sign-in');
       void triggerHaptic('selection');
     } catch (caught) {
       setError(normalizeError(caught).message);

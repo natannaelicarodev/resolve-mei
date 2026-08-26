@@ -28,10 +28,9 @@ function configure(error: Error | null) {
     error,
   });
   const select = jest.fn(() => ({ single }));
-  const eq = jest.fn(() => ({ select }));
-  const update = jest.fn((_values: unknown) => ({ eq }));
-  jest.mocked(supabase.from).mockReturnValue({ update } as never);
-  return { update, eq };
+  const upsert = jest.fn((_values: unknown, _options: unknown) => ({ select }));
+  jest.mocked(supabase.from).mockReturnValue({ upsert } as never);
+  return { upsert };
 }
 
 beforeEach(() => {
@@ -44,12 +43,18 @@ it('persists the personal image only in profiles.avatar_path', async () => {
   const chain = configure(null);
   await updateMyProfile('user-1', input, 'user-1/old.png', image);
   expect(supabase.from).toHaveBeenCalledWith('profiles');
-  expect(chain.update).toHaveBeenCalledWith({
-    full_name: 'Ana Silva',
-    phone: '11999999999',
-    avatar_path: 'user-1/new.png',
-  });
-  expect(chain.update.mock.calls[0]?.[0]).not.toHaveProperty('logo_path');
+  expect(chain.upsert).toHaveBeenCalledWith(
+    {
+      id: 'user-1',
+      full_name: 'Ana Silva',
+      phone: '11999999999',
+      avatar_path: 'user-1/new.png',
+    },
+    {
+      onConflict: 'id',
+    },
+  );
+  expect(chain.upsert.mock.calls[0]?.[0]).not.toHaveProperty('logo_path');
   expect(removeAvatar).toHaveBeenCalledWith('user-1/old.png');
 });
 
@@ -67,5 +72,20 @@ it('keeps the photo optional when only personal text changes', async () => {
   const chain = configure(null);
   await updateMyProfile('user-1', input, null);
   expect(uploadAvatar).not.toHaveBeenCalled();
-  expect(chain.update.mock.calls[0]?.[0]).not.toHaveProperty('avatar_path');
+  expect(chain.upsert.mock.calls[0]?.[0]).not.toHaveProperty('avatar_path');
+});
+
+it('creates the authenticated user profile when a legacy account has no row yet', async () => {
+  const chain = configure(null);
+
+  await updateMyProfile('user-1', input, null);
+
+  expect(chain.upsert).toHaveBeenCalledWith(
+    expect.objectContaining({
+      id: 'user-1',
+      full_name: 'Ana Silva',
+      phone: '11999999999',
+    }),
+    { onConflict: 'id' },
+  );
 });

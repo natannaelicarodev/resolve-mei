@@ -13,7 +13,7 @@ export default function ProtectedLayout() {
   const pathname = usePathname();
   const { colors } = useTheme();
   const { isLoading, user } = useAuth();
-  const business = useMyBusiness(Boolean(user));
+  const business = useMyBusiness(user?.id);
 
   useEffect(() => {
     if (business.isError) {
@@ -39,6 +39,7 @@ export default function ProtectedLayout() {
 
   return (
     <Stack
+      key={user?.id}
       screenOptions={{
         animation: 'slide_from_right',
         contentStyle: { backgroundColor: colors.background },
@@ -46,6 +47,8 @@ export default function ProtectedLayout() {
     >
       <Stack.Screen name="home" options={{ headerShown: false }} />
       <Stack.Screen name="clients" options={{ headerShown: false }} />
+      <Stack.Screen name="services" options={{ headerShown: false }} />
+      <Stack.Screen name="quotes" options={{ headerShown: false }} />
       <Stack.Screen
         name="onboarding"
         options={{ title: 'Perfil profissional', headerBackVisible: false }}

@@ -89,6 +89,7 @@ export function ProfileScreen() {
     [params.field, params.section],
   );
   const { user } = useAuth();
+  const userId = user?.id ?? '';
   const { colors } = useTheme();
   const queryClient = useQueryClient();
   const cancelNavigation = useRef<(() => void) | null>(null);
@@ -102,14 +103,20 @@ export function ProfileScreen() {
     () => navigation?.tab ?? 'personal',
   );
   const query = useQuery({
-    queryKey: profileQueryKey,
-    queryFn: () => getMyProfile(user?.id ?? ''),
-    enabled: Boolean(user),
+    queryKey: profileQueryKey(userId),
+    queryFn: ({ signal }) => getMyProfile(userId, signal),
+    enabled: Boolean(userId),
   });
   const image = useQuery({
-    queryKey: ['profile-avatar', 'signed', query.data?.avatar_path],
+    queryKey: [
+      'private',
+      userId,
+      'profile-avatar',
+      'signed',
+      query.data?.avatar_path,
+    ],
     queryFn: () => createAvatarSignedUrl(query.data?.avatar_path ?? ''),
-    enabled: Boolean(query.data?.avatar_path),
+    enabled: Boolean(userId && query.data?.avatar_path),
     staleTime: 4 * 60 * 1000,
   });
   const {
@@ -124,9 +131,9 @@ export function ProfileScreen() {
     defaultValues: { fullName: '', phone: '' },
   });
   useEffect(() => {
-    if (query.data)
+    if (query.data?.id === userId)
       reset({ fullName: query.data.full_name, phone: query.data.phone ?? '' });
-  }, [query.data, reset]);
+  }, [query.data, reset, userId]);
   useEffect(() => {
     contextualNavigationHandled.current = false;
   }, [navigation]);
@@ -175,10 +182,13 @@ export function ProfileScreen() {
       );
     },
     onSuccess: (profile) => {
-      queryClient.setQueryData(profileQueryKey, profile);
-      void queryClient.invalidateQueries({ queryKey: profileQueryKey });
+      if (profile.id !== userId) return;
+      queryClient.setQueryData(profileQueryKey(userId), profile);
+      void queryClient.invalidateQueries({ queryKey: profileQueryKey(userId) });
       if (selectedImage) {
-        void queryClient.invalidateQueries({ queryKey: ['profile-avatar'] });
+        void queryClient.invalidateQueries({
+          queryKey: ['private', userId, 'profile-avatar'],
+        });
         setSelectedImage(undefined);
       }
       setShowSuccess(true);
@@ -290,6 +300,7 @@ export function ProfileScreen() {
               )
             ) : (
               <ProfessionalProfileForm
+                key={userId}
                 focus={
                   navigation?.tab === 'professional'
                     ? navigation.field

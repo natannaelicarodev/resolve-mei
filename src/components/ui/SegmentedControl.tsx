@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
@@ -16,50 +16,68 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   disabled = false,
+  scrollable = false,
 }: {
   label: string;
   options: readonly SegmentOption<T>[];
   value: T;
   onChange: (value: T) => void;
   disabled?: boolean;
+  scrollable?: boolean;
 }) {
   const { colors } = useTheme();
+  const optionsContent = options.map((option) => {
+    const selected = option.value === value;
+    return (
+      <AnimatedPressable
+        accessibilityLabel={option.label}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected, disabled, selected }}
+        containerStyle={
+          scrollable ? styles.optionContainerScrollable : styles.optionContainer
+        }
+        disableScale
+        disabled={disabled}
+        key={option.value}
+        onPress={() => {
+          if (selected) return;
+          void triggerHaptic('selection');
+          onChange(option.value);
+        }}
+        style={[
+          styles.option,
+          scrollable && styles.optionScrollable,
+          selected && { backgroundColor: colors.primary },
+        ]}
+      >
+        <Text
+          color={selected ? 'textOnPrimary' : 'textSecondary'}
+          numberOfLines={1}
+          variant="label"
+        >
+          {option.label}
+        </Text>
+      </AnimatedPressable>
+    );
+  });
+  const content = scrollable ? (
+    <ScrollView
+      contentContainerStyle={styles.scrollContent}
+      horizontal
+      showsHorizontalScrollIndicator={false}
+    >
+      {optionsContent}
+    </ScrollView>
+  ) : (
+    optionsContent
+  );
   return (
     <View
       accessibilityLabel={label}
       accessibilityRole="radiogroup"
       style={[styles.group, { backgroundColor: colors.backgroundSubtle }]}
     >
-      {options.map((option) => {
-        const selected = option.value === value;
-        return (
-          <AnimatedPressable
-            accessibilityLabel={option.label}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: selected, disabled, selected }}
-            containerStyle={styles.optionContainer}
-            disableScale
-            disabled={disabled}
-            key={option.value}
-            onPress={() => {
-              if (selected) return;
-              void triggerHaptic('selection');
-              onChange(option.value);
-            }}
-            style={[
-              styles.option,
-              selected && { backgroundColor: colors.primary },
-            ]}
-          >
-            <Text
-              color={selected ? 'textOnPrimary' : 'textSecondary'}
-              variant="label"
-            >
-              {option.label}
-            </Text>
-          </AnimatedPressable>
-        );
-      })}
+      {content}
     </View>
   );
 }
@@ -79,4 +97,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   optionContainer: { flex: 1, minWidth: 0 },
+  optionContainerScrollable: { flexShrink: 0 },
+  optionScrollable: { paddingHorizontal: spacing.md },
+  scrollContent: { gap: spacing.xs },
 });

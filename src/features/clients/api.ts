@@ -12,6 +12,7 @@ export async function listClients(
   search = '',
   status: ClientStatusFilter = 'all',
   page = 0,
+  signal?: AbortSignal,
 ) {
   let query = supabase
     .from('clients')
@@ -23,6 +24,7 @@ export async function listClients(
     query = query.or(
       `name.ilike.%${term}%,document.ilike.%${term}%,phone.ilike.%${term}%,email.ilike.%${term}%`,
     );
+  if (signal) query = query.abortSignal(signal);
   const from = page * CLIENT_PAGE_SIZE;
   const { data, error } = await query
     .order('updated_at', { ascending: false })
@@ -35,13 +37,15 @@ export async function listClients(
 export async function getClient(
   businessId: string,
   clientId: string,
+  signal?: AbortSignal,
 ): Promise<Client> {
-  const { data, error } = await supabase
+  let query = supabase
     .from('clients')
     .select('*')
     .eq('business_id', businessId)
-    .eq('id', clientId)
-    .single();
+    .eq('id', clientId);
+  if (signal) query = query.abortSignal(signal);
+  const { data, error } = await query.single();
   if (error) throw error;
   return data;
 }
@@ -91,12 +95,17 @@ export async function setClientStatus(
   return data;
 }
 
-export async function countActiveClients(businessId: string): Promise<number> {
-  const { count, error } = await supabase
+export async function countActiveClients(
+  businessId: string,
+  signal?: AbortSignal,
+): Promise<number> {
+  let query = supabase
     .from('clients')
     .select('id', { count: 'exact', head: true })
     .eq('business_id', businessId)
     .eq('status', 'active');
+  if (signal) query = query.abortSignal(signal);
+  const { count, error } = await query;
   if (error) throw error;
   return count ?? 0;
 }

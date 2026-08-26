@@ -25,3 +25,23 @@ export const shadows = {
     elevation: 8,
   },
 } satisfies Record<string, ViewStyle>;
+
+const darkShadows = {
+  none: {},
+  card: {
+    boxShadow: '0 3px 12px rgba(0, 0, 0, 0.28)',
+    elevation: 4,
+  },
+  floating: {
+    boxShadow: '0 7px 20px rgba(0, 0, 0, 0.34)',
+    elevation: 6,
+  },
+  modal: {
+    boxShadow: '0 12px 32px rgba(0, 0, 0, 0.42)',
+    elevation: 9,
+  },
+} satisfies Record<string, ViewStyle>;
+
+export function getThemeShadows(theme: 'light' | 'dark') {
+  return theme === 'dark' ? darkShadows : shadows;
+}

@@ -10,7 +10,7 @@ jest.mock('@/features/business/api', () => ({
   completeOnboarding: jest.fn(),
 }));
 jest.mock('@/features/business/hooks', () => ({
-  businessQueryKey: ['business', 'mine'],
+  businessQueryKey: (userId: string) => ['private', userId, 'business'],
 }));
 jest.mock('expo-image-picker', () => ({
   requestMediaLibraryPermissionsAsync: jest.fn(),

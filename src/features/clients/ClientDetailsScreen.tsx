@@ -17,6 +17,7 @@ import { setClientStatus } from './api';
 import { openClientContact } from './contact';
 import { formatClientDocument, formatPhone } from './format';
 import { clientsQueryKey, useClient } from './hooks';
+import { useAuth } from '@/providers/AuthProvider';
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -37,7 +38,9 @@ export function ClientDetailsScreen({
   businessId: string;
   clientId: string;
 }) {
-  const query = useClient(businessId, clientId);
+  const { user } = useAuth();
+  const userId = user?.id ?? '';
+  const query = useClient(userId, businessId, clientId);
   const queryClient = useQueryClient();
   const [contactError, setContactError] = useState(false);
   const status = useMutation({
@@ -45,11 +48,11 @@ export function ClientDetailsScreen({
       setClientStatus(businessId, clientId, next),
     onSuccess: async (saved) => {
       queryClient.setQueryData(
-        [...clientsQueryKey(businessId), 'detail', clientId],
+        [...clientsQueryKey(userId, businessId), 'detail', clientId],
         saved,
       );
       await queryClient.invalidateQueries({
-        queryKey: clientsQueryKey(businessId),
+        queryKey: clientsQueryKey(userId, businessId),
       });
     },
   });

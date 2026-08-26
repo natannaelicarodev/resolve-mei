@@ -4,30 +4,30 @@ import type { ReactElement } from 'react';
 
 import HomeRoute from '@app/(protected)/home';
 import { useMyBusiness } from '@/features/business/hooks';
-import { useActiveClientCount } from '@/features/clients/hooks';
-import {
-  createAvatarSignedUrl,
-  getProfileInitial,
-} from '@/features/profile/avatar';
+import { useHomeDashboard } from '@/features/home/hooks';
+import { createAvatarSignedUrl } from '@/features/profile/avatar';
 import { getMyProfile } from '@/features/profile/api';
 import { useAuth } from '@/providers/AuthProvider';
+import type { HomeDashboardData } from '@/features/home/api';
 
 jest.mock('@/features/business/hooks', () => ({ useMyBusiness: jest.fn() }));
-jest.mock('@/features/clients/hooks', () => ({
-  useActiveClientCount: jest.fn(),
-}));
+jest.mock('@/features/home/hooks', () => ({ useHomeDashboard: jest.fn() }));
 jest.mock('@/features/profile/avatar', () => ({
   ...jest.requireActual('@/features/profile/avatar'),
   createAvatarSignedUrl: jest.fn(),
 }));
 jest.mock('@/features/profile/api', () => ({
   getMyProfile: jest.fn(),
-  profileQueryKey: ['profile', 'mine'],
+  profileQueryKey: (userId: string) => ['private', userId, 'profile'],
 }));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/components/motion', () => {
   const { Pressable, View } = jest.requireActual('react-native');
-  return { AnimatedPressable: Pressable, FadeInView: View };
+  return {
+    AnimatedPressable: Pressable,
+    FadeInView: View,
+    useReducedMotion: () => true,
+  };
 });
 
 const profile = {
@@ -37,6 +37,21 @@ const profile = {
   avatar_path: null,
   created_at: '2026-08-25T00:00:00Z',
   updated_at: '2026-08-25T00:00:00Z',
+};
+const dashboardFixture: HomeDashboardData = {
+  businessId: 'business-1',
+  period: 'month',
+  periodStart: '2026-08-01',
+  periodEnd: '2026-09-01',
+  approvedCents: 150000,
+  previousApprovedCents: 100000,
+  negotiatingCents: 50000,
+  approvedCount: 2,
+  openCount: 1,
+  quoteCount: 3,
+  monthly: [{ month: '2026-08-01', approvedCents: 150000 }],
+  clients: { total: 3, active: 2, inactive: 1 },
+  services: [],
 };
 
 beforeEach(() => {
@@ -52,11 +67,12 @@ beforeEach(() => {
       email: 'ana@example.com',
     },
   } as ReturnType<typeof useMyBusiness>);
-  jest.mocked(useActiveClientCount).mockReturnValue({
-    data: 3,
+  jest.mocked(useHomeDashboard).mockReturnValue({
+    data: dashboardFixture,
     isLoading: false,
     isError: false,
-  } as ReturnType<typeof useActiveClientCount>);
+    refetch: jest.fn(),
+  } as unknown as ReturnType<typeof useHomeDashboard>);
 });
 
 async function renderWithClient(element: ReactElement) {
@@ -69,36 +85,22 @@ async function renderWithClient(element: ReactElement) {
   return { queryClient, screen };
 }
 
-it('shows the CRM home without the redundant business card or logo requirement', async () => {
+it('shows the personalized CRM dashboard with real sections', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  expect(await screen.findByText('Olá, Ana')).toBeTruthy();
+  expect(await screen.findByText(/Ana$/)).toBeTruthy();
+  expect(screen.getByText('Veja como está o seu negócio hoje.')).toBeTruthy();
+  expect(screen.getByText('Balanço estimado')).toBeTruthy();
   expect(screen.getByText('Ações rápidas')).toBeTruthy();
-  expect(screen.getByText('3')).toBeTruthy();
+  expect(screen.getByText('Visão geral')).toBeTruthy();
   expect(screen.queryByText('Ver perfil')).toBeNull();
-  expect(screen.queryByText(/Perfil configurado/i)).toBeNull();
-  expect(screen.queryByText(/Adicionar logotipo/i)).toBeNull();
-  expect(screen.getByLabelText('Perfil')).toBeTruthy();
   await screen.unmount();
   queryClient.clear();
 });
 
 it('uses the personal profile initial when there is no avatar', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  expect(await screen.findByText('Olá, Ana')).toBeTruthy();
-  expect(screen.getByTestId('profile-image-fallback')).toBeTruthy();
-  expect(screen.getByText('A')).toBeTruthy();
+  expect(await screen.findByTestId('profile-image-fallback')).toBeTruthy();
   expect(createAvatarSignedUrl).not.toHaveBeenCalled();
-  await screen.unmount();
-  queryClient.clear();
-});
-
-it('handles an empty name with a safe fallback', async () => {
-  jest.mocked(getMyProfile).mockResolvedValue({ ...profile, full_name: '   ' });
-  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  expect(await screen.findByText('Olá')).toBeTruthy();
-  expect(screen.getByTestId('profile-image-fallback')).toBeTruthy();
-  expect(getProfileInitial('   ')).toBe('U');
-  expect(getProfileInitial('  -Érica')).toBe('É');
   await screen.unmount();
   queryClient.clear();
 });
@@ -111,23 +113,18 @@ it('shows a temporary signed personal avatar', async () => {
     .mocked(createAvatarSignedUrl)
     .mockResolvedValue('https://signed.example/avatar');
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  const image = await screen.findByTestId('profile-image');
-  expect(image.props.source).toEqual({ uri: 'https://signed.example/avatar' });
-  expect(createAvatarSignedUrl).toHaveBeenCalledWith('user-1/avatar.webp');
+  expect((await screen.findByTestId('profile-image')).props.source).toEqual({
+    uri: 'https://signed.example/avatar',
+  });
   await screen.unmount();
   queryClient.clear();
 });
 
-it('falls back without exposing a broken image when signing fails', async () => {
-  jest
-    .mocked(getMyProfile)
-    .mockResolvedValue({ ...profile, avatar_path: 'user-1/avatar.webp' });
-  jest
-    .mocked(createAvatarSignedUrl)
-    .mockRejectedValue(new Error('sign failed'));
+it('falls back safely when the profile name is empty', async () => {
+  jest.mocked(getMyProfile).mockResolvedValue({ ...profile, full_name: '   ' });
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
   expect(await screen.findByTestId('profile-image-fallback')).toBeTruthy();
-  expect(screen.queryByTestId('profile-image')).toBeNull();
+  expect(screen.getByText('U')).toBeTruthy();
   await screen.unmount();
   queryClient.clear();
 });

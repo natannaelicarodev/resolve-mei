@@ -83,10 +83,10 @@ describe('getMyBusiness', () => {
   it('uses maybeSingle and normalizes an absent business to null', async () => {
     maybeSingle.mockResolvedValue({ data: null, error: null });
     jest.mocked(supabase.from).mockReturnValue({
-      select: () => ({ maybeSingle }),
+      select: () => ({ eq: () => ({ maybeSingle }) }),
     } as never);
 
-    await expect(getMyBusiness()).resolves.toBeNull();
+    await expect(getMyBusiness('user-1')).resolves.toBeNull();
     expect(supabase.from).toHaveBeenCalledWith('businesses');
     expect(maybeSingle).toHaveBeenCalledTimes(1);
   });
@@ -95,19 +95,22 @@ describe('getMyBusiness', () => {
     const error = { code: '42501', message: 'permission denied' };
     maybeSingle.mockResolvedValue({ data: null, error });
     jest.mocked(supabase.from).mockReturnValue({
-      select: () => ({ maybeSingle }),
+      select: () => ({ eq: () => ({ maybeSingle }) }),
     } as never);
 
-    await expect(getMyBusiness()).rejects.toBe(error);
+    await expect(getMyBusiness('user-1')).rejects.toBe(error);
   });
 });
 
 describe('updateExistingBusiness', () => {
   beforeEach(() => jest.clearAllMocks());
 
-  function configureUpdate(error: Error | null) {
+  function configureUpdate(
+    error: Error | null,
+    returned = { ...draft, onboarding_completed: true },
+  ) {
     const single = jest.fn().mockResolvedValue({
-      data: { ...draft, onboarding_completed: true },
+      data: returned,
       error,
     });
     const select = jest.fn(() => ({ single }));
@@ -154,5 +157,18 @@ describe('updateExistingBusiness', () => {
     expect(chain.updateExisting.mock.calls[0]?.[0]).not.toHaveProperty(
       'logo_path',
     );
+  });
+
+  it('rejects an update response from a different business identity', async () => {
+    configureUpdate(null, {
+      ...draft,
+      id: 'business-2',
+      owner_id: 'user-2',
+      onboarding_completed: true,
+    });
+
+    await expect(
+      updateExistingBusiness('user-1', 'business-1', input),
+    ).rejects.toThrow('BUSINESS_IDENTITY_MISMATCH');
   });
 });

@@ -11,7 +11,7 @@ import { renderProfile } from './helpers/renderProfile';
 
 jest.mock('@/features/profile/api', () => ({
   getMyProfile: jest.fn(),
-  profileQueryKey: ['profile', 'mine'],
+  profileQueryKey: (userId: string) => ['private', userId, 'profile'],
   updateMyProfile: jest.fn(),
 }));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
@@ -60,8 +60,10 @@ it('shows accessible success and updates profile and business caches', async () 
   const announcement = screen.getByRole('alert');
   expect(announcement.props.accessible).toBe(true);
   expect(announcement.props.accessibilityLiveRegion).toBe('polite');
-  expect(queryClient.getQueryData(profileQueryKey)).toEqual(profile);
-  expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: profileQueryKey });
+  expect(queryClient.getQueryData(profileQueryKey('user-1'))).toEqual(profile);
+  expect(invalidateQueries).toHaveBeenCalledWith({
+    queryKey: profileQueryKey('user-1'),
+  });
   expect(router.replace).not.toHaveBeenCalled();
   await dispose();
 });

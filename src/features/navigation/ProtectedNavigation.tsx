@@ -10,7 +10,8 @@ import { IconButton, Text } from '@/components/ui';
 import { sizes, spacing, useTheme } from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
-type ProtectedDestination = 'home' | 'clients' | 'profile';
+type ProtectedDestination =
+  'home' | 'clients' | 'services' | 'quotes' | 'profile';
 
 export function navigateBackOrFallback(
   fallback: Href = '/home',
@@ -115,9 +116,24 @@ export function ProtectedBottomNavigation({
         selected={selected === 'clients'}
       />
       <NavigationItem
-        disabled
+        icon="briefcase-outline"
+        label="Serviços"
+        onPress={
+          selected === 'services'
+            ? undefined
+            : () => router.replace('/services')
+        }
+        selected={selected === 'services'}
+      />
+      <NavigationItem
         icon="file-document-outline"
         label="Orçamentos"
+        onPress={
+          selected === 'quotes'
+            ? undefined
+            : () => router.replace('/quotes' as Href)
+        }
+        selected={selected === 'quotes'}
       />
       <NavigationItem
         icon="account-circle-outline"

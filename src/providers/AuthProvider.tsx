@@ -1,5 +1,14 @@
 import type { Session, User } from '@supabase/supabase-js';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import type { PropsWithChildren } from 'react';
 import { AppState, Platform } from 'react-native';
 
@@ -19,22 +28,57 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
+  const queryClient = useQueryClient();
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const currentUserId = useRef<string | null>(null);
+  const transitionGeneration = useRef(0);
+
+  const applySession = useCallback(
+    async (nextSession: Session | null) => {
+      const nextUserId = nextSession?.user.id ?? null;
+      if (currentUserId.current === nextUserId) {
+        setSession(nextSession);
+        setIsLoading(false);
+        return;
+      }
+
+      const generation = ++transitionGeneration.current;
+      currentUserId.current = null;
+      setSession(null);
+      setIsLoading(Boolean(nextUserId));
+      await queryClient.cancelQueries();
+      queryClient.clear();
+      if (transitionGeneration.current !== generation) return;
+      currentUserId.current = nextUserId;
+      setSession(nextSession);
+      setIsLoading(false);
+    },
+    [queryClient],
+  );
+
+  const signOut = useCallback(async () => {
+    ++transitionGeneration.current;
+    currentUserId.current = null;
+    setSession(null);
+    setIsLoading(false);
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await performSignOut();
+  }, [queryClient]);
 
   useEffect(() => {
     let active = true;
+    let authEventReceived = false;
     void supabase.auth.getSession().then(({ data }) => {
-      if (active) {
-        setSession(data.session);
-        setIsLoading(false);
-      }
+      if (active && !authEventReceived) void applySession(data.session);
     });
 
     const { data: listener } = supabase.auth.onAuthStateChange(
       (event, nextSession) => {
-        setSession(nextSession);
+        authEventReceived = true;
+        void applySession(nextSession);
         setIsPasswordRecovery(event === 'PASSWORD_RECOVERY');
         setIsLoading(false);
       },
@@ -54,7 +98,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       appStateListener?.remove();
       if (Platform.OS !== 'web') supabase.auth.stopAutoRefresh();
     };
-  }, []);
+  }, [applySession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -64,9 +108,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isPasswordRecovery,
       clearPasswordRecovery: () => setIsPasswordRecovery(false),
       beginPasswordRecovery: () => setIsPasswordRecovery(true),
-      signOut: performSignOut,
+      signOut,
     }),
-    [isLoading, isPasswordRecovery, session],
+    [isLoading, isPasswordRecovery, session, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -4,8 +4,10 @@ import { router } from 'expo-router';
 import { ClientListScreen } from '@/features/clients/ClientListScreen';
 import { useClients } from '@/features/clients/hooks';
 import { ThemeProvider } from '@/theme';
+import { useAuth } from '@/providers/AuthProvider';
 
 jest.mock('@/features/clients/hooks', () => ({ useClients: jest.fn() }));
+jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -15,6 +17,9 @@ beforeEach(() => {
     isLoading: false,
     isSuccess: true,
   } as unknown as ReturnType<typeof useClients>);
+  jest.mocked(useAuth).mockReturnValue({
+    user: { id: 'user-1' },
+  } as ReturnType<typeof useAuth>);
 });
 
 it('shows an explicit add-client action and opens the creation form', async () => {

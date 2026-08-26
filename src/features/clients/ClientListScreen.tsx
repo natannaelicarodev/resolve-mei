@@ -25,6 +25,7 @@ import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
 import { clientInitials, formatClientDocument, formatPhone } from './format';
 import { useClients } from './hooks';
+import { useAuth } from '@/providers/AuthProvider';
 
 function ClientRow({ client }: { client: Client }) {
   const { colors } = useTheme();
@@ -70,11 +71,12 @@ function ClientRow({ client }: { client: Client }) {
 }
 
 export function ClientListScreen({ businessId }: { businessId: string }) {
+  const { user } = useAuth();
   const { colors } = useTheme();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ClientStatusFilter>('all');
-  const query = useClients(businessId, search, status);
+  const query = useClients(user?.id ?? '', businessId, search, status);
   useEffect(() => {
     const timer = setTimeout(() => setSearch(input.trim()), 300);
     return () => clearTimeout(timer);
