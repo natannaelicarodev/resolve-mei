@@ -10,6 +10,8 @@ export type { FeedbackVariant } from './InlineFeedback';
 export { Input } from './Input';
 export type { InputProps } from './Input';
 export { Screen } from './Screen';
+export { SegmentedControl } from './SegmentedControl';
+export type { SegmentOption } from './SegmentedControl';
 export { Skeleton } from './Skeleton';
 export { Text } from './Text';
 export type { TextProps } from './Text';

@@ -1,16 +1,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
-import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 
-import { Button, Input, Text } from '@/components/ui';
+import { Button, InlineFeedback, Input, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
-import { colors } from '@/theme';
 import { updatePassword } from './api';
 import { AuthShell } from './AuthShell';
 import { resetPasswordSchema } from './schemas';
 import type { ResetPasswordData } from './schemas';
+import { PasswordRequirements } from './PasswordRequirements';
 
 export function ResetPasswordScreen() {
   const { session, isPasswordRecovery, clearPasswordRecovery } = useAuth();
@@ -23,6 +22,7 @@ export function ResetPasswordScreen() {
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+  const password = useWatch({ control, name: 'password' });
   const submit = async (data: ResetPasswordData) => {
     try {
       await updatePassword(data.password);
@@ -58,6 +58,7 @@ export function ResetPasswordScreen() {
           />
         )}
       />
+      <PasswordRequirements password={password} />
       <Controller
         control={control}
         name="confirmPassword"
@@ -73,9 +74,7 @@ export function ResetPasswordScreen() {
         )}
       />
       {errors.root?.message ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {errors.root.message}
-        </Text>
+        <InlineFeedback message={errors.root.message} variant="error" />
       ) : null}
       <Button
         label="Atualizar senha"
@@ -85,4 +84,3 @@ export function ResetPasswordScreen() {
     </AuthShell>
   );
 }
-const styles = StyleSheet.create({ error: { color: colors.danger } });

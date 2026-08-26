@@ -1,8 +1,9 @@
-export const colors = {
+export const lightColors = {
   background: '#F7F6F2',
   backgroundSubtle: '#F0F3EF',
   surface: '#FFFFFF',
   surfaceElevated: '#FFFFFF',
+  surfaceMuted: '#EEF2EE',
   surfacePressed: '#E9EEEA',
   textPrimary: '#202522',
   textSecondary: '#4E5A53',
@@ -33,4 +34,44 @@ export const colors = {
   disabledText: '#68746D',
 } as const;
 
-export type ColorToken = keyof typeof colors;
+export type ColorToken = keyof typeof lightColors;
+export type ThemeColors = Record<ColorToken, string>;
+
+export const darkColors: ThemeColors = {
+  background: '#151916',
+  backgroundSubtle: '#1B211D',
+  surface: '#202622',
+  surfaceElevated: '#262D28',
+  surfaceMuted: '#252C27',
+  surfacePressed: '#303A33',
+  textPrimary: '#F2F5F3',
+  textSecondary: '#C2CBC5',
+  textMuted: '#9EAAA2',
+  primary: '#58C996',
+  primaryPressed: '#78D8AB',
+  primarySubtle: '#173A2A',
+  secondary: '#78A9F2',
+  accent: '#E3B95D',
+  accentCoral: '#E78372',
+  success: '#64D19E',
+  successSubtle: '#17382A',
+  warning: '#F0C66A',
+  warningSubtle: '#3C3118',
+  danger: '#FF9187',
+  dangerSubtle: '#432320',
+  info: '#8CB9F5',
+  infoSubtle: '#1E3049',
+  border: '#39433C',
+  borderStrong: '#59665D',
+  overlay: 'rgba(0, 0, 0, 0.68)',
+  focusRing: '#8CB9F5',
+  disabled: '#343B36',
+  textOnPrimary: '#102219',
+  textOnDanger: '#2D0B08',
+  text: '#F2F5F3',
+  focus: '#8CB9F5',
+  disabledText: '#8A958D',
+};
+
+// Compatibilidade para módulos puramente estáticos; componentes renderizados usam useTheme().
+export const colors = lightColors;

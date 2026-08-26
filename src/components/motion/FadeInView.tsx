@@ -21,12 +21,14 @@ export function FadeInView({
   const reducedMotion = useReducedMotion();
   const [progress] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    Animated.timing(progress, {
+    const animation = Animated.timing(progress, {
       toValue: 1,
       duration: reducedMotion ? motion.duration.fast : motion.duration.enter,
       delay: reducedMotion ? 0 : delay,
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+    return () => animation.stop();
   }, [delay, progress, reducedMotion]);
   return (
     <Animated.View

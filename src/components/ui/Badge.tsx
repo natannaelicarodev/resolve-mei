@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radii, spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { Text } from './Text';
 
 type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
@@ -29,12 +29,20 @@ export function Badge({
   variant?: BadgeVariant;
   icon?: ReactNode;
 }) {
+  const { colors } = useTheme();
+  const backgroundColor = {
+    neutral: colors.backgroundSubtle,
+    success: colors.successSubtle,
+    warning: colors.warningSubtle,
+    danger: colors.dangerSubtle,
+    info: colors.infoSubtle,
+  }[variant];
   return (
     <View
       accessible
       accessibilityLabel={getBadgeAccessibilityLabel(label, variant)}
       accessibilityRole="text"
-      style={[styles.badge, styles[variant]]}
+      style={[styles.badge, { backgroundColor }]}
     >
       {icon}
       <Text variant="status">{label}</Text>
@@ -52,9 +60,4 @@ const styles = StyleSheet.create({
     minHeight: 28,
     paddingHorizontal: spacing.sm,
   },
-  neutral: { backgroundColor: colors.backgroundSubtle },
-  success: { backgroundColor: colors.successSubtle },
-  warning: { backgroundColor: colors.warningSubtle },
-  danger: { backgroundColor: colors.dangerSubtle },
-  info: { backgroundColor: colors.infoSubtle },
 });

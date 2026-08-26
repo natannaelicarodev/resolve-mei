@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { Animated } from 'react-native';
 import type { DimensionValue, ViewStyle } from 'react-native';
 
 import { useReducedMotion } from '@/components/motion';
-import { colors, opacity, radii } from '@/theme';
+import { opacity, radii, useTheme } from '@/theme';
 
 export function Skeleton({
   width = '100%',
@@ -14,6 +14,7 @@ export function Skeleton({
   height?: number;
   radius?: number;
 }) {
+  const { colors } = useTheme();
   const reducedMotion = useReducedMotion();
   const [value] = useState(() => new Animated.Value(opacity.skeleton));
   useEffect(() => {
@@ -43,13 +44,14 @@ export function Skeleton({
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
       style={[
-        styles.base,
-        { borderRadius: radius, height, opacity: value, width } as ViewStyle,
+        {
+          backgroundColor: colors.borderStrong,
+          borderRadius: radius,
+          height,
+          opacity: value,
+          width,
+        } as ViewStyle,
       ]}
     />
   );
 }
-
-const styles = StyleSheet.create({
-  base: { backgroundColor: colors.borderStrong },
-});

@@ -5,7 +5,7 @@ import type { PressableProps } from 'react-native';
 import { AnimatedPressable } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
 import type { HapticIntent } from '@/lib/haptics';
-import { colors, radii, sizes, spacing, typography } from '@/theme';
+import { radii, sizes, spacing, typography, useTheme } from '@/theme';
 import { Text } from './Text';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -36,6 +36,7 @@ export function Button({
   style,
   ...props
 }: ButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const foreground =
     variant === 'primary' || variant === 'danger' || state === 'success'
@@ -56,10 +57,20 @@ export function Button({
       style={(pressState) => [
         styles.base,
         styles[size],
-        styles[variant],
-        state === 'success' && styles.success,
+        variant === 'primary' && { backgroundColor: colors.primary },
+        variant === 'secondary' && {
+          backgroundColor: colors.surface,
+          borderColor: colors.primary,
+          borderWidth: 1,
+        },
+        variant === 'ghost' && styles.ghost,
+        variant === 'danger' && { backgroundColor: colors.danger },
+        state === 'success' && { backgroundColor: colors.success },
         pressState.pressed && !isDisabled && styles.pressed,
-        isDisabled && styles.disabled,
+        isDisabled && {
+          backgroundColor: colors.disabled,
+          borderColor: colors.disabled,
+        },
         typeof style === 'function' ? style(pressState) : style,
       ]}
       {...props}
@@ -73,9 +84,7 @@ export function Button({
         ) : (
           icon
         )}
-        <Text style={[styles.label, { color: foreground }]}>
-          {state === 'success' ? `✓ ${label}` : label}
-        </Text>
+        <Text style={[styles.label, { color: foreground }]}>{label}</Text>
       </View>
     </AnimatedPressable>
   );
@@ -92,17 +101,8 @@ const styles = StyleSheet.create({
   small: { minHeight: 44, paddingHorizontal: spacing.md },
   medium: { minHeight: sizes.buttonMinHeight },
   large: { minHeight: 56, paddingHorizontal: spacing.lg },
-  primary: { backgroundColor: colors.primary },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.primary,
-    borderWidth: 1,
-  },
   ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.danger },
-  success: { backgroundColor: colors.success },
   pressed: { opacity: 0.88 },
-  disabled: { backgroundColor: colors.disabled, borderColor: colors.disabled },
   content: {
     alignItems: 'center',
     flexDirection: 'row',

@@ -7,6 +7,7 @@ import { renderProfile } from './helpers/renderProfile';
 
 jest.mock('@/features/profile/api', () => ({
   getMyProfile: jest.fn(),
+  profileQueryKey: ['profile', 'mine'],
   updateMyProfile: jest.fn(),
 }));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
@@ -22,14 +23,18 @@ it('keeps entered data and stays on screen when saving fails', async () => {
     id: 'user-1',
     full_name: 'Ana Silva',
     phone: null,
+    avatar_path: null,
     created_at: '2026-08-25T00:00:00Z',
     updated_at: '2026-08-25T00:00:00Z',
   });
   jest.mocked(updateMyProfile).mockRejectedValue(new Error('database detail'));
   const { dispose, screen } = await renderProfile();
 
-  fireEvent.changeText(screen.getByLabelText('Nome completo'), 'Ana Souza');
-  fireEvent.press(
+  await fireEvent.changeText(
+    screen.getByLabelText('Nome completo'),
+    'Ana Souza',
+  );
+  await fireEvent.press(
     screen.getByRole('button', { name: 'Salvar dados pessoais' }),
   );
 

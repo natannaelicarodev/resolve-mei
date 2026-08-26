@@ -1,4 +1,4 @@
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, Ref } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -8,14 +8,17 @@ import {
 } from 'react-native';
 import type { ScrollViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import type { Edge } from 'react-native-safe-area-context';
 
-import { colors, sizes, spacing } from '@/theme';
+import { sizes, spacing, useTheme } from '@/theme';
 
 export interface ScreenProps extends PropsWithChildren<ScrollViewProps> {
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
   scroll?: boolean;
   keyboardAvoiding?: boolean;
   background?: 'default' | 'subtle';
+  scrollRef?: Ref<ScrollView>;
+  safeAreaEdges?: readonly Edge[];
 }
 
 export function Screen({
@@ -24,11 +27,15 @@ export function Screen({
   scroll = true,
   keyboardAvoiding = false,
   background = 'default',
+  scrollRef,
+  safeAreaEdges = ['top', 'bottom'],
   ...props
 }: ScreenProps) {
+  const { colors } = useTheme();
   const content = <View style={styles.content}>{children}</View>;
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
       {...props}
@@ -48,8 +55,16 @@ export function Screen({
   );
   return (
     <SafeAreaView
-      edges={['bottom']}
-      style={[styles.safeArea, background === 'subtle' && styles.subtle]}
+      edges={safeAreaEdges}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor:
+            background === 'subtle'
+              ? colors.backgroundSubtle
+              : colors.background,
+        },
+      ]}
     >
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
@@ -66,8 +81,7 @@ export function Screen({
 }
 
 const styles = StyleSheet.create({
-  safeArea: { backgroundColor: colors.background, flex: 1 },
-  subtle: { backgroundColor: colors.backgroundSubtle },
+  safeArea: { flex: 1 },
   keyboard: { flex: 1 },
   scrollContent: {
     flexGrow: 1,

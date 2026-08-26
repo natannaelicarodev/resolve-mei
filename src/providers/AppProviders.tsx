@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ThemeProvider } from '@/theme';
 import { AuthProvider } from './AuthProvider';
 
 export function AppProviders({ children }: PropsWithChildren) {
@@ -18,9 +19,11 @@ export function AppProviders({ children }: PropsWithChildren) {
 
   return (
     <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>{children}</AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
     </SafeAreaProvider>
   );
 }

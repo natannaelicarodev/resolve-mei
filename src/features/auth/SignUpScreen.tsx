@@ -1,17 +1,19 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet } from 'react-native';
 
-import { Button, Checkbox, Input, Text } from '@/components/ui';
+import { Button, Checkbox, InlineFeedback, Input, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { colors } from '@/theme';
+import { useTheme } from '@/theme';
 import { signUp } from './api';
 import { AuthShell } from './AuthShell';
 import { signUpSchema } from './schemas';
 import type { SignUpData } from './schemas';
+import { PasswordRequirements } from './PasswordRequirements';
 
 export function SignUpScreen() {
+  const { colors } = useTheme();
   const {
     control,
     handleSubmit,
@@ -27,6 +29,7 @@ export function SignUpScreen() {
       acceptedTerms: false,
     },
   });
+  const password = useWatch({ control, name: 'password' });
   const submit = async (data: SignUpData) => {
     try {
       const session = await signUp(data);
@@ -41,8 +44,8 @@ export function SignUpScreen() {
   };
   return (
     <AuthShell
-      title="Criar conta"
-      subtitle="Comece sua configuração profissional"
+      title="Crie sua conta"
+      subtitle="Comece seu perfil profissional em poucos minutos."
     >
       <Controller
         control={control}
@@ -88,6 +91,7 @@ export function SignUpScreen() {
           />
         )}
       />
+      <PasswordRequirements password={password} />
       <Controller
         control={control}
         name="confirmPassword"
@@ -115,9 +119,7 @@ export function SignUpScreen() {
         )}
       />
       {errors.root?.message ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {errors.root.message}
-        </Text>
+        <InlineFeedback message={errors.root.message} variant="error" />
       ) : null}
       <Button
         label="Criar conta"
@@ -126,14 +128,11 @@ export function SignUpScreen() {
       />
       <Text>
         Já possui conta?{' '}
-        <Link href="/sign-in" style={styles.link}>
+        <Link href="/sign-in" style={[styles.link, { color: colors.primary }]}>
           Entrar
         </Link>
       </Text>
     </AuthShell>
   );
 }
-const styles = StyleSheet.create({
-  error: { color: colors.danger },
-  link: { color: colors.primary },
-});
+const styles = StyleSheet.create({ link: {} });

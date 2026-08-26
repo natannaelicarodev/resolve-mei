@@ -47,10 +47,18 @@ As migrations nao sao aplicadas automaticamente e nao exigem Docker ou senha do 
 1. `supabase/migrations/202608250001_auth_profiles_businesses.sql`
 2. `supabase/migrations/202608250002_business_logos_storage.sql`
 3. `supabase/migrations/202608260003_authenticated_table_grants.sql`
+4. `supabase/migrations/202608260004_clients.sql`
+5. `supabase/migrations/202608260005_profile_avatars.sql`
 
 A primeira migration cria `profiles`, `businesses`, constraints, timestamps, trigger de perfil, indices, RLS e politicas por proprietario. A segunda cria/atualiza o bucket privado `business-logos`, limitado a 5 MB e JPEG/PNG/WebP, e restringe objetos a `{user_id}/{arquivo}`.
 
 A terceira migration concede ao papel `authenticated` somente `SELECT`, `INSERT` e `UPDATE` em `profiles` e `businesses`. Grants e RLS atuam em etapas diferentes e sao necessarios conjuntamente: os grants autorizam quais operacoes o papel pode solicitar nas tabelas, enquanto as policies de RLS limitam quais linhas cada usuario autenticado pode acessar. Uma policy permissiva nao substitui o grant da operacao, e um grant nao ignora a RLS habilitada.
+
+A quarta migration cria o cadastro de clientes. Ela concede somente `SELECT`, `INSERT` e `UPDATE` ao papel autenticado e usa RLS para vincular cada linha ao proprietario do negocio. A ausência de `DELETE` é intencional: clientes deixam de aparecer como ativos por alteração de status, sem exclusão física. Documentos opcionais são únicos por negócio quando informados.
+
+A quinta migration adiciona `profiles.avatar_path` e cria o bucket privado `avatars`, limitado a 5 MB e JPEG/PNG/WebP. As policies isolam cada usuário na pasta `{user_id}/{arquivo}`. A foto pessoal não utiliza `businesses.logo_path`; referências antigas nesse campo não são copiadas automaticamente, pois não é seguro presumir que todo logotipo empresarial represente a pessoa.
+
+As ações de WhatsApp consideram telefones brasileiros normalizados com DDD e acrescentam o código do país `55` somente ao abrir o link. O número persistido continua nacional, com 10 ou 11 dígitos.
 
 Nao execute novamente uma migration ja registrada sem revisar o historico do projeto. Os arquivos nao usam operacoes destrutivas para mascarar conflitos.
 

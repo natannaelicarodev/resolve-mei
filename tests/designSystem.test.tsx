@@ -5,6 +5,7 @@ import {
   Card,
   IconButton,
   Input,
+  SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
@@ -59,7 +60,7 @@ describe('design system foundation', () => {
       const screen = await render(
         <Button label={variant} onPress={onPress} variant={variant} />,
       );
-      fireEvent.press(screen.getByRole('button', { name: variant }));
+      await fireEvent.press(screen.getByRole('button', { name: variant }));
       expect(onPress).toHaveBeenCalledTimes(1);
     },
   );
@@ -76,7 +77,7 @@ describe('design system foundation', () => {
       'accessibilityState',
       { busy: true, disabled: true },
     );
-    expect(screen.getByText('✓ Salvo')).toBeTruthy();
+    expect(screen.getByText('Salvo')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Bloqueado' })).toBeDisabled();
   });
 
@@ -92,7 +93,7 @@ describe('design system foundation', () => {
       </>,
     );
     const focused = screen.getByLabelText('Foco');
-    fireEvent(focused, 'focus', { nativeEvent: {} });
+    await fireEvent(focused, 'focus', { nativeEvent: {} });
     await waitFor(() =>
       expect(screen.getByLabelText('Foco')).toHaveStyle({
         borderColor: colors.focusRing,
@@ -131,14 +132,36 @@ describe('design system foundation', () => {
         />
       </>,
     );
-    fireEvent.press(screen.getByRole('button', { name: 'Abrir item' }));
-    fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Abrir item' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
     expect(cardPress).toHaveBeenCalledTimes(1);
     expect(iconPress).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Fechar' })).toHaveStyle({
       height: 44,
       width: 44,
     });
+  });
+
+  it('distributes segmented options across the available width', async () => {
+    const screen = await render(
+      <SegmentedControl
+        label="Tema"
+        onChange={jest.fn()}
+        options={[
+          { label: 'Sistema', value: 'system' },
+          { label: 'Claro', value: 'light' },
+          { label: 'Escuro', value: 'dark' },
+        ]}
+        value="dark"
+      />,
+    );
+
+    for (const label of ['Sistema', 'Claro', 'Escuro']) {
+      expect(screen.getByRole('radio', { name: label }).parent).toHaveStyle({
+        flex: 1,
+        minWidth: 0,
+      });
+    }
   });
 
   it('communicates badge and inline feedback without color alone', async () => {
@@ -151,7 +174,11 @@ describe('design system foundation', () => {
 
   it('hides skeleton decoration from accessibility', async () => {
     const screen = await render(<Skeleton height={20} width={100} />);
-    expect(screen.toJSON()).toBeNull();
+    expect(screen.toJSON()).toHaveProp('accessibilityElementsHidden', true);
+    expect(screen.toJSON()).toHaveProp(
+      'importantForAccessibility',
+      'no-hide-descendants',
+    );
     expect(screen.queryByRole('progressbar')).toBeNull();
   });
 });

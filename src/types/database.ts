@@ -14,6 +14,7 @@ export interface Database {
           id: string;
           full_name: string;
           phone: string | null;
+          avatar_path: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -21,12 +22,14 @@ export interface Database {
           id: string;
           full_name?: string;
           phone?: string | null;
+          avatar_path?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           full_name?: string;
           phone?: string | null;
+          avatar_path?: string | null;
           updated_at?: string;
         };
         Relationships: [];
@@ -75,6 +78,36 @@ export interface Database {
           updated_at?: string;
         };
         Update: Partial<Database['public']['Tables']['businesses']['Insert']>;
+        Relationships: [];
+      };
+      clients: {
+        Row: {
+          id: string;
+          business_id: string;
+          type: 'person' | 'company';
+          name: string;
+          document: string | null;
+          phone: string | null;
+          email: string | null;
+          notes: string | null;
+          status: 'active' | 'inactive';
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          business_id: string;
+          type: 'person' | 'company';
+          name: string;
+          document?: string | null;
+          phone?: string | null;
+          email?: string | null;
+          notes?: string | null;
+          status?: 'active' | 'inactive';
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: Partial<Database['public']['Tables']['clients']['Insert']>;
         Relationships: [];
       };
     };

@@ -17,11 +17,13 @@ export function StepTransition({
   const reducedMotion = useReducedMotion();
   useEffect(() => {
     progress.setValue(0);
-    Animated.timing(progress, {
+    const animation = Animated.timing(progress, {
       toValue: 1,
       duration: reducedMotion ? motion.duration.fast : motion.duration.enter,
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+    return () => animation.stop();
   }, [progress, reducedMotion, step]);
   const offset =
     direction === 'forward' ? motion.distance.step : -motion.distance.step;

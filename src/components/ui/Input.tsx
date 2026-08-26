@@ -2,7 +2,7 @@ import { forwardRef, useId, useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
-import { colors, radii, sizes, spacing, typography } from '@/theme';
+import { radii, sizes, spacing, typography, useTheme } from '@/theme';
 import { Text } from './Text';
 
 export interface InputProps extends TextInputProps {
@@ -32,6 +32,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   },
   ref,
 ) {
+  const { colors } = useTheme();
   const id = useId();
   const [focused, setFocused] = useState(false);
   const isEditable = editable && !readOnly;
@@ -60,10 +61,18 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
         placeholderTextColor={colors.textMuted}
         style={[
           styles.input,
-          Boolean(value) && styles.filled,
-          focused && styles.focused,
-          !isEditable && styles.disabled,
-          error && styles.errorInput,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+            color: colors.textPrimary,
+          },
+          Boolean(value) && { borderColor: colors.borderStrong },
+          focused && { borderColor: colors.focusRing, borderWidth: 2 },
+          !isEditable && {
+            backgroundColor: colors.disabled,
+            color: colors.disabledText,
+          },
+          error && { borderColor: colors.danger, borderWidth: 2 },
           style,
         ]}
         value={value}
@@ -95,18 +104,11 @@ const styles = StyleSheet.create({
   wrapper: { gap: spacing.xs },
   input: {
     minHeight: sizes.inputHeight,
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radii.medium,
     borderWidth: 1,
-    color: colors.textPrimary,
     paddingHorizontal: spacing.md,
     ...typography.body,
   },
-  focused: { borderColor: colors.focusRing, borderWidth: 2 },
-  filled: { borderColor: colors.borderStrong },
-  disabled: { backgroundColor: colors.disabled, color: colors.disabledText },
-  errorInput: { borderColor: colors.danger, borderWidth: 2 },
   messageRow: { flexDirection: 'row', justifyContent: 'space-between' },
   messageSpace: { minHeight: 18 },
 });

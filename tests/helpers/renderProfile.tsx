@@ -3,9 +3,14 @@ import { render, waitFor } from '@testing-library/react-native';
 
 import { ProfileScreen } from '@/features/profile/ProfileScreen';
 
-export async function renderProfile() {
+export async function renderProfile({
+  waitForPersonal = true,
+}: { waitForPersonal?: boolean } = {}) {
   const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    defaultOptions: {
+      queries: { gcTime: 0, retry: false },
+      mutations: { gcTime: 0, retry: false },
+    },
   });
   const invalidateQueries = jest.spyOn(queryClient, 'invalidateQueries');
   const screen = await render(
@@ -13,9 +18,10 @@ export async function renderProfile() {
       <ProfileScreen />
     </QueryClientProvider>,
   );
-  await waitFor(() =>
-    expect(screen.getByDisplayValue('Ana Silva')).toBeTruthy(),
-  );
+  if (waitForPersonal)
+    await waitFor(() =>
+      expect(screen.getByDisplayValue('Ana Silva')).toBeTruthy(),
+    );
   const dispose = async () => {
     await screen.unmount();
     queryClient.clear();

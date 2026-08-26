@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet } from 'react-native';
 import type { PressableProps } from 'react-native';
 
 import { AnimatedPressable } from '@/components/motion';
-import { colors, radii, sizes } from '@/theme';
+import { radii, sizes, useTheme } from '@/theme';
 
 export interface IconButtonProps extends Omit<PressableProps, 'children'> {
   accessibilityLabel: string;
@@ -19,6 +19,7 @@ export function IconButton({
   style,
   ...props
 }: IconButtonProps) {
+  const { colors } = useTheme();
   const isDisabled = disabled || loading;
   return (
     <AnimatedPressable
@@ -28,7 +29,7 @@ export function IconButton({
       disabled={isDisabled}
       style={(state) => [
         styles.button,
-        state.pressed && styles.pressed,
+        state.pressed && { backgroundColor: colors.surfacePressed },
         typeof style === 'function' ? style(state) : style,
       ]}
       {...props}
@@ -46,5 +47,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: sizes.touchTarget,
   },
-  pressed: { backgroundColor: colors.surfacePressed },
 });

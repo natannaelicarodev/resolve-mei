@@ -13,11 +13,14 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('expo-router', () => ({
   router: {
     back: jest.fn(),
+    canGoBack: jest.fn(() => true),
+    dismissTo: jest.fn(),
     push: jest.fn(),
     replace: jest.fn(),
   },
   Link: 'Link',
   Redirect: 'Redirect',
   Stack: Object.assign('Stack', { Screen: 'Screen' }),
+  useLocalSearchParams: jest.fn(() => ({})),
   usePathname: jest.fn(),
 }));

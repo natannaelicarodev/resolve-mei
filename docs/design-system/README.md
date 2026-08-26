@@ -18,6 +18,29 @@ Os tokens ficam em `src/theme` e são semânticos. Componentes devem consumir no
 
 As combinações principais foram escolhidas para WCAG AA: grafite sobre fundos claros, branco sobre verde principal, branco sobre vermelho de perigo e textos escuros nos fundos sutis. Status sempre inclui texto, símbolo ou papel acessível.
 
+### Temas
+
+O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies em grafite esverdeado, sem preto absoluto, neon ou linguagem visual de fintech.
+
+## Referência Nucleus UI Lite
+
+O arquivo completo foi inspecionado pelo plugin do Figma antes da revisão visual da Home. A implementação usa a gramática e os estados dos componentes, mantendo conteúdo, marca, cores semânticas e fluxos próprios do ResolveMEI.
+
+| Componente verificado         | Node ID    | Aplicação no ResolveMEI                          |
+| ----------------------------- | ---------- | ------------------------------------------------ |
+| Controls / Buttons            | `1:11`     | estados normal, pressionado e desabilitado       |
+| Primary block button          | `1:7`      | referência de altura, hierarquia e área de toque |
+| Icon buttons                  | `498:6134` | ação discreta de configurações                   |
+| Nav Bars / Standard           | `5:43`     | cabeçalho compacto e sem hero                    |
+| Tab Bars / Icon & Text        | `34:744`   | navegação inferior com ícone e rótulo            |
+| Views / Tables and list items | `66:735`   | resumo horizontal do negócio                     |
+| Avatar list item              | `104:1608` | avatar, texto principal e ação à direita         |
+| Avatars                       | `94:935`   | proporções do avatar do usuário e logotipo       |
+| Badge pill                    | `655:21`   | único status de perfil configurado               |
+| Dividers                      | `27:66`    | separação estrutural discreta                    |
+
+Foram rejeitados para a Home: tab bar somente com ícones (`762:5898`), por reduzir clareza; tabelas desktop, por não atenderem ao contexto mobile; bottom sheets (`878:7298`), popovers e gráficos, pois não existe conteúdo funcional que os justifique; e repetição de badges, que faria a interface parecer demonstração do kit.
+
 ## Tipografia
 
 Manrope foi escolhida pela leitura clara de acentos, números distinguíveis e boa presença em Android. São usados somente os pesos 400, 500, 600 e 700. A fonte está sob SIL Open Font License 1.1, conforme o pacote `@expo-google-fonts/manrope`.
@@ -35,6 +58,11 @@ O splash permanece visível durante o carregamento. Se a fonte falhar, o aplicat
 - `Badge`: status textual em pill; cor nunca é o único sinal.
 - `InlineFeedback`: success, error, warning e info com live region.
 - `Skeleton`: dimensões estáveis e pulsação leve, sem shimmer pesado.
+- `SegmentedControl`: escolhas curtas e mutuamente exclusivas com estado selecionado textual e haptic semântico.
+
+## Aplicação nas telas
+
+Na Etapa 2, autenticação, onboarding, home, perfil, configurações, loading e erros passaram a consumir esta fundação. O onboarding usa cinco etapas visuais sobre um único formulário e mantém uma única submissão final. O perfil alterna entre dados pessoais e profissionais sem misturar mutations ou payloads. A Home usa um cabeçalho compacto, resumo verdadeiro do negócio, três ações rápidas desabilitadas e um estado vazio orientado ao primeiro uso. Recursos inexistentes não recebem rotas, métricas ou dados fictícios.
 
 ## Motion e haptics
 

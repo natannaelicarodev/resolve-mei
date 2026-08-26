@@ -1,32 +1,32 @@
 import { StyleSheet, View } from 'react-native';
 
-import { colors, radii, spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { Text } from './Text';
 
 export type FeedbackVariant = 'success' | 'error' | 'warning' | 'info';
 const config = {
   success: {
-    symbol: '✓',
-    background: colors.successSubtle,
-    color: colors.success,
+    symbol: null,
+    background: 'successSubtle',
+    color: 'success',
     label: 'Sucesso',
   },
   error: {
     symbol: '!',
-    background: colors.dangerSubtle,
-    color: colors.danger,
+    background: 'dangerSubtle',
+    color: 'danger',
     label: 'Erro',
   },
   warning: {
     symbol: '!',
-    background: colors.warningSubtle,
-    color: colors.warning,
+    background: 'warningSubtle',
+    color: 'warning',
     label: 'Atenção',
   },
   info: {
     symbol: 'i',
-    background: colors.infoSubtle,
-    color: colors.info,
+    background: 'infoSubtle',
+    color: 'info',
     label: 'Informação',
   },
 } as const;
@@ -45,16 +45,22 @@ export function InlineFeedback({
   message: string;
   variant: FeedbackVariant;
 }) {
+  const { colors } = useTheme();
   const item = config[variant];
   return (
     <View
       accessible
       {...getFeedbackAccessibilityProps(variant)}
-      style={[styles.container, { backgroundColor: item.background }]}
+      style={[styles.container, { backgroundColor: colors[item.background] }]}
     >
-      <Text style={[styles.symbol, { color: item.color }]} variant="label">
-        {item.symbol}
-      </Text>
+      {item.symbol ? (
+        <Text
+          style={[styles.symbol, { color: colors[item.color] }]}
+          variant="label"
+        >
+          {item.symbol}
+        </Text>
+      ) : null}
       <View style={styles.copy}>
         <Text color="textPrimary" variant="label">
           {item.label}

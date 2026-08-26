@@ -3,15 +3,17 @@ import { Link } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
 import { StyleSheet } from 'react-native';
 
-import { Button, Input, Text } from '@/components/ui';
+import { SuccessTransition } from '@/components/motion';
+import { Button, InlineFeedback, Input } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { colors } from '@/theme';
+import { useTheme } from '@/theme';
 import { requestPasswordReset } from './api';
 import { AuthShell } from './AuthShell';
 import { forgotPasswordSchema } from './schemas';
 import type { ForgotPasswordData } from './schemas';
 
 export function ForgotPasswordScreen() {
+  const { colors } = useTheme();
   const {
     control,
     handleSubmit,
@@ -30,8 +32,8 @@ export function ForgotPasswordScreen() {
   };
   return (
     <AuthShell
-      title="Recuperar senha"
-      subtitle="Receba um link seguro por e-mail"
+      title="Recupere seu acesso"
+      subtitle="Informe seu e-mail e enviaremos as instruções."
     >
       <Controller
         control={control}
@@ -49,27 +51,20 @@ export function ForgotPasswordScreen() {
         )}
       />
       {errors.root?.message ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {errors.root.message}
-        </Text>
+        <InlineFeedback message={errors.root.message} variant="error" />
       ) : null}
       {isSubmitSuccessful ? (
-        <Text accessibilityLiveRegion="polite">
-          Se o e-mail estiver cadastrado, enviaremos as instruções.
-        </Text>
+        <SuccessTransition message="Se o e-mail estiver cadastrado, enviaremos as instruções." />
       ) : null}
       <Button
         label="Enviar instruções"
         loading={isSubmitting}
         onPress={() => void handleSubmit(submit)()}
       />
-      <Link href="/sign-in" style={styles.link}>
+      <Link href="/sign-in" style={[styles.link, { color: colors.primary }]}>
         Voltar para entrar
       </Link>
     </AuthShell>
   );
 }
-const styles = StyleSheet.create({
-  error: { color: colors.danger },
-  link: { color: colors.primary },
-});
+const styles = StyleSheet.create({ link: {} });

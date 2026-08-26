@@ -1,20 +1,35 @@
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, StyleSheet } from 'react-native';
 
+import { FadeInView } from '@/components/motion';
 import { Screen, Text } from '@/components/ui';
-import { colors, spacing } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 
-export function LoadingScreen({ label = 'Carregando...' }: { label?: string }) {
+export function LoadingScreen({
+  label = 'Carregando...',
+  description,
+}: {
+  label?: string;
+  description?: string;
+}) {
+  const { colors } = useTheme();
   return (
     <Screen contentContainerStyle={styles.screen}>
-      <View accessibilityLiveRegion="polite" style={styles.content}>
+      <FadeInView accessibilityLiveRegion="polite" style={styles.content}>
         <ActivityIndicator color={colors.primary} size="large" />
-        <Text>{label}</Text>
-      </View>
+        <Text align="center" variant="cardTitle">
+          {label}
+        </Text>
+        {description ? (
+          <Text align="center" color="textSecondary">
+            {description}
+          </Text>
+        ) : null}
+      </FadeInView>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { justifyContent: 'center' },
-  content: { alignItems: 'center', gap: spacing.md },
+  content: { alignItems: 'center', gap: spacing.sm },
 });

@@ -7,9 +7,11 @@ import { decideProtectedRoute } from '@/features/auth/routeGuards';
 import { useMyBusiness } from '@/features/business/hooks';
 import { logDevelopmentError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
+import { useTheme } from '@/theme';
 
 export default function ProtectedLayout() {
   const pathname = usePathname();
+  const { colors } = useTheme();
   const { isLoading, user } = useAuth();
   const business = useMyBusiness(Boolean(user));
 
@@ -36,14 +38,20 @@ export default function ProtectedLayout() {
   if (decision === 'home') return <Redirect href="/home" />;
 
   return (
-    <Stack>
-      <Stack.Screen name="home" options={{ title: 'ResolveMEI' }} />
+    <Stack
+      screenOptions={{
+        animation: 'slide_from_right',
+        contentStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <Stack.Screen name="home" options={{ headerShown: false }} />
+      <Stack.Screen name="clients" options={{ headerShown: false }} />
       <Stack.Screen
         name="onboarding"
         options={{ title: 'Perfil profissional', headerBackVisible: false }}
       />
-      <Stack.Screen name="profile" options={{ title: 'Meu perfil' }} />
-      <Stack.Screen name="settings" options={{ title: 'Configurações' }} />
+      <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>
   );
 }

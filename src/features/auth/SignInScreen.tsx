@@ -1,17 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button, Input, Text } from '@/components/ui';
+import { Button, InlineFeedback, Input, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { colors, spacing } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { signIn } from './api';
 import { AuthShell } from './AuthShell';
 import { signInSchema } from './schemas';
 import type { SignInData } from './schemas';
 
 export function SignInScreen() {
+  const { colors } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
   const {
     control,
     handleSubmit,
@@ -29,7 +32,10 @@ export function SignInScreen() {
     }
   };
   return (
-    <AuthShell title="Entrar" subtitle="Acesse seu perfil profissional">
+    <AuthShell
+      title="Bem-vindo de volta"
+      subtitle="Entre para continuar cuidando do seu negócio."
+    >
       <Controller
         control={control}
         name="email"
@@ -40,6 +46,7 @@ export function SignInScreen() {
             error={errors.email?.message}
             keyboardType="email-address"
             label="E-mail"
+            returnKeyType="next"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
             value={field.value}
@@ -56,27 +63,37 @@ export function SignInScreen() {
             label="Senha"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            returnKeyType="done"
+            secureTextEntry={!showPassword}
             value={field.value}
           />
         )}
       />
+      <Button
+        accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+        label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+        onPress={() => setShowPassword((current) => !current)}
+        size="small"
+        variant="ghost"
+      />
       {errors.root?.message ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          {errors.root.message}
-        </Text>
+        <InlineFeedback message={errors.root.message} variant="error" />
       ) : null}
       <Button
         label="Entrar"
         loading={isSubmitting}
         onPress={() => void handleSubmit(submit)()}
       />
-      <Link href="/forgot-password" style={styles.link}>
+      <Link
+        accessibilityRole="link"
+        href="/forgot-password"
+        style={[styles.link, { color: colors.primary }]}
+      >
         Esqueci minha senha
       </Link>
       <Text>
         Primeiro acesso?{' '}
-        <Link href="/sign-up" style={styles.link}>
+        <Link href="/sign-up" style={[styles.link, { color: colors.primary }]}>
           Criar conta
         </Link>
       </Text>
@@ -84,6 +101,5 @@ export function SignInScreen() {
   );
 }
 const styles = StyleSheet.create({
-  error: { color: colors.danger },
-  link: { color: colors.primary, paddingVertical: spacing.sm },
+  link: { paddingVertical: spacing.sm },
 });

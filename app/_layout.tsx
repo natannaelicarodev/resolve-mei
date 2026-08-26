@@ -10,7 +10,7 @@ import { useEffect } from 'react';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { AppProviders } from '@/providers/AppProviders';
-import { colors } from '@/theme';
+import { useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -31,27 +31,37 @@ export default function RootLayout() {
   return (
     <AppErrorBoundary>
       <AppProviders>
-        <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            contentStyle: { backgroundColor: colors.background },
-            headerStyle: { backgroundColor: colors.surface },
-            headerTintColor: colors.textPrimary,
-            headerShadowVisible: false,
-          }}
-        >
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-          <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-          <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-          {__DEV__ ? (
-            <Stack.Screen
-              name="design-system"
-              options={{ title: 'Catálogo técnico' }}
-            />
-          ) : null}
-        </Stack>
+        <ThemedNavigation />
       </AppProviders>
     </AppErrorBoundary>
+  );
+}
+
+function ThemedNavigation() {
+  const { colors, resolvedTheme } = useTheme();
+  return (
+    <>
+      <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
+      <Stack
+        screenOptions={{
+          animation: 'slide_from_right',
+          contentStyle: { backgroundColor: colors.background },
+          headerStyle: { backgroundColor: colors.surface },
+          headerTintColor: colors.textPrimary,
+          headerShadowVisible: false,
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="(protected)" options={{ headerShown: false }} />
+        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
+        {__DEV__ ? (
+          <Stack.Screen
+            name="design-system"
+            options={{ title: 'Catálogo técnico' }}
+          />
+        ) : null}
+      </Stack>
+    </>
   );
 }

@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import type { PressableProps, ViewProps } from 'react-native';
 
 import { AnimatedPressable } from '@/components/motion';
-import { colors, radii, shadows, spacing } from '@/theme';
+import { radii, shadows, spacing, useTheme } from '@/theme';
 
 export type CardVariant =
   | 'default'
@@ -27,8 +27,41 @@ export function Card({
   style,
   ...props
 }: CardProps) {
+  const { colors } = useTheme();
+  const variants = {
+    default: {},
+    elevated: { ...shadows.card, borderColor: 'transparent' },
+    interactive: {
+      backgroundColor: colors.surfaceElevated,
+      borderColor: colors.borderStrong,
+    },
+    highlighted: {
+      backgroundColor: colors.primarySubtle,
+      borderColor: colors.primary,
+    },
+    success: {
+      backgroundColor: colors.successSubtle,
+      borderColor: colors.success,
+    },
+    warning: {
+      backgroundColor: colors.warningSubtle,
+      borderColor: colors.warning,
+    },
+    danger: {
+      backgroundColor: colors.dangerSubtle,
+      borderColor: colors.danger,
+    },
+  };
   const content = (
-    <View style={[styles.card, styles[variant], style]} {...props}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+        variants[variant],
+        style,
+      ]}
+      {...props}
+    >
       {children}
     </View>
   );
@@ -48,30 +81,9 @@ export function Card({
 const styles = StyleSheet.create({
   pressable: { width: '100%' },
   card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
     borderRadius: radii.card,
     borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.md,
     padding: spacing.lg,
   },
-  default: {},
-  elevated: { ...shadows.card, borderColor: 'transparent' },
-  interactive: {
-    backgroundColor: colors.surfaceElevated,
-    borderColor: colors.borderStrong,
-  },
-  highlighted: {
-    backgroundColor: colors.primarySubtle,
-    borderColor: colors.primary,
-  },
-  success: {
-    backgroundColor: colors.successSubtle,
-    borderColor: colors.success,
-  },
-  warning: {
-    backgroundColor: colors.warningSubtle,
-    borderColor: colors.warning,
-  },
-  danger: { backgroundColor: colors.dangerSubtle, borderColor: colors.danger },
 });

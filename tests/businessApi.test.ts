@@ -3,22 +3,12 @@ import {
   getMyBusiness,
   updateExistingBusiness,
 } from '@/features/business/api';
-import {
-  logLogoDiagnostic,
-  removeBusinessLogo,
-  uploadBusinessLogo,
-} from '@/features/business/logo';
 import { supabase } from '@/lib/supabase';
 
 const upsert = jest.fn();
 const update = jest.fn();
 const maybeSingle = jest.fn();
 jest.mock('@/lib/supabase', () => ({ supabase: { from: jest.fn() } }));
-jest.mock('@/features/business/logo', () => ({
-  uploadBusinessLogo: jest.fn(),
-  removeBusinessLogo: jest.fn(),
-  logLogoDiagnostic: jest.fn(),
-}));
 
 const input = {
   businessName: 'Ana Servicos',
@@ -73,10 +63,7 @@ describe('completeOnboarding', () => {
       }),
       { onConflict: 'owner_id' },
     );
-    expect(update).toHaveBeenCalledWith({
-      logo_path: null,
-      onboarding_completed: true,
-    });
+    expect(update).toHaveBeenCalledWith({ onboarding_completed: true });
   });
   it('leaves the persisted draft incomplete when final persistence fails', async () => {
     configureQueries(new Error('failure'));
@@ -116,10 +103,7 @@ describe('getMyBusiness', () => {
 });
 
 describe('updateExistingBusiness', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    jest.mocked(removeBusinessLogo).mockResolvedValue(undefined);
-  });
+  beforeEach(() => jest.clearAllMocks());
 
   function configureUpdate(error: Error | null) {
     const single = jest.fn().mockResolvedValue({
@@ -139,12 +123,11 @@ describe('updateExistingBusiness', () => {
   it('updates only the existing owned business with normalized fields', async () => {
     const chain = configureUpdate(null);
 
-    await updateExistingBusiness(
-      'user-1',
-      'business-1',
-      { ...input, documentNumber: '529.982.247-25', postalCode: '01001-000' },
-      null,
-    );
+    await updateExistingBusiness('user-1', 'business-1', {
+      ...input,
+      documentNumber: '529.982.247-25',
+      postalCode: '01001-000',
+    });
 
     expect(chain.updateExisting).toHaveBeenCalledWith({
       business_name: 'Ana Servicos',
@@ -168,75 +151,8 @@ describe('updateExistingBusiness', () => {
     expect(chain.updateExisting.mock.calls[0]?.[0]).not.toHaveProperty(
       'owner_id',
     );
-  });
-
-  it('stores a replacement only after upload and removes the previous logo', async () => {
-    const chain = configureUpdate(null);
-    jest
-      .mocked(uploadBusinessLogo)
-      .mockResolvedValue('user-1/replacement.webp');
-    const logo = {
-      uri: 'file:///logo.webp',
-      width: 100,
-      height: 100,
-      mimeType: 'image/webp',
-      fileSize: 1024,
-    };
-
-    await updateExistingBusiness(
-      'user-1',
-      'business-1',
-      input,
-      'user-1/old.webp',
-      logo,
-    );
-
-    expect(uploadBusinessLogo).toHaveBeenCalledWith('user-1', logo);
-    expect(chain.updateExisting).toHaveBeenCalledWith(
-      expect.objectContaining({ logo_path: 'user-1/replacement.webp' }),
-    );
-    expect(removeBusinessLogo).toHaveBeenCalledWith('user-1/old.webp');
-  });
-
-  it('removes a newly uploaded logo when the database update fails', async () => {
-    configureUpdate(new Error('update failed'));
-    jest.mocked(uploadBusinessLogo).mockResolvedValue('user-1/replacement.png');
-
-    await expect(
-      updateExistingBusiness('user-1', 'business-1', input, null, {
-        uri: 'file:///logo.png',
-        width: 100,
-        height: 100,
-        mimeType: 'image/png',
-        fileSize: 1024,
-      }),
-    ).rejects.toThrow('update failed');
-    expect(removeBusinessLogo).toHaveBeenCalledWith('user-1/replacement.png');
-    expect(logLogoDiagnostic).toHaveBeenCalledWith(
-      'database-update',
-      expect.any(Error),
-    );
-  });
-
-  it('diagnoses cleanup without failing a confirmed database update', async () => {
-    configureUpdate(null);
-    jest.mocked(uploadBusinessLogo).mockResolvedValue('user-1/replacement.png');
-    jest
-      .mocked(removeBusinessLogo)
-      .mockRejectedValue(new Error('cleanup detail'));
-
-    await expect(
-      updateExistingBusiness('user-1', 'business-1', input, 'user-1/old.png', {
-        uri: 'file:///logo.png',
-        width: 100,
-        height: 100,
-        mimeType: 'image/png',
-        fileSize: 1024,
-      }),
-    ).resolves.toMatchObject({ onboarding_completed: true });
-    expect(logLogoDiagnostic).toHaveBeenCalledWith(
-      'cleanup',
-      expect.any(Error),
+    expect(chain.updateExisting.mock.calls[0]?.[0]).not.toHaveProperty(
+      'logo_path',
     );
   });
 });

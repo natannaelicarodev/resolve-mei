@@ -4,6 +4,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import {
   AnimatedPressable,
+  FadeInView,
   StepTransition,
   SuccessTransition,
 } from '@/components/motion';
@@ -49,7 +50,7 @@ describe('motion and haptics', () => {
         <Text>Abrir</Text>
       </AnimatedPressable>,
     );
-    fireEvent.press(screen.getByRole('button', { name: 'Abrir' }));
+    await fireEvent.press(screen.getByRole('button', { name: 'Abrir' }));
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
@@ -64,6 +65,20 @@ describe('motion and haptics', () => {
     );
     await waitFor(() =>
       expect(screen.getByText('Etapa acessível')).toBeTruthy(),
+    );
+  });
+
+  it('keeps fading content available with reduced motion enabled', async () => {
+    jest
+      .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')
+      .mockResolvedValue(true);
+    const screen = await render(
+      <FadeInView>
+        <Text>Conteúdo sem deslocamento</Text>
+      </FadeInView>,
+    );
+    await waitFor(() =>
+      expect(screen.getByText('Conteúdo sem deslocamento')).toBeTruthy(),
     );
   });
 

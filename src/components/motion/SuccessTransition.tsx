@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet } from 'react-native';
 
 import { triggerHaptic } from '@/lib/haptics';
-import { colors, motion, radii, sizes, spacing } from '@/theme';
+import { motion } from '@/theme';
 import { Text } from '../ui/Text';
 import { useReducedMotion } from './useReducedMotion';
 
@@ -17,45 +17,28 @@ export function SuccessTransition({
   const reducedMotion = useReducedMotion();
   useEffect(() => {
     if (haptic) void triggerHaptic('success');
-    Animated.spring(progress, {
+    const animation = Animated.spring(progress, {
       toValue: 1,
       useNativeDriver: true,
       ...(reducedMotion ? { damping: 100, stiffness: 1000 } : motion.spring),
-    }).start();
+    });
+    animation.start();
+    return () => animation.stop();
   }, [haptic, progress, reducedMotion]);
   return (
-    <View
+    <Animated.View
       accessible
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
-      style={styles.container}
+      style={[styles.container, { opacity: progress }]}
     >
-      <Animated.View
-        style={[
-          styles.icon,
-          { opacity: progress, transform: [{ scale: progress }] },
-        ]}
-      >
-        <Text accessibilityElementsHidden style={styles.mark}>
-          ✓
-        </Text>
-      </Animated.View>
       <Text color="success" variant="label">
         {message}
       </Text>
-    </View>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { alignItems: 'center', gap: spacing.sm },
-  icon: {
-    alignItems: 'center',
-    backgroundColor: colors.successSubtle,
-    borderRadius: radii.circular,
-    height: sizes.avatarMedium,
-    justifyContent: 'center',
-    width: sizes.avatarMedium,
-  },
-  mark: { color: colors.success, fontSize: sizes.iconLarge },
+  container: { alignItems: 'center' },
 });

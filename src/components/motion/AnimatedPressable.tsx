@@ -1,16 +1,18 @@
 import { useState } from 'react';
 import { Animated, Pressable } from 'react-native';
-import type { PressableProps } from 'react-native';
+import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 import { motion, opacity } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
 
 export interface AnimatedPressableProps extends PressableProps {
+  containerStyle?: StyleProp<ViewStyle>;
   disableScale?: boolean;
   style?: PressableProps['style'];
 }
 
 export function AnimatedPressable({
+  containerStyle,
   disableScale = false,
   disabled,
   onPressIn,
@@ -33,15 +35,18 @@ export function AnimatedPressable({
 
   return (
     <Animated.View
-      style={{
-        opacity: disabled
-          ? opacity.disabled
-          : value.interpolate({
-              inputRange: [motion.pressScale, 1],
-              outputRange: [opacity.pressed, 1],
-            }),
-        transform: [{ scale: value }],
-      }}
+      style={[
+        containerStyle,
+        {
+          opacity: disabled
+            ? opacity.disabled
+            : value.interpolate({
+                inputRange: [motion.pressScale, 1],
+                outputRange: [opacity.pressed, 1],
+              }),
+          transform: [{ scale: value }],
+        },
+      ]}
     >
       <Pressable
         disabled={disabled}

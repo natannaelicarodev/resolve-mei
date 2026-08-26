@@ -15,6 +15,7 @@ import {
   InlineFeedback,
   Input,
   Screen,
+  SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
@@ -23,17 +24,7 @@ import {
   setHapticsEnabled,
   triggerHaptic,
 } from '@/lib/haptics';
-import { colors, radii, spacing } from '@/theme';
-
-const swatches = [
-  ['Fundo', colors.background],
-  ['Superfície', colors.surface],
-  ['Grafite', colors.textPrimary],
-  ['Verde', colors.primary],
-  ['Azul', colors.secondary],
-  ['Amarelo', colors.accent],
-  ['Coral', colors.accentCoral],
-] as const;
+import { radii, spacing, useTheme } from '@/theme';
 
 function Section({
   title,
@@ -48,8 +39,19 @@ function Section({
 }
 
 export function DesignSystemCatalog() {
+  const { colors, preference, setPreference } = useTheme();
+  const swatches = [
+    ['Fundo', colors.background],
+    ['Superfície', colors.surface],
+    ['Texto', colors.textPrimary],
+    ['Verde', colors.primary],
+    ['Azul', colors.secondary],
+    ['Amarelo', colors.accent],
+    ['Coral', colors.accentCoral],
+  ] as const;
   const [step, setStep] = useState(1);
   const [haptics, setHaptics] = useState(isHapticsEnabled());
+  const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
   const reducedMotion = useReducedMotion();
   const toggleHaptics = (value: boolean) => {
     setHaptics(value);
@@ -69,12 +71,28 @@ export function DesignSystemCatalog() {
             <View key={label} style={styles.swatchItem}>
               <View
                 accessibilityLabel={`${label}: ${value}`}
-                style={[styles.swatch, { backgroundColor: value }]}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: value, borderColor: colors.border },
+                ]}
               />
               <Text variant="caption">{label}</Text>
             </View>
           ))}
         </View>
+      </Section>
+
+      <Section title="Tema">
+        <SegmentedControl
+          label="Tema do catálogo"
+          onChange={(value) => void setPreference(value)}
+          options={[
+            { label: 'Sistema', value: 'system' },
+            { label: 'Claro', value: 'light' },
+            { label: 'Escuro', value: 'dark' },
+          ]}
+          value={preference}
+        />
       </Section>
 
       <Section title="Tipografia">
@@ -92,7 +110,14 @@ export function DesignSystemCatalog() {
           {[4, 8, 12, 16, 24, 32].map((size) => (
             <View
               key={size}
-              style={[styles.spaceBlock, { height: size, width: size }]}
+              style={[
+                styles.spaceBlock,
+                {
+                  backgroundColor: colors.secondary,
+                  height: size,
+                  width: size,
+                },
+              ]}
             />
           ))}
         </View>
@@ -105,7 +130,10 @@ export function DesignSystemCatalog() {
           }).map(([label, radius]) => (
             <View
               key={label}
-              style={[styles.radiusBlock, { borderRadius: radius }]}
+              style={[
+                styles.radiusBlock,
+                { backgroundColor: colors.primarySubtle, borderRadius: radius },
+              ]}
             >
               <Text variant="caption">{label}</Text>
             </View>
@@ -124,6 +152,15 @@ export function DesignSystemCatalog() {
       </Section>
 
       <Section title="Campos">
+        <SegmentedControl
+          label="Tipo de documento"
+          onChange={setDocumentType}
+          options={[
+            { label: 'CPF', value: 'cpf' },
+            { label: 'CNPJ', value: 'cnpj' },
+          ]}
+          value={documentType}
+        />
         <Input
           helperText="Mensagem de ajuda persistente."
           label="Normal"
@@ -251,7 +288,7 @@ export function DesignSystemCatalog() {
           />
           <IconButton
             accessibilityLabel="Testar confirmação tátil"
-            icon={<Text>✓</Text>}
+            icon={<Text>+</Text>}
             onPress={() => void triggerHaptic('success')}
           />
         </View>
@@ -265,7 +302,6 @@ const styles = StyleSheet.create({
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   swatchItem: { gap: spacing.xs, width: 72 },
   swatch: {
-    borderColor: colors.border,
     borderRadius: radii.medium,
     borderWidth: 1,
     height: 52,
@@ -277,11 +313,10 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: 40,
   },
-  spaceBlock: { backgroundColor: colors.secondary },
+  spaceBlock: {},
   radiusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   radiusBlock: {
     alignItems: 'center',
-    backgroundColor: colors.primarySubtle,
     height: 64,
     justifyContent: 'center',
     width: 76,

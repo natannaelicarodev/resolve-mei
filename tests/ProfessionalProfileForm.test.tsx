@@ -5,10 +5,10 @@ import { router } from 'expo-router';
 import { updateExistingBusiness } from '@/features/business/api';
 import type { Business } from '@/features/business/api';
 import { businessQueryKey, useMyBusiness } from '@/features/business/hooks';
-import { createLogoSignedUrl } from '@/features/business/logo';
 import {
   ProfessionalProfileForm,
   businessToFormData,
+  resolveFirstRequiredBusinessField,
 } from '@/features/profile/ProfessionalProfileForm';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -19,17 +19,9 @@ jest.mock('@/features/business/hooks', () => ({
   businessQueryKey: ['business', 'mine'],
   useMyBusiness: jest.fn(),
 }));
-jest.mock('@/features/business/logo', () => ({
-  createLogoSignedUrl: jest.fn(),
-  validateLogo: jest.fn(),
-}));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/features/profile/navigation', () => ({
   scheduleProfileRedirect: jest.fn(() => jest.fn()),
-}));
-jest.mock('@tanstack/react-query', () => ({
-  ...jest.requireActual('@tanstack/react-query'),
-  useQuery: jest.fn(() => ({ data: 'https://signed.example/logo' })),
 }));
 
 const business: Business = {
@@ -72,7 +64,23 @@ it('maps all existing professional fields into the reusable form', () => {
   });
 });
 
-it('updates only professional data, shows the signed logo, and refreshes its cache', async () => {
+it('resolves the first missing required professional field in form order', () => {
+  expect(
+    resolveFirstRequiredBusinessField({ ...business, business_name: '' }),
+  ).toBe('businessName');
+  expect(
+    resolveFirstRequiredBusinessField({
+      ...business,
+      professional_phone: '',
+      email: '',
+    }),
+  ).toBe('professionalPhone');
+  expect(
+    resolveFirstRequiredBusinessField({ ...business, postal_code: '' }),
+  ).toBe('postalCode');
+});
+
+it('updates professional data without rendering the profile image control', async () => {
   jest.mocked(useAuth).mockReturnValue({
     user: { id: 'user-1' },
   } as ReturnType<typeof useAuth>);
@@ -81,9 +89,6 @@ it('updates only professional data, shows the signed logo, and refreshes its cac
     isError: false,
     isLoading: false,
   } as ReturnType<typeof useMyBusiness>);
-  jest
-    .mocked(createLogoSignedUrl)
-    .mockResolvedValue('https://signed.example/logo');
   jest
     .mocked(updateExistingBusiness)
     .mockResolvedValue({ ...business, business_name: 'Ana MEI' });
@@ -101,13 +106,14 @@ it('updates only professional data, shows the signed logo, and refreshes its cac
     </QueryClientProvider>,
   );
 
-  expect(
-    await screen.findByLabelText('Logotipo atual do negócio'),
-  ).toBeTruthy();
+  expect(screen.queryByLabelText('Logotipo atual do negócio')).toBeNull();
   expect(screen.getByDisplayValue('Ana Serviços')).toBeTruthy();
   expect(screen.getByDisplayValue('529.982.247-25')).toBeTruthy();
-  fireEvent.changeText(screen.getByLabelText('Nome do negócio'), 'Ana MEI');
-  fireEvent.press(
+  await fireEvent.changeText(
+    screen.getByLabelText('Nome do negócio'),
+    'Ana MEI',
+  );
+  await fireEvent.press(
     screen.getByRole('button', { name: 'Salvar dados profissionais' }),
   );
 
@@ -123,8 +129,6 @@ it('updates only professional data, shows the signed logo, and refreshes its cac
       professionalPhone: '11988887777',
       postalCode: '01001000',
     }),
-    'user-1/logo.webp',
-    undefined,
   );
   expect(invalidateQueries).toHaveBeenCalledWith({
     queryKey: businessQueryKey,

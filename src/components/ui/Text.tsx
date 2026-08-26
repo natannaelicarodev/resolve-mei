@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { StyleSheet, Text as NativeText } from 'react-native';
 
-import { colors, typography } from '@/theme';
+import { typography, useTheme } from '@/theme';
 import type { ColorToken, TypographyVariant } from '@/theme';
 
 type NativeTextProps = ComponentProps<typeof NativeText>;
@@ -20,6 +20,7 @@ export function Text({
   style,
   ...props
 }: TextProps) {
+  const { colors } = useTheme();
   return (
     <NativeText
       allowFontScaling
@@ -38,4 +39,4 @@ export function Text({
   );
 }
 
-const styles = StyleSheet.create({ base: { color: colors.textPrimary } });
+const styles = StyleSheet.create({ base: {} });

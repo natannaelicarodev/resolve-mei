@@ -1,22 +1,23 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import type { ImagePickerAsset } from 'expo-image-picker';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { StyleSheet } from 'react-native';
+import type { TextInput, View } from 'react-native';
 
-import { Button, Text } from '@/components/ui';
+import { SuccessTransition } from '@/components/motion';
+import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
 import { updateExistingBusiness } from '@/features/business/api';
 import type { Business } from '@/features/business/api';
 import { BusinessFormFields } from '@/features/business/BusinessFormFields';
+import type { BusinessFocusField } from '@/features/business/BusinessFormFields';
 import { businessQueryKey, useMyBusiness } from '@/features/business/hooks';
-import { createLogoSignedUrl } from '@/features/business/logo';
 import { businessSchema } from '@/features/business/schemas';
 import type { BusinessFormData } from '@/features/business/schemas';
 import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
-import { colors, spacing } from '@/theme';
+import { spacing } from '@/theme';
 import { formatDocument } from '@/utils/documents';
 import { scheduleProfileRedirect } from './navigation';
 
@@ -41,13 +42,38 @@ export function businessToFormData(business: Business): BusinessFormData {
   };
 }
 
-export function ProfessionalProfileForm() {
+export type ProfessionalProfileFocus = 'first-required' | 'email';
+
+export function resolveFirstRequiredBusinessField(
+  business: Business,
+): BusinessFocusField {
+  const required: [BusinessFocusField, string | null | undefined][] = [
+    ['businessName', business.business_name],
+    ['documentNumber', business.document_number],
+    ['professionalPhone', business.professional_phone],
+    ['email', business.email],
+    ['street', business.street],
+    ['number', business.number],
+    ['neighborhood', business.neighborhood],
+    ['city', business.city],
+    ['state', business.state],
+    ['postalCode', business.postal_code],
+  ];
+  return required.find(([, value]) => !value?.trim())?.[0] ?? 'businessName';
+}
+
+export function ProfessionalProfileForm({
+  focus,
+  onFocusTarget,
+}: {
+  focus?: ProfessionalProfileFocus;
+  onFocusTarget?: (target: TextInput | View | null) => void;
+}) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const business = useMyBusiness(Boolean(user));
   const cancelNavigation = useRef<(() => void) | null>(null);
   const submissionLocked = useRef(false);
-  const [selectedLogo, setSelectedLogo] = useState<ImagePickerAsset>();
   const [showSuccess, setShowSuccess] = useState(false);
   const {
     control,
@@ -75,12 +101,11 @@ export function ProfessionalProfileForm() {
       pixKey: '',
     },
   });
-  const logoUrl = useQuery({
-    queryKey: ['business-logo', 'signed', business.data?.logo_path],
-    queryFn: () => createLogoSignedUrl(business.data?.logo_path ?? ''),
-    enabled: Boolean(business.data?.logo_path),
-    staleTime: 4 * 60 * 1000,
-  });
+  const focusField: BusinessFocusField | undefined = business.data
+    ? focus === 'first-required'
+      ? resolveFirstRequiredBusinessField(business.data)
+      : focus
+    : undefined;
 
   useEffect(() => {
     if (business.data) reset(businessToFormData(business.data));
@@ -95,13 +120,7 @@ export function ProfessionalProfileForm() {
   const mutation = useMutation({
     mutationFn: (data: BusinessFormData) => {
       if (!user || !business.data) throw new Error('Missing business');
-      return updateExistingBusiness(
-        user.id,
-        business.data.id,
-        data,
-        business.data.logo_path,
-        selectedLogo,
-      );
+      return updateExistingBusiness(user.id, business.data.id, data);
     },
     onSuccess: (updatedBusiness) => {
       queryClient.setQueryData(businessQueryKey, updatedBusiness);
@@ -127,40 +146,44 @@ export function ProfessionalProfileForm() {
 
   return (
     <>
-      <Text style={styles.heading} variant="title">
+      <Text style={styles.heading} variant="cardTitle">
         Dados profissionais
       </Text>
       {business.isLoading ? (
-        <Text>Carregando dados profissionais...</Text>
+        <Card>
+          <Skeleton height={20} width="45%" />
+          <Skeleton height={56} />
+          <Skeleton height={56} />
+          <Skeleton height={52} />
+        </Card>
       ) : null}
       {business.isError || (!business.isLoading && !business.data) ? (
-        <Text accessibilityRole="alert" style={styles.error}>
-          Não foi possível carregar os dados profissionais.
-        </Text>
+        <Card variant="danger">
+          <InlineFeedback
+            message="Não foi possível carregar os dados profissionais."
+            variant="error"
+          />
+          <Button
+            label="Tentar novamente"
+            onPress={() => void business.refetch?.()}
+            variant="secondary"
+          />
+        </Card>
       ) : null}
       {business.data ? (
         <>
           <BusinessFormFields
             control={control}
-            currentLogoUrl={logoUrl.data}
             disabled={mutation.isPending || showSuccess}
-            onLogoSelected={setSelectedLogo}
-            selectedLogo={selectedLogo}
+            focusField={focusField}
+            onFocusTarget={onFocusTarget}
             setValue={setValue}
           />
           {errors.root?.message ? (
-            <Text accessibilityRole="alert" style={styles.error}>
-              {errors.root.message}
-            </Text>
+            <InlineFeedback message={errors.root.message} variant="error" />
           ) : null}
           {showSuccess ? (
-            <Text
-              accessible
-              accessibilityLiveRegion="polite"
-              style={styles.success}
-            >
-              Dados profissionais atualizados com sucesso.
-            </Text>
+            <SuccessTransition message="Dados profissionais atualizados com sucesso." />
           ) : null}
           <Button
             disabled={mutation.isPending || showSuccess}
@@ -176,6 +199,4 @@ export function ProfessionalProfileForm() {
 
 const styles = StyleSheet.create({
   heading: { marginTop: spacing.sm },
-  error: { color: colors.danger },
-  success: { color: colors.primary },
 });
