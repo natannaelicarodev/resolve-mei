@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   Text,
@@ -43,6 +44,7 @@ export function ClientDetailsScreen({
   const query = useClient(userId, businessId, clientId);
   const queryClient = useQueryClient();
   const [contactError, setContactError] = useState(false);
+  const [confirmingStatus, setConfirmingStatus] = useState(false);
   const status = useMutation({
     mutationFn: (next: 'active' | 'inactive') =>
       setClientStatus(businessId, clientId, next),
@@ -98,21 +100,8 @@ export function ClientDetailsScreen({
       setContactError(true);
     }
   };
-  const confirmStatus = () => {
-    const next = client.status === 'active' ? 'inactive' : 'active';
-    Alert.alert(
-      `${next === 'inactive' ? 'Inativar' : 'Ativar'} cliente`,
-      `Confirma a alteração de status de ${client.name}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          style: next === 'inactive' ? 'destructive' : 'default',
-          onPress: () => status.mutate(next),
-        },
-      ],
-    );
-  };
+  const nextStatus = client.status === 'active' ? 'inactive' : 'active';
+  const deactivating = nextStatus === 'inactive';
   return (
     <Screen safeAreaEdges={['top', 'bottom']}>
       <ProtectedPageHeader
@@ -207,7 +196,20 @@ export function ClientDetailsScreen({
         }
         loading={status.isPending}
         variant={client.status === 'active' ? 'danger' : 'secondary'}
-        onPress={confirmStatus}
+        onPress={() => setConfirmingStatus(true)}
+      />
+      <ConfirmationDialog
+        confirmLabel={deactivating ? 'Inativar cliente' : 'Ativar cliente'}
+        description={`Confirma a alteração de status de ${client.name}?`}
+        destructive={deactivating}
+        loading={status.isPending}
+        onCancel={() => setConfirmingStatus(false)}
+        onConfirm={() => {
+          setConfirmingStatus(false);
+          status.mutate(nextStatus);
+        }}
+        title={`${deactivating ? 'Inativar' : 'Ativar'} cliente`}
+        visible={confirmingStatus}
       />
     </Screen>
   );

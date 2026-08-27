@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { PressableProps } from 'react-native';
@@ -44,6 +45,15 @@ export function Button({
       : variant === 'ghost'
         ? colors.textPrimary
         : colors.primary;
+  const defaultIcon =
+    variant === 'danger' ? (
+      <MaterialCommunityIcons
+        color={foreground}
+        name="alert-circle-outline"
+        size={dangerIconSize[size]}
+        testID="button-danger-icon"
+      />
+    ) : null;
   return (
     <AnimatedPressable
       accessibilityLabel={accessibilityLabel}
@@ -82,13 +92,19 @@ export function Button({
             color={foreground}
           />
         ) : (
-          icon
+          (icon ?? defaultIcon)
         )}
         <Text style={[styles.label, { color: foreground }]}>{label}</Text>
       </View>
     </AnimatedPressable>
   );
 }
+
+const dangerIconSize: Record<ButtonSize, number> = {
+  small: 16,
+  medium: 18,
+  large: 20,
+};
 
 const styles = StyleSheet.create({
   base: {

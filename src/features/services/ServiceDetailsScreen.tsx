@@ -1,11 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { Alert, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Badge,
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   Text,
@@ -27,6 +29,7 @@ export function ServiceDetailsScreen({
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const query = useService(userId, businessId, serviceId);
+  const [confirmingStatus, setConfirmingStatus] = useState(false);
   const queryClient = useQueryClient();
   const status = useMutation({
     mutationFn: (next: 'active' | 'inactive') =>
@@ -89,21 +92,8 @@ export function ServiceDetailsScreen({
     );
   const service = query.data;
   const duration = formatDuration(service.estimated_duration_minutes);
-  const confirmStatus = () => {
-    const next = service.status === 'active' ? 'inactive' : 'active';
-    Alert.alert(
-      `${next === 'inactive' ? 'Inativar' : 'Ativar'} serviço`,
-      `Confirma a alteração de status de ${service.name}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          style: next === 'inactive' ? 'destructive' : 'default',
-          onPress: () => status.mutate(next),
-        },
-      ],
-    );
-  };
+  const nextStatus = service.status === 'active' ? 'inactive' : 'active';
+  const deactivating = nextStatus === 'inactive';
   return (
     <Screen safeAreaEdges={['top', 'bottom']}>
       {header}
@@ -158,8 +148,21 @@ export function ServiceDetailsScreen({
           service.status === 'active' ? 'Inativar serviço' : 'Ativar serviço'
         }
         loading={status.isPending}
-        onPress={confirmStatus}
+        onPress={() => setConfirmingStatus(true)}
         variant={service.status === 'active' ? 'danger' : 'secondary'}
+      />
+      <ConfirmationDialog
+        confirmLabel={deactivating ? 'Inativar serviço' : 'Ativar serviço'}
+        description={`Confirma a alteração de status de ${service.name}?`}
+        destructive={deactivating}
+        loading={status.isPending}
+        onCancel={() => setConfirmingStatus(false)}
+        onConfirm={() => {
+          setConfirmingStatus(false);
+          status.mutate(nextStatus);
+        }}
+        title={`${deactivating ? 'Inativar' : 'Ativar'} serviço`}
+        visible={confirmingStatus}
       />
     </Screen>
   );

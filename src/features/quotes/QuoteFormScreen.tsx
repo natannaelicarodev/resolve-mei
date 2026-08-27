@@ -3,13 +3,14 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Input,
   Screen,
@@ -82,6 +83,7 @@ function QuoteForm({
   const mounted = useRef(true);
   const locked = useRef(false);
   const allowNavigation = useRef(false);
+  const [pendingExit, setPendingExit] = useState<(() => void) | null>(null);
   useEffect(
     () => () => {
       mounted.current = false;
@@ -125,21 +127,10 @@ function QuoteForm({
     const removeListener = navigation.addListener('beforeRemove', (event) => {
       if (!form.formState.isDirty || allowNavigation.current) return;
       event.preventDefault();
-      Alert.alert(
-        'Descartar alterações?',
-        'As alterações feitas neste orçamento não foram salvas.',
-        [
-          { text: 'Continuar editando', style: 'cancel' },
-          {
-            text: 'Descartar',
-            style: 'destructive',
-            onPress: () => {
-              allowNavigation.current = true;
-              navigation.dispatch(event.data.action);
-            },
-          },
-        ],
-      );
+      setPendingExit(() => () => {
+        allowNavigation.current = true;
+        navigation.dispatch(event.data.action);
+      });
     });
     return removeListener;
   }, [form.formState.isDirty, navigation]);
@@ -406,6 +397,20 @@ function QuoteForm({
         label="Salvar e marcar como enviado"
         onPress={() => void submit('sent')}
         variant="secondary"
+      />
+      <ConfirmationDialog
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar alterações"
+        description="As alterações feitas neste orçamento não foram salvas."
+        destructive
+        onCancel={() => setPendingExit(null)}
+        onConfirm={() => {
+          const exit = pendingExit;
+          setPendingExit(null);
+          exit?.();
+        }}
+        title="Descartar alterações?"
+        visible={pendingExit !== null}
       />
     </Screen>
   );

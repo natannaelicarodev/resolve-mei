@@ -4,6 +4,8 @@ export { Card } from './Card';
 export type { CardProps, CardVariant } from './Card';
 export { Badge } from './Badge';
 export { Checkbox } from './Checkbox';
+export { ConfirmationDialog } from './ConfirmationDialog';
+export type { ConfirmationDialogProps } from './ConfirmationDialog';
 export { IconButton } from './IconButton';
 export { InlineFeedback } from './InlineFeedback';
 export type { FeedbackVariant } from './InlineFeedback';

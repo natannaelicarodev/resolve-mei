@@ -1,12 +1,12 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   SegmentedControl,
@@ -42,16 +42,7 @@ export function SettingsScreen() {
       setIsLoading(false);
     }
   };
-  const confirmLogout = () => {
-    Alert.alert(
-      'Sair da conta?',
-      'Você precisará entrar novamente para acessar seus dados.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: () => void logout() },
-      ],
-    );
-  };
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   return (
     <SafeAreaView
       edges={['top', 'bottom']}
@@ -86,8 +77,21 @@ export function SettingsScreen() {
             disabled={isLoading}
             label="Sair da conta"
             loading={isLoading}
-            onPress={confirmLogout}
+            onPress={() => setConfirmingLogout(true)}
             variant="secondary"
+          />
+          <ConfirmationDialog
+            confirmLabel="Sair da conta"
+            description="Você precisará entrar novamente para acessar seus dados."
+            destructive
+            loading={isLoading}
+            onCancel={() => setConfirmingLogout(false)}
+            onConfirm={() => {
+              setConfirmingLogout(false);
+              void logout();
+            }}
+            title="Sair da conta?"
+            visible={confirmingLogout}
           />
         </Card>
         <Card>
