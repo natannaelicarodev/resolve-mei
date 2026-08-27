@@ -30,7 +30,11 @@ it('matches the grouped Clients structure with shared controls', () => {
   expect(list).toContain('<SegmentedControl');
   expect(list).toContain('scrollable');
   expect(list).toContain('<Card style={styles.groupedList}>');
-  expect(clients).toContain('<Card style={styles.list}>');
+  // Clients renders through FlatList like Quotes and Services, so the rows are
+  // no longer wrapped in a Card; the shared controls above them stay the same.
+  expect(clients).toContain('<FlatList');
+  expect(clients).toContain('ListHeaderComponent={header}');
+  expect(clients).not.toContain('clients.map(');
   expect(list).toContain('numberOfLines={1}');
   expect(list).toContain('paddingBottom: 112');
   expect(list).not.toContain('getThemeShadows');

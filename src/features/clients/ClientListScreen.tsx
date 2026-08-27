@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/motion';
@@ -11,7 +11,6 @@ import {
   Card,
   InlineFeedback,
   Input,
-  Screen,
   SegmentedControl,
   Skeleton,
   Text,
@@ -20,7 +19,7 @@ import {
   ProtectedBottomNavigation,
   ProtectedPageHeader,
 } from '@/features/navigation/ProtectedNavigation';
-import { radii, spacing, useTheme } from '@/theme';
+import { radii, sizes, spacing, useTheme } from '@/theme';
 import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
 import { clientInitials, formatClientDocument, formatPhone } from './format';
@@ -83,109 +82,122 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
   }, [input]);
   const clients = query.data ?? [];
 
+  const header = (
+    <View style={styles.header}>
+      <ProtectedPageHeader title="Clientes" />
+      <View style={styles.titleRow}>
+        <View style={styles.titleCopy}>
+          <Text variant="sectionTitle">Seus clientes</Text>
+          <Text color="textSecondary">
+            {query.isSuccess
+              ? `${clients.length}${clients.length === CLIENT_PAGE_SIZE ? '+' : ''} encontrados`
+              : 'Consulte e organize seus contatos'}
+          </Text>
+        </View>
+        <Button
+          accessibilityHint="Abre o formulário para adicionar um cliente."
+          haptic="selection"
+          icon={
+            <MaterialCommunityIcons
+              color={colors.textOnPrimary}
+              name="account-plus-outline"
+              size={20}
+            />
+          }
+          label="Novo cliente"
+          size="small"
+          onPress={() => router.push('/clients/new')}
+        />
+      </View>
+      <Input
+        label="Buscar clientes"
+        placeholder="Nome, documento, telefone ou e-mail"
+        reserveMessageSpace={false}
+        value={input}
+        onChangeText={setInput}
+      />
+      <SegmentedControl
+        label="Filtrar clientes"
+        options={[
+          { label: 'Todos', value: 'all' },
+          { label: 'Ativos', value: 'active' },
+          { label: 'Inativos', value: 'inactive' },
+        ]}
+        value={status}
+        onChange={setStatus}
+      />
+    </View>
+  );
+
+  const empty = (
+    <Card style={styles.empty}>
+      <MaterialCommunityIcons name="account-search-outline" size={40} />
+      <Text align="center" variant="cardTitle">
+        {search ? 'Nenhum resultado encontrado' : 'Nenhum cliente cadastrado'}
+      </Text>
+      <Text align="center" color="textSecondary">
+        {search
+          ? 'Revise a busca ou limpe os filtros.'
+          : 'Seus clientes aparecerão aqui conforme você cadastrá-los.'}
+      </Text>
+      {search ? (
+        <Button
+          variant="ghost"
+          label="Limpar busca"
+          onPress={() => setInput('')}
+        />
+      ) : (
+        <Button
+          label="Cadastrar cliente"
+          onPress={() => router.push('/clients/new')}
+        />
+      )}
+    </Card>
+  );
+
   return (
     <SafeAreaView
       edges={['top', 'bottom']}
       style={[styles.page, { backgroundColor: colors.background }]}
     >
-      <Screen safeAreaEdges={[]} contentContainerStyle={styles.screenContent}>
-        <ProtectedPageHeader title="Clientes" />
-        <View style={styles.titleRow}>
-          <View style={styles.titleCopy}>
-            <Text variant="sectionTitle">Seus clientes</Text>
-            <Text color="textSecondary">
-              {query.isSuccess
-                ? `${clients.length}${clients.length === CLIENT_PAGE_SIZE ? '+' : ''} encontrados`
-                : 'Consulte e organize seus contatos'}
-            </Text>
+      {query.isLoading ? (
+        <View style={styles.content}>
+          {header}
+          <View
+            accessible
+            accessibilityLabel="Carregando clientes"
+            accessibilityLiveRegion="polite"
+            style={styles.loading}
+          >
+            <Skeleton height={72} />
+            <Skeleton height={72} />
+            <Skeleton height={72} />
           </View>
+        </View>
+      ) : query.isError ? (
+        <View style={styles.content}>
+          {header}
+          <InlineFeedback
+            message="Não foi possível carregar os clientes."
+            variant="error"
+          />
           <Button
-            accessibilityHint="Abre o formulário para adicionar um cliente."
-            haptic="selection"
-            icon={
-              <MaterialCommunityIcons
-                color={colors.textOnPrimary}
-                name="account-plus-outline"
-                size={20}
-              />
-            }
-            label="Novo cliente"
-            size="small"
-            onPress={() => router.push('/clients/new')}
+            label="Tentar novamente"
+            onPress={() => void query.refetch()}
+            variant="secondary"
           />
         </View>
-        <Input
-          label="Buscar clientes"
-          placeholder="Nome, documento, telefone ou e-mail"
-          reserveMessageSpace={false}
-          value={input}
-          onChangeText={setInput}
+      ) : (
+        <FlatList
+          contentContainerStyle={styles.listContent}
+          data={clients}
+          keyExtractor={(client) => client.id}
+          ListEmptyComponent={empty}
+          ListHeaderComponent={header}
+          renderItem={({ item }) => <ClientRow client={item} />}
+          style={styles.list}
         />
-        <SegmentedControl
-          label="Filtrar clientes"
-          options={[
-            { label: 'Todos', value: 'all' },
-            { label: 'Ativos', value: 'active' },
-            { label: 'Inativos', value: 'inactive' },
-          ]}
-          value={status}
-          onChange={setStatus}
-        />
-        {query.isLoading ? (
-          <View style={styles.loading}>
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-          </View>
-        ) : null}
-        {query.isError ? (
-          <>
-            <InlineFeedback
-              variant="error"
-              message="Não foi possível carregar os clientes."
-            />
-            <Button
-              variant="secondary"
-              label="Tentar novamente"
-              onPress={() => void query.refetch()}
-            />
-          </>
-        ) : null}
-        {query.isSuccess && clients.length === 0 ? (
-          <Card style={styles.empty}>
-            <MaterialCommunityIcons name="account-search-outline" size={40} />
-            <Text align="center" variant="cardTitle">
-              {search
-                ? 'Nenhum resultado encontrado'
-                : 'Nenhum cliente cadastrado'}
-            </Text>
-            <Text align="center" color="textSecondary">
-              {search
-                ? 'Revise a busca ou limpe os filtros.'
-                : 'Seus clientes aparecerão aqui conforme você cadastrá-los.'}
-            </Text>
-            {search ? (
-              <Button
-                variant="ghost"
-                label="Limpar busca"
-                onPress={() => setInput('')}
-              />
-            ) : (
-              <Button
-                label="Cadastrar cliente"
-                onPress={() => router.push('/clients/new')}
-              />
-            )}
-          </Card>
-        ) : null}
-        {clients.length ? (
-          <Card style={styles.list}>
-            {clients.map((client) => (
-              <ClientRow client={client} key={client.id} />
-            ))}
-          </Card>
-        ) : null}
-      </Screen>
+      )}
       <ProtectedBottomNavigation selected="clients" />
     </SafeAreaView>
   );
@@ -193,14 +205,27 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
-  screenContent: {
-    paddingBottom: spacing.xl,
-    paddingTop: spacing.sm,
+  list: { flex: 1 },
+  content: {
+    alignSelf: 'center',
+    flex: 1,
+    gap: spacing.lg,
+    maxWidth: sizes.contentMaxWidth,
+    padding: spacing.md,
+    width: '100%',
   },
+  listContent: {
+    alignSelf: 'center',
+    flexGrow: 1,
+    maxWidth: sizes.contentMaxWidth,
+    padding: spacing.md,
+    paddingBottom: spacing.xl,
+    width: '100%',
+  },
+  header: { gap: spacing.lg, marginBottom: spacing.lg },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  titleCopy: { flex: 1, gap: spacing.xs },
+  titleCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   loading: { gap: spacing.sm },
-  list: { gap: 0, padding: 0, overflow: 'hidden' },
   row: {
     alignItems: 'center',
     borderBottomWidth: StyleSheet.hairlineWidth,
