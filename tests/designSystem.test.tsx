@@ -137,8 +137,8 @@ describe('design system foundation', () => {
     expect(cardPress).toHaveBeenCalledTimes(1);
     expect(iconPress).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Fechar' })).toHaveStyle({
-      height: 44,
-      width: 44,
+      height: sizes.touchTarget,
+      width: sizes.touchTarget,
     });
   });
 

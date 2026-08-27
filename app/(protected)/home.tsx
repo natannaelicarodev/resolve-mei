@@ -6,6 +6,7 @@ import { HomeDashboard } from '@/features/home/HomeDashboard';
 import { getMyProfile, profileQueryKey } from '@/features/profile/api';
 import { useHomeDashboard } from '@/features/home/hooks';
 import type { DashboardPeriod } from '@/features/home/api';
+import { useFinancialPrivacy } from '@/features/home/useFinancialPrivacy';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function HomeRoute() {
@@ -32,6 +33,7 @@ export default function HomeRoute() {
   });
   const avatarUrl = avatar.data;
   const dashboard = useHomeDashboard(userId, data?.id ?? '', period);
+  const financialPrivacy = useFinancialPrivacy(userId);
   const profileConfigured = data?.onboarding_completed === true;
   const missingPhone = !profile.data?.phone?.trim();
   const missingEmail = !data?.email?.trim();
@@ -57,6 +59,9 @@ export default function HomeRoute() {
       hasContact={hasContact}
       avatarUrl={avatarUrl}
       profileConfigured={profileConfigured}
+      financialValuesHidden={financialPrivacy.hidden}
+      financialPrivacyHydrated={financialPrivacy.hydrated}
+      onFinancialPrivacyToggle={() => void financialPrivacy.toggle()}
     />
   );
 }

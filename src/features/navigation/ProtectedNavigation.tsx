@@ -7,7 +7,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/motion';
 import { IconButton, Text } from '@/components/ui';
-import { sizes, spacing, useTheme } from '@/theme';
+import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 type ProtectedDestination =
@@ -44,12 +44,20 @@ function NavigationItem({
       : colors.textSecondary;
   const content: ReactNode = (
     <>
-      <MaterialCommunityIcons color={color} name={icon} size={22} />
+      <View
+        style={[
+          styles.navigationIcon,
+          selected && { backgroundColor: colors.primaryMuted },
+        ]}
+      >
+        <MaterialCommunityIcons color={color} name={icon} size={23} />
+      </View>
       <Text
         color={
           selected ? 'primary' : disabled ? 'disabledText' : 'textSecondary'
         }
-        variant="caption"
+        numberOfLines={1}
+        variant="navigation"
       >
         {label}
       </Text>
@@ -89,14 +97,18 @@ export function ProtectedBottomNavigation({
 }: {
   selected: ProtectedDestination;
 }) {
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
   return (
     <View
       accessibilityLabel="Navegação principal"
       accessibilityRole="tablist"
       style={[
         styles.bottomNavigation,
-        { backgroundColor: colors.surface, borderTopColor: colors.border },
+        getThemeShadows(resolvedTheme).floating,
+        {
+          backgroundColor: colors.surfaceElevated,
+          borderTopColor: colors.borderSubtle,
+        },
       ]}
     >
       <NavigationItem
@@ -219,18 +231,25 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    minHeight: 72,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
-    paddingTop: spacing.sm,
+    minHeight: sizes.bottomNavigationHeight,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.sm,
+    paddingTop: spacing.xs,
   },
   navigationSlot: { flex: 1, minWidth: 0 },
   navigationItem: {
     alignItems: 'center',
-    gap: 2,
+    gap: 1,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     width: '100%',
+  },
+  navigationIcon: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    height: 32,
+    justifyContent: 'center',
+    width: 48,
   },
   pageHeader: {
     alignItems: 'center',

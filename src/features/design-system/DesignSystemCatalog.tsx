@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Switch, View } from 'react-native';
 
 import {
@@ -11,13 +11,18 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmationDialog,
+  EmptyState,
   IconButton,
   InlineFeedback,
   Input,
+  ListContainer,
+  ListItem,
   Screen,
   SegmentedControl,
   Skeleton,
   Text,
+  useToast,
 } from '@/components/ui';
 import {
   isHapticsEnabled,
@@ -38,21 +43,30 @@ function Section({
   );
 }
 
-export function DesignSystemCatalog() {
+export function DesignSystemCatalog({
+  previewTheme,
+}: {
+  previewTheme?: 'light' | 'dark';
+}) {
   const { colors, preference, setPreference } = useTheme();
   const swatches = [
     ['Fundo', colors.background],
     ['Superfície', colors.surface],
     ['Texto', colors.textPrimary],
-    ['Verde', colors.primary],
-    ['Azul', colors.secondary],
-    ['Amarelo', colors.accent],
-    ['Coral', colors.accentCoral],
+    ['Azul Atlântico', colors.primary],
+    ['Azul apoio', colors.secondary],
+    ['Âmbar', colors.accent],
+    ['Sucesso', colors.success],
   ] as const;
   const [step, setStep] = useState(1);
   const [haptics, setHaptics] = useState(isHapticsEnabled());
   const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
+  const [confirmationVisible, setConfirmationVisible] = useState(false);
+  const { showToast } = useToast();
   const reducedMotion = useReducedMotion();
+  useEffect(() => {
+    if (previewTheme) void setPreference(previewTheme);
+  }, [previewTheme, setPreference]);
   const toggleHaptics = (value: boolean) => {
     setHaptics(value);
     setHapticsEnabled(value);
@@ -144,7 +158,9 @@ export function DesignSystemCatalog() {
       <Section title="Botões">
         <Button label="Ação principal" haptic="selection" />
         <Button label="Ação secundária" variant="secondary" />
+        <Button label="Ação contornada" variant="outline" />
         <Button label="Ação discreta" variant="ghost" />
+        <Button label="Ação em texto" variant="link" />
         <Button label="Excluir" variant="danger" />
         <Button label="Carregando" loading />
         <Button label="Concluído" state="success" />
@@ -192,6 +208,15 @@ export function DesignSystemCatalog() {
         <Card variant="elevated">
           <Text variant="cardTitle">Elevado</Text>
         </Card>
+        <Card variant="subtle">
+          <Text variant="cardTitle">Sutil</Text>
+        </Card>
+        <Card variant="summary">
+          <Text variant="cardTitle">Resumo operacional</Text>
+        </Card>
+        <Card variant="selected">
+          <Text variant="cardTitle">Selecionado</Text>
+        </Card>
         <Card
           accessibilityLabel="Abrir cliente fictício"
           onPress={() => void triggerHaptic('selection')}
@@ -211,6 +236,27 @@ export function DesignSystemCatalog() {
         <Card variant="danger">
           <Text>Falha no envio</Text>
         </Card>
+      </Section>
+
+      <Section title="Listas e estados vazios">
+        <ListContainer>
+          <ListItem
+            onPress={() => undefined}
+            subtitle="(85) 99999-9999"
+            title="Cliente exemplo"
+            trailing={<Badge label="Ativo" variant="success" />}
+          />
+          <ListItem
+            onPress={() => undefined}
+            subtitle="45 min"
+            title="Serviço exemplo"
+            trailing={<Text variant="label">R$ 180,00</Text>}
+          />
+        </ListContainer>
+        <EmptyState
+          description="Cadastre o primeiro item para começar."
+          title="Nada por aqui ainda"
+        />
       </Section>
 
       <Section title="Status e feedback">
@@ -242,6 +288,33 @@ export function DesignSystemCatalog() {
         <Skeleton height={20} width="60%" />
         <Skeleton height={72} />
         <Skeleton height={44} width={120} />
+      </Section>
+
+      <Section title="Toast e confirmação">
+        <Button
+          label="Mostrar toast"
+          onPress={() =>
+            showToast({
+              message: 'O feedback não bloqueia sua próxima ação.',
+              title: 'Alterações salvas',
+              variant: 'success',
+            })
+          }
+          variant="secondary"
+        />
+        <Button
+          label="Abrir confirmação"
+          onPress={() => setConfirmationVisible(true)}
+          variant="outline"
+        />
+        <ConfirmationDialog
+          confirmLabel="Confirmar"
+          description="Use este padrão apenas para decisões importantes."
+          onCancel={() => setConfirmationVisible(false)}
+          onConfirm={() => setConfirmationVisible(false)}
+          title="Confirmar ação?"
+          visible={confirmationVisible}
+        />
       </Section>
 
       <Section title="Animações">

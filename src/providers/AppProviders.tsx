@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { PropsWithChildren } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ToastProvider } from '@/components/ui';
 import { ThemeProvider } from '@/theme';
 import { AuthProvider } from './AuthProvider';
 
@@ -21,7 +22,9 @@ export function AppProviders({ children }: PropsWithChildren) {
     <SafeAreaProvider>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <AuthProvider>{children}</AuthProvider>
+          <ToastProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </ToastProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>

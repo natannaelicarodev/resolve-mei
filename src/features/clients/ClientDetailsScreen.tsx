@@ -1,11 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   Text,
@@ -43,6 +44,8 @@ export function ClientDetailsScreen({
   const query = useClient(userId, businessId, clientId);
   const queryClient = useQueryClient();
   const [contactError, setContactError] = useState(false);
+  const [statusConfirmationVisible, setStatusConfirmationVisible] =
+    useState(false);
   const status = useMutation({
     mutationFn: (next: 'active' | 'inactive') =>
       setClientStatus(businessId, clientId, next),
@@ -98,21 +101,7 @@ export function ClientDetailsScreen({
       setContactError(true);
     }
   };
-  const confirmStatus = () => {
-    const next = client.status === 'active' ? 'inactive' : 'active';
-    Alert.alert(
-      `${next === 'inactive' ? 'Inativar' : 'Ativar'} cliente`,
-      `Confirma a alteração de status de ${client.name}?`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          style: next === 'inactive' ? 'destructive' : 'default',
-          onPress: () => status.mutate(next),
-        },
-      ],
-    );
-  };
+  const nextStatus = client.status === 'active' ? 'inactive' : 'active';
   return (
     <Screen safeAreaEdges={['top', 'bottom']}>
       <ProtectedPageHeader
@@ -207,7 +196,20 @@ export function ClientDetailsScreen({
         }
         loading={status.isPending}
         variant={client.status === 'active' ? 'danger' : 'secondary'}
-        onPress={confirmStatus}
+        onPress={() => setStatusConfirmationVisible(true)}
+      />
+      <ConfirmationDialog
+        confirmLabel="Confirmar"
+        description={`Confirma a alteração de status de ${client.name}?`}
+        destructive={nextStatus === 'inactive'}
+        loading={status.isPending}
+        onCancel={() => setStatusConfirmationVisible(false)}
+        onConfirm={() => {
+          status.mutate(nextStatus);
+          setStatusConfirmationVisible(false);
+        }}
+        title={`${nextStatus === 'inactive' ? 'Inativar' : 'Ativar'} cliente`}
+        visible={statusConfirmationVisible}
       />
     </Screen>
   );

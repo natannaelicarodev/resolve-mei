@@ -12,6 +12,10 @@ export type { TypographyVariant } from './typography';
 
 export const shadows = {
   none: {},
+  subtle: {
+    boxShadow: '0 1px 3px rgba(32, 37, 34, 0.05)',
+    elevation: 1,
+  },
   card: {
     boxShadow: '0 2px 8px rgba(32, 37, 34, 0.07)',
     elevation: 2,
@@ -19,6 +23,14 @@ export const shadows = {
   floating: {
     boxShadow: '0 6px 18px rgba(32, 37, 34, 0.11)',
     elevation: 5,
+  },
+  elevated: {
+    boxShadow: '0 6px 18px rgba(32, 37, 34, 0.11)',
+    elevation: 5,
+  },
+  overlay: {
+    boxShadow: '0 8px 24px rgba(32, 37, 34, 0.14)',
+    elevation: 7,
   },
   modal: {
     boxShadow: '0 12px 32px rgba(32, 37, 34, 0.16)',
@@ -28,6 +40,10 @@ export const shadows = {
 
 const darkShadows = {
   none: {},
+  subtle: {
+    boxShadow: '0 1px 4px rgba(0, 0, 0, 0.22)',
+    elevation: 2,
+  },
   card: {
     boxShadow: '0 3px 12px rgba(0, 0, 0, 0.28)',
     elevation: 4,
@@ -35,6 +51,14 @@ const darkShadows = {
   floating: {
     boxShadow: '0 7px 20px rgba(0, 0, 0, 0.34)',
     elevation: 6,
+  },
+  elevated: {
+    boxShadow: '0 7px 20px rgba(0, 0, 0, 0.34)',
+    elevation: 6,
+  },
+  overlay: {
+    boxShadow: '0 10px 28px rgba(0, 0, 0, 0.38)',
+    elevation: 8,
   },
   modal: {
     boxShadow: '0 12px 32px rgba(0, 0, 0, 0.42)',

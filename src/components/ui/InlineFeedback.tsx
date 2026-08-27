@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, View } from 'react-native';
 
 import { radii, spacing, useTheme } from '@/theme';
@@ -6,25 +7,25 @@ import { Text } from './Text';
 export type FeedbackVariant = 'success' | 'error' | 'warning' | 'info';
 const config = {
   success: {
-    symbol: null,
+    icon: 'check-circle-outline',
     background: 'successSubtle',
     color: 'success',
     label: 'Sucesso',
   },
   error: {
-    symbol: '!',
+    icon: 'alert-circle-outline',
     background: 'dangerSubtle',
     color: 'danger',
     label: 'Erro',
   },
   warning: {
-    symbol: '!',
+    icon: 'alert-outline',
     background: 'warningSubtle',
     color: 'warning',
     label: 'Atenção',
   },
   info: {
-    symbol: 'i',
+    icon: 'information-outline',
     background: 'infoSubtle',
     color: 'info',
     label: 'Informação',
@@ -53,14 +54,17 @@ export function InlineFeedback({
       {...getFeedbackAccessibilityProps(variant)}
       style={[styles.container, { backgroundColor: colors[item.background] }]}
     >
-      {item.symbol ? (
-        <Text
-          style={[styles.symbol, { color: colors[item.color] }]}
-          variant="label"
-        >
-          {item.symbol}
-        </Text>
-      ) : null}
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={styles.icon}
+      >
+        <MaterialCommunityIcons
+          color={colors[item.color]}
+          name={item.icon}
+          size={22}
+        />
+      </View>
       <View style={styles.copy}>
         <Text color="textPrimary" variant="label">
           {item.label}
@@ -80,6 +84,11 @@ const styles = StyleSheet.create({
     minHeight: 52,
     padding: spacing.md,
   },
-  symbol: { textAlign: 'center', width: 20 },
+  icon: {
+    alignItems: 'center',
+    height: 24,
+    justifyContent: 'center',
+    width: 24,
+  },
   copy: { flex: 1 },
 });

@@ -9,16 +9,15 @@ import {
   Badge,
   Button,
   Card,
+  CompactCreateButton,
   InlineFeedback,
-  Input,
+  ListPageHeader,
+  SearchInput,
   SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { sizes, spacing, useTheme } from '@/theme';
 import type { Service, ServiceStatusFilter } from './api';
 import { formatDuration, formatPriceCents } from './format';
@@ -45,19 +44,33 @@ function ServiceRow({ service }: { service: Service }) {
         <Text numberOfLines={1} variant="label">
           {service.name}
         </Text>
-        <Text color="textSecondary" numberOfLines={1} variant="caption">
-          {formatPriceCents(service.price_cents)}
-          {duration ? ` · ${duration}` : ''}
-        </Text>
+        {service.description ? (
+          <Text color="textSecondary" numberOfLines={1} variant="caption">
+            {service.description}
+          </Text>
+        ) : null}
+        {duration ? (
+          <Text color="textMuted" numberOfLines={1} variant="caption">
+            {duration}
+          </Text>
+        ) : null}
       </View>
-      {service.status === 'inactive' ? (
-        <Badge label="Inativo" variant="neutral" />
-      ) : null}
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
+      <View style={styles.trailing}>
+        <Text numberOfLines={1} style={styles.price} variant="monetaryValue">
+          {formatPriceCents(service.price_cents)}
+        </Text>
+        <View style={styles.trailingMeta}>
+          <Badge
+            label={service.status === 'active' ? 'Ativo' : 'Inativo'}
+            variant={service.status === 'active' ? 'success' : 'neutral'}
+          />
+          <MaterialCommunityIcons
+            color={colors.textMuted}
+            name="chevron-right"
+            size={20}
+          />
+        </View>
+      </View>
     </AnimatedPressable>
   );
 }
@@ -86,32 +99,23 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
   };
   const header = (
     <View style={styles.header}>
-      <ProtectedPageHeader title="Serviços" />
-      <View style={styles.titleRow}>
-        <View style={styles.titleCopy}>
-          <Text variant="sectionTitle">Seus serviços</Text>
-          <Text color="textSecondary">
-            {query.isSuccess
-              ? `${totalCount} ${totalCount === 1 ? 'resultado' : 'resultados'}`
-              : 'Organize o que seu negócio oferece'}
-          </Text>
-        </View>
-        <Button
-          accessibilityHint="Abre o formulário para adicionar um serviço."
-          haptic="selection"
-          icon={
-            <MaterialCommunityIcons
-              color={colors.textOnPrimary}
-              name="briefcase-plus-outline"
-              size={20}
-            />
-          }
-          label="Novo serviço"
-          onPress={() => router.push('/services/new')}
-          size="small"
-        />
-      </View>
-      <Input
+      <ListPageHeader
+        title="Serviços"
+        summary={
+          query.isSuccess
+            ? `${totalCount} ${totalCount === 1 ? 'resultado' : 'resultados'}`
+            : 'Organize o que seu negócio oferece'
+        }
+        action={
+          <CompactCreateButton
+            accessibilityHint="Abre o formulário para adicionar um serviço."
+            icon="briefcase-plus-outline"
+            label="Novo serviço"
+            onPress={() => router.push('/services/new')}
+          />
+        }
+      />
+      <SearchInput
         label="Buscar serviços"
         onChangeText={setInput}
         placeholder="Nome ou descrição"
@@ -244,8 +248,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   header: { gap: spacing.lg, marginBottom: spacing.lg },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  titleCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   loading: { gap: spacing.sm },
   row: {
     alignItems: 'center',
@@ -256,6 +258,13 @@ const styles = StyleSheet.create({
     padding: spacing.md,
   },
   rowCopy: { flex: 1, gap: 2, minWidth: 0 },
+  trailing: { alignItems: 'flex-end', flexShrink: 0, gap: spacing.xs },
+  trailingMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  price: { flexShrink: 0 },
   empty: { alignItems: 'center' },
   footer: { padding: spacing.lg },
 });

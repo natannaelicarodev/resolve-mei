@@ -68,7 +68,7 @@ it('renders accessible single-line filters and a compact quote card', async () =
   );
 
   expect(screen.getAllByText('Orçamentos').length).toBeGreaterThan(0);
-  expect(screen.getByText('Seus orçamentos')).toBeTruthy();
+  expect(screen.queryByText('Seus orçamentos')).toBeNull();
   expect(screen.getByText('1 encontrado')).toBeTruthy();
   expect(screen.queryByText('quotes')).toBeNull();
   for (const label of ['Todos', 'Rascunhos', 'Enviados', 'Aprovados']) {

@@ -5,7 +5,6 @@ import {
   render,
   waitFor,
 } from '@testing-library/react-native';
-import { Alert } from 'react-native';
 
 import { setServiceStatus } from '@/features/services/api';
 import { ServiceDetailsScreen } from '@/features/services/ServiceDetailsScreen';
@@ -83,11 +82,13 @@ it('confirms and inactivates the existing service', async () => {
     ...service,
     status: 'inactive',
   });
-  jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
-    buttons?.find((button) => button.text === 'Confirmar')?.onPress?.();
-  });
   const screen = await renderDetails();
-  fireEvent.press(screen.getByRole('button', { name: 'Inativar serviço' }));
+  await fireEvent.press(
+    screen.getByRole('button', { name: 'Inativar serviço' }),
+  );
+  await fireEvent.press(
+    await screen.findByRole('button', { name: 'Confirmar' }),
+  );
   await waitFor(() =>
     expect(setServiceStatus).toHaveBeenCalledWith(
       'business-1',

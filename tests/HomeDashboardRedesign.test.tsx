@@ -230,3 +230,23 @@ it('handles an empty monthly series and exposes all quick actions', async () => 
   expect(screen.getByLabelText('Novo serviço')).toBeTruthy();
   await screen.unmount();
 });
+
+it('hides every monetary dashboard value without exposing it to accessibility', async () => {
+  const onToggle = jest.fn();
+  const screen = await render(
+    <HomeDashboard
+      {...props({
+        financialValuesHidden: true,
+        financialPrivacyHydrated: true,
+        onFinancialPrivacyToggle: onToggle,
+      })}
+    />,
+  );
+  expect(screen.getAllByText('R$ ••••••')).toHaveLength(3);
+  expect(screen.queryByLabelText(/R\$ 2\.450,00/)).toBeNull();
+  expect(screen.getByText('6')).toBeTruthy();
+  expect(screen.getByLabelText('Mar, valor oculto')).toBeTruthy();
+  fireEvent.press(screen.getByLabelText('Mostrar valores financeiros'));
+  expect(onToggle).toHaveBeenCalledTimes(1);
+  await screen.unmount();
+});

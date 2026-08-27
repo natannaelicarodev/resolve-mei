@@ -8,8 +8,9 @@ import type { HapticIntent } from '@/lib/haptics';
 import { radii, sizes, spacing, typography, useTheme } from '@/theme';
 import { Text } from './Text';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
-export type ButtonSize = 'small' | 'medium' | 'large';
+export type ButtonVariant =
+  'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'link' | 'icon';
+export type ButtonSize = 'small' | 'compact' | 'medium' | 'large';
 export type ButtonState = 'normal' | 'success';
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -43,7 +44,9 @@ export function Button({
       ? colors.textOnPrimary
       : variant === 'ghost'
         ? colors.textPrimary
-        : colors.primary;
+        : variant === 'link' || variant === 'icon'
+          ? colors.primary
+          : colors.primary;
   return (
     <AnimatedPressable
       accessibilityLabel={accessibilityLabel}
@@ -59,11 +62,16 @@ export function Button({
         styles[size],
         variant === 'primary' && { backgroundColor: colors.primary },
         variant === 'secondary' && {
-          backgroundColor: colors.surface,
-          borderColor: colors.primary,
-          borderWidth: 1,
+          backgroundColor: colors.primaryMuted,
+        },
+        variant === 'outline' && {
+          backgroundColor: colors.surfaceInteractive,
+          borderColor: colors.borderStrong,
+          borderWidth: StyleSheet.hairlineWidth,
         },
         variant === 'ghost' && styles.ghost,
+        variant === 'link' && styles.link,
+        variant === 'icon' && styles.icon,
         variant === 'danger' && { backgroundColor: colors.danger },
         state === 'success' && { backgroundColor: colors.success },
         pressState.pressed && !isDisabled && styles.pressed,
@@ -99,9 +107,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   small: { minHeight: 44, paddingHorizontal: spacing.md },
+  compact: { minHeight: 48, paddingHorizontal: spacing[3] },
   medium: { minHeight: sizes.buttonMinHeight },
   large: { minHeight: 56, paddingHorizontal: spacing.lg },
   ghost: { backgroundColor: 'transparent' },
+  link: {
+    alignSelf: 'flex-start',
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+  },
+  icon: {
+    backgroundColor: 'transparent',
+    minWidth: 48,
+    paddingHorizontal: spacing.sm,
+  },
   pressed: { opacity: 0.88 },
   content: {
     alignItems: 'center',

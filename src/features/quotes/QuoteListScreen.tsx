@@ -9,16 +9,15 @@ import {
   Badge,
   Button,
   Card,
+  CompactCreateButton,
   InlineFeedback,
-  Input,
+  ListPageHeader,
+  SearchInput,
   SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { sizes, spacing, useTheme } from '@/theme';
 import type { Quote, QuoteStatusFilter } from './api';
@@ -123,36 +122,25 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
   const totalCount = query.data?.pages[0]?.totalCount ?? 0;
   const header = (
     <View style={styles.header}>
-      <ProtectedPageHeader title="Orçamentos" />
-      <View style={styles.titleRow}>
-        <View style={styles.titleCopy}>
-          <Text numberOfLines={1} variant="sectionTitle">
-            Seus orçamentos
-          </Text>
-          <Text color="textSecondary">
-            {query.isSuccess
-              ? totalCount === 0
-                ? 'Nenhum encontrado'
-                : `${totalCount} ${totalCount === 1 ? 'encontrado' : 'encontrados'}`
-              : 'Consulte e organize seus orçamentos'}
-          </Text>
-        </View>
-        <Button
-          accessibilityHint="Abre o formulário para criar um orçamento."
-          haptic="selection"
-          label="Novo orçamento"
-          icon={
-            <MaterialCommunityIcons
-              color={colors.textOnPrimary}
-              name="file-document-plus-outline"
-              size={20}
-            />
-          }
-          onPress={() => router.push('/quotes/new')}
-          size="small"
-        />
-      </View>
-      <Input
+      <ListPageHeader
+        title="Orçamentos"
+        summary={
+          query.isSuccess
+            ? totalCount === 0
+              ? 'Nenhum encontrado'
+              : `${totalCount} ${totalCount === 1 ? 'encontrado' : 'encontrados'}`
+            : 'Consulte e organize seus orçamentos'
+        }
+        action={
+          <CompactCreateButton
+            accessibilityHint="Abre o formulário para criar um orçamento."
+            label="Novo orçamento"
+            icon="file-document-plus-outline"
+            onPress={() => router.push('/quotes/new')}
+          />
+        }
+      />
+      <SearchInput
         label="Buscar orçamentos"
         placeholder="Número ou cliente"
         value={input}
@@ -265,8 +253,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   header: { gap: spacing.lg, marginBottom: spacing.lg },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  titleCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   groupedList: { gap: 0, overflow: 'hidden', padding: 0 },
   row: {
     alignItems: 'center',

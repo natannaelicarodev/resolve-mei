@@ -39,6 +39,18 @@ export const typography = {
     lineHeight: 24,
     letterSpacing: 0,
   },
+  bodyMedium: {
+    fontFamily: fontFamilies.medium,
+    fontSize: 16,
+    lineHeight: 24,
+    letterSpacing: 0,
+  },
+  bodySmall: {
+    fontFamily: fontFamilies.regular,
+    fontSize: 14,
+    lineHeight: 22,
+    letterSpacing: 0,
+  },
   bodySecondary: {
     fontFamily: fontFamilies.regular,
     fontSize: 14,
@@ -69,6 +81,32 @@ export const typography = {
     lineHeight: 32,
     letterSpacing: 0,
     fontVariant: ['tabular-nums'],
+  },
+  monetaryHero: {
+    fontFamily: fontFamilies.bold,
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -0.3,
+    fontVariant: ['tabular-nums'],
+  },
+  monetaryValue: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 18,
+    lineHeight: 26,
+    letterSpacing: 0,
+    fontVariant: ['tabular-nums'],
+  },
+  badge: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 12,
+    lineHeight: 16,
+    letterSpacing: 0.2,
+  },
+  navigation: {
+    fontFamily: fontFamilies.semibold,
+    fontSize: 11,
+    lineHeight: 16,
+    letterSpacing: 0.1,
   },
   status: {
     fontFamily: fontFamilies.semibold,

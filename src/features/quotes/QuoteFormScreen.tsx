@@ -3,13 +3,14 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { Alert, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Input,
   Screen,
@@ -82,6 +83,10 @@ function QuoteForm({
   const mounted = useRef(true);
   const locked = useRef(false);
   const allowNavigation = useRef(false);
+  const pendingNavigationAction = useRef<
+    Parameters<typeof navigation.dispatch>[0] | null
+  >(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   useEffect(
     () => () => {
       mounted.current = false;
@@ -125,21 +130,8 @@ function QuoteForm({
     const removeListener = navigation.addListener('beforeRemove', (event) => {
       if (!form.formState.isDirty || allowNavigation.current) return;
       event.preventDefault();
-      Alert.alert(
-        'Descartar alterações?',
-        'As alterações feitas neste orçamento não foram salvas.',
-        [
-          { text: 'Continuar editando', style: 'cancel' },
-          {
-            text: 'Descartar',
-            style: 'destructive',
-            onPress: () => {
-              allowNavigation.current = true;
-              navigation.dispatch(event.data.action);
-            },
-          },
-        ],
-      );
+      pendingNavigationAction.current = event.data.action;
+      setConfirmDiscard(true);
     });
     return removeListener;
   }, [form.formState.isDirty, navigation]);
@@ -406,6 +398,25 @@ function QuoteForm({
         label="Salvar e marcar como enviado"
         onPress={() => void submit('sent')}
         variant="secondary"
+      />
+      <ConfirmationDialog
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar"
+        destructive
+        description="As alterações feitas neste orçamento não foram salvas."
+        onCancel={() => {
+          pendingNavigationAction.current = null;
+          setConfirmDiscard(false);
+        }}
+        onConfirm={() => {
+          const action = pendingNavigationAction.current;
+          if (!action) return;
+          allowNavigation.current = true;
+          setConfirmDiscard(false);
+          navigation.dispatch(action);
+        }}
+        title="Descartar alterações?"
+        visible={confirmDiscard}
       />
     </Screen>
   );

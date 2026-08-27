@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { Alert, StyleSheet, View } from 'react-native';
-import { useEffect, useRef } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   Text,
@@ -45,6 +46,8 @@ export function QuoteDetailsScreen({
   const query = useQuote(userId, businessId, quoteId);
   const queryClient = useQueryClient();
   const mounted = useRef(true);
+  const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
+  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
   const identity = `${userId}:${businessId}:${quoteId}`;
   useEffect(
     () => () => {
@@ -132,23 +135,7 @@ export function QuoteDetailsScreen({
     );
   const quote = query.data;
   const displayStatus = getDisplayQuoteStatus(quote.status, quote.valid_until);
-  const confirmTransition = (next: QuoteStatus) =>
-    Alert.alert(
-      actionLabels[next] ?? 'Alterar status',
-      `Confirma a alteração para ${quoteStatusLabels[next]}?`,
-      [
-        { text: 'Voltar', style: 'cancel' },
-        {
-          text: 'Confirmar',
-          onPress: () =>
-            statusMutation.mutate({ status: next, expectedIdentity: identity }),
-          style:
-            next === 'canceled' || next === 'rejected'
-              ? 'destructive'
-              : 'default',
-        },
-      ],
-    );
+  const confirmTransition = (next: QuoteStatus) => setPendingStatus(next);
   return (
     <Screen safeAreaEdges={['top', 'bottom']}>
       {header}
@@ -248,20 +235,47 @@ export function QuoteDetailsScreen({
         disabled={duplicateMutation.isPending}
         loading={duplicateMutation.isPending}
         label="Duplicar orçamento"
-        onPress={() =>
-          Alert.alert(
-            'Duplicar orçamento',
-            'Uma nova cópia será criada como rascunho para revisão.',
-            [
-              { text: 'Voltar', style: 'cancel' },
-              {
-                text: 'Duplicar',
-                onPress: () => duplicateMutation.mutate(identity),
-              },
-            ],
-          )
-        }
+        onPress={() => setConfirmDuplicate(true)}
         variant="secondary"
+      />
+      <ConfirmationDialog
+        cancelLabel="Voltar"
+        confirmLabel="Confirmar"
+        destructive={
+          pendingStatus === 'canceled' || pendingStatus === 'rejected'
+        }
+        loading={statusMutation.isPending}
+        description={
+          pendingStatus
+            ? `Confirma a alteração para ${quoteStatusLabels[pendingStatus]}?`
+            : ''
+        }
+        onCancel={() => setPendingStatus(null)}
+        onConfirm={() => {
+          if (!pendingStatus) return;
+          statusMutation.mutate({
+            status: pendingStatus,
+            expectedIdentity: identity,
+          });
+          setPendingStatus(null);
+        }}
+        title={
+          pendingStatus ? (actionLabels[pendingStatus] ?? 'Alterar status') : ''
+        }
+        visible={pendingStatus !== null}
+      />
+      <ConfirmationDialog
+        cancelLabel="Voltar"
+        confirmLabel="Duplicar"
+        loading={duplicateMutation.isPending}
+        description="Uma nova cópia será criada como rascunho para revisão."
+        onCancel={() => setConfirmDuplicate(false)}
+        onConfirm={() => {
+          duplicateMutation.mutate(identity);
+          setConfirmDuplicate(false);
+        }}
+        title="Duplicar orçamento"
+        visible={confirmDuplicate}
       />
     </Screen>
   );

@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { AnimatedPressable } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
@@ -50,6 +51,13 @@ export function SegmentedControl<T extends string>({
           selected && { backgroundColor: colors.primary },
         ]}
       >
+        {selected ? (
+          <MaterialCommunityIcons
+            color={colors.textOnPrimary}
+            name="check"
+            size={16}
+          />
+        ) : null}
         <Text
           color={selected ? 'textOnPrimary' : 'textSecondary'}
           numberOfLines={1}
@@ -92,6 +100,8 @@ const styles = StyleSheet.create({
   option: {
     alignItems: 'center',
     borderRadius: radii.small,
+    flexDirection: 'row',
+    gap: spacing.xs,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     paddingHorizontal: spacing.sm,
@@ -99,5 +109,5 @@ const styles = StyleSheet.create({
   optionContainer: { flex: 1, minWidth: 0 },
   optionContainerScrollable: { flexShrink: 0 },
   optionScrollable: { paddingHorizontal: spacing.md },
-  scrollContent: { gap: spacing.xs },
+  scrollContent: { gap: spacing.xs, paddingRight: spacing.xs },
 });

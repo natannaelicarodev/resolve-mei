@@ -6,13 +6,13 @@
     "orientation": "portrait",
     "scheme": "resolvemei",
     "icon": "./assets/resolve-mei-logo.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0E4D4E",
+        "backgroundColor": "#24556F",
         "foregroundImage": "./assets/resolve-mei-logo.png"
       },
       "predictiveBackGestureEnabled": false
@@ -32,7 +32,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#0E4D4E",
+          "backgroundColor": "#24556F",
           "image": "./assets/resolve-mei-logo.png",
           "imageWidth": 200,
           "resizeMode": "contain"

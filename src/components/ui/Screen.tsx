@@ -17,6 +17,7 @@ export interface ScreenProps extends PropsWithChildren<ScrollViewProps> {
   scroll?: boolean;
   keyboardAvoiding?: boolean;
   background?: 'default' | 'subtle';
+  contentWidth?: 'default' | 'wide';
   scrollRef?: Ref<ScrollView>;
   safeAreaEdges?: readonly Edge[];
 }
@@ -27,12 +28,19 @@ export function Screen({
   scroll = true,
   keyboardAvoiding = false,
   background = 'default',
+  contentWidth = 'default',
   scrollRef,
   safeAreaEdges = ['top', 'bottom'],
   ...props
 }: ScreenProps) {
   const { colors } = useTheme();
-  const content = <View style={styles.content}>{children}</View>;
+  const content = (
+    <View
+      style={[styles.content, contentWidth === 'wide' && styles.contentWide]}
+    >
+      {children}
+    </View>
+  );
   const body = scroll ? (
     <ScrollView
       ref={scrollRef}
@@ -95,4 +103,5 @@ const styles = StyleSheet.create({
     maxWidth: sizes.contentMaxWidth,
     width: '100%',
   },
+  contentWide: { maxWidth: sizes.contentWideMaxWidth },
 });

@@ -19,7 +19,7 @@ import { Button, IconButton, Skeleton, Text } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { getProfileInitial } from '@/features/profile/avatar';
 import { formatMoney } from '@/features/quotes/domain';
-import { getThemeShadows, radii, shadows, spacing, useTheme } from '@/theme';
+import { getThemeShadows, radii, spacing, useTheme } from '@/theme';
 import type { DashboardPeriod, HomeDashboardData } from './api';
 
 interface HomeDashboardProps {
@@ -34,6 +34,9 @@ interface HomeDashboardProps {
   dashboardLoading?: boolean;
   dashboardError?: boolean;
   onRetry?: () => void;
+  financialValuesHidden?: boolean;
+  financialPrivacyHydrated?: boolean;
+  onFinancialPrivacyToggle?: () => void;
 }
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 const PERIODS = [
@@ -56,6 +59,7 @@ const MONTHS = [
   'Nov',
   'Dez',
 ];
+const PRIVATE_MONEY = 'R$ ••••••';
 
 function AppHeader({
   firstName,
@@ -289,27 +293,58 @@ function Balance({
   period,
   onPeriodChange,
   compact,
+  valuesHidden,
+  privacyHydrated,
+  onPrivacyToggle,
 }: DashboardStateProps & {
   period: DashboardPeriod;
   onPeriodChange: (period: DashboardPeriod) => void;
   compact: boolean;
+  valuesHidden: boolean;
+  privacyHydrated: boolean;
+  onPrivacyToggle: () => void;
 }) {
   const { colors, resolvedTheme } = useTheme();
   return (
     <View
       style={[
         styles.balance,
-        resolvedTheme === 'dark'
-          ? getThemeShadows(resolvedTheme).floating
-          : shadows.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).subtle,
+        { backgroundColor: colors.surfaceElevated },
       ]}
     >
+      <View
+        style={[styles.balanceAccent, { backgroundColor: colors.accent }]}
+      />
       <View style={styles.balanceHeader}>
         <Text style={styles.balanceTitle} variant="cardTitle">
           Balanço estimado
         </Text>
-        <PeriodPicker onChange={onPeriodChange} value={period} />
+        <View style={styles.balanceActions}>
+          <IconButton
+            accessibilityLabel={
+              valuesHidden
+                ? 'Mostrar valores financeiros'
+                : 'Ocultar valores financeiros'
+            }
+            accessibilityState={{
+              busy: !privacyHydrated,
+              disabled: !privacyHydrated,
+              expanded: !valuesHidden,
+            }}
+            disabled={!privacyHydrated}
+            hitSlop={8}
+            icon={
+              <MaterialCommunityIcons
+                color={colors.textSecondary}
+                name={valuesHidden ? 'eye-off-outline' : 'eye-outline'}
+                size={21}
+              />
+            }
+            onPress={onPrivacyToggle}
+          />
+          <PeriodPicker onChange={onPeriodChange} value={period} />
+        </View>
       </View>
       <Text color="textSecondary" variant="caption">
         Total dos orçamentos aprovados no período.
@@ -325,12 +360,16 @@ function Balance({
         <>
           <Text
             adjustsFontSizeToFit
-            accessibilityLabel={`Valor aprovado: ${formatMoney(data.approvedCents)}`}
+            accessibilityLabel={
+              valuesHidden
+                ? 'Valor aprovado oculto'
+                : `Valor aprovado: ${formatMoney(data.approvedCents)}`
+            }
             minimumFontScale={0.72}
             numberOfLines={1}
             style={styles.balanceValue}
           >
-            {formatMoney(data.approvedCents)}
+            {valuesHidden ? PRIVATE_MONEY : formatMoney(data.approvedCents)}
           </Text>
           {data.approvedCents === 0 ? (
             <Text color="textSecondary">
@@ -341,19 +380,25 @@ function Balance({
               {comparison(data.approvedCents, data.previousApprovedCents)}
             </Text>
           )}
-          <View style={[styles.divider, { backgroundColor: colors.border }]} />
+          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
           <View style={[styles.metrics, compact && styles.metricsCompact]}>
             <Metric
               compact={compact}
               icon="check-circle-outline"
               label="Valor aprovado"
-              value={formatMoney(data.approvedCents)}
+              value={
+                valuesHidden ? PRIVATE_MONEY : formatMoney(data.approvedCents)
+              }
             />
             <Metric
               compact={compact}
               icon="clock-outline"
               label="Em negociação"
-              value={formatMoney(data.negotiatingCents)}
+              value={
+                valuesHidden
+                  ? PRIVATE_MONEY
+                  : formatMoney(data.negotiatingCents)
+              }
             />
             <Metric
               compact={compact}
@@ -388,24 +433,46 @@ function QuickAction({
   onPress: () => void;
   fullWidth?: boolean;
 }) {
-  const { colors, resolvedTheme } = useTheme();
+  const { colors } = useTheme();
   return (
     <AnimatedPressable
       accessibilityLabel={label}
       accessibilityRole="button"
+      containerStyle={[
+        styles.quickActionContainer,
+        fullWidth && styles.quickActionContainerFull,
+      ]}
       onPress={onPress}
       style={[
         styles.quickAction,
-        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
         fullWidth && styles.quickActionFullWidth,
         {
-          backgroundColor: primary ? colors.primarySubtle : colors.surfaceMuted,
-          borderColor: primary ? colors.primary : colors.border,
+          backgroundColor: primary ? colors.primary : colors.surfaceInteractive,
+          borderColor: primary ? colors.primary : colors.borderSubtle,
         },
       ]}
     >
-      <MaterialCommunityIcons color={colors.primary} name={icon} size={27} />
-      <Text align="center" variant="label">
+      <View
+        style={[
+          styles.quickIcon,
+          {
+            backgroundColor: primary
+              ? 'rgba(255,255,255,0.16)'
+              : colors.primaryMuted,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={primary ? colors.brandOnPrimary : colors.primary}
+          name={icon}
+          size={25}
+        />
+      </View>
+      <Text
+        align="center"
+        color={primary ? 'brandOnPrimary' : 'textPrimary'}
+        variant="label"
+      >
         {label}
       </Text>
     </AnimatedPressable>
@@ -448,7 +515,13 @@ interface DashboardStateProps {
   retry: () => void;
 }
 
-function Overview({ data, loading, error, retry }: DashboardStateProps) {
+function Overview({
+  data,
+  loading,
+  error,
+  retry,
+  valuesHidden,
+}: DashboardStateProps & { valuesHidden: boolean }) {
   const { colors, resolvedTheme } = useTheme();
   const [selected, setSelected] = useState<number>();
   if (loading)
@@ -516,7 +589,10 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
                   ).getMonth()
                 ]
               }
-              : {formatMoney(data.monthly[visibleIndex].approvedCents)}
+              :{' '}
+              {valuesHidden
+                ? 'valor oculto'
+                : formatMoney(data.monthly[visibleIndex].approvedCents)}
             </Text>
           ) : null}
           <ScrollView
@@ -539,7 +615,11 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
               const current = index === data.monthly.length - 1;
               return (
                 <AnimatedPressable
-                  accessibilityLabel={`${month}, ${formatMoney(item.approvedCents)}`}
+                  accessibilityLabel={
+                    valuesHidden
+                      ? `${month}, valor oculto`
+                      : `${month}, ${formatMoney(item.approvedCents)}`
+                  }
                   accessibilityRole="button"
                   containerStyle={[
                     styles.barContainer,
@@ -829,6 +909,11 @@ export function HomeDashboard(props: HomeDashboardProps) {
             onPeriodChange={props.onPeriodChange ?? (() => undefined)}
             period={props.period ?? 'month'}
             compact={compact}
+            valuesHidden={props.financialValuesHidden ?? false}
+            privacyHydrated={props.financialPrivacyHydrated ?? true}
+            onPrivacyToggle={
+              props.onFinancialPrivacyToggle ?? (() => undefined)
+            }
           />
           <QuickActions compact={compact} />
           <View style={styles.section}>
@@ -836,7 +921,10 @@ export function HomeDashboard(props: HomeDashboardProps) {
             <View
               style={[styles.overviewGrid, wide && styles.overviewGridWide]}
             >
-              <Overview {...state} />
+              <Overview
+                {...state}
+                valuesHidden={props.financialValuesHidden ?? false}
+              />
               <Clients {...state} />
             </View>
           </View>
@@ -885,16 +973,24 @@ const styles = StyleSheet.create({
   sectionHeader: { gap: spacing.xs },
   balance: {
     borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing[3],
+    overflow: 'hidden',
     padding: spacing[5],
+    paddingTop: spacing[6],
   },
+  balanceAccent: { height: 4, left: 0, position: 'absolute', right: 0, top: 0 },
   balanceHeader: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
   },
   balanceTitle: { flex: 1, minWidth: 0 },
+  balanceActions: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexShrink: 0,
+    gap: spacing.xs,
+  },
   periodButton: {
     alignItems: 'center',
     borderRadius: radii.small,
@@ -948,6 +1044,8 @@ const styles = StyleSheet.create({
   quickStack: { gap: spacing.sm },
   quickGridItem: { flex: 2, flexDirection: 'row', gap: spacing[3] },
   quickSecondaryRow: { flexDirection: 'row', gap: spacing.sm },
+  quickActionContainer: { flex: 1, minWidth: 0 },
+  quickActionContainerFull: { flex: 0, width: '100%' },
   quickAction: {
     alignItems: 'center',
     borderRadius: radii.medium,
@@ -955,11 +1053,18 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.sm,
     justifyContent: 'center',
-    minHeight: 72,
+    minHeight: 92,
     minWidth: 0,
     padding: spacing.sm,
   },
-  quickActionFullWidth: { flex: 0, width: '100%' },
+  quickIcon: {
+    alignItems: 'center',
+    borderRadius: radii.medium,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
+  quickActionFullWidth: { width: '100%' },
   overviewGrid: { gap: spacing[3] },
   overviewGridWide: { alignItems: 'stretch', flexDirection: 'row' },
   chartCard: {

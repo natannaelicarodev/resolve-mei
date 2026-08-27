@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/motion';
@@ -9,17 +9,16 @@ import {
   Badge,
   Button,
   Card,
+  CompactCreateButton,
   InlineFeedback,
-  Input,
+  ListPageHeader,
+  SearchInput,
   Screen,
   SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { radii, spacing, useTheme } from '@/theme';
 import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
@@ -58,9 +57,10 @@ function ClientRow({ client }: { client: Client }) {
               : (client.email ?? 'Sem contato informado')}
         </Text>
       </View>
-      {client.status === 'inactive' ? (
-        <Badge label="Inativo" variant="neutral" />
-      ) : null}
+      <Badge
+        label={client.status === 'active' ? 'Ativo' : 'Inativo'}
+        variant={client.status === 'active' ? 'success' : 'neutral'}
+      />
       <MaterialCommunityIcons
         color={colors.textMuted}
         name="chevron-right"
@@ -88,33 +88,35 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
       edges={['top', 'bottom']}
       style={[styles.page, { backgroundColor: colors.background }]}
     >
-      <Screen safeAreaEdges={[]} contentContainerStyle={styles.screenContent}>
-        <ProtectedPageHeader title="Clientes" />
-        <View style={styles.titleRow}>
-          <View style={styles.titleCopy}>
-            <Text variant="sectionTitle">Seus clientes</Text>
-            <Text color="textSecondary">
-              {query.isSuccess
-                ? `${clients.length}${clients.length === CLIENT_PAGE_SIZE ? '+' : ''} encontrados`
-                : 'Consulte e organize seus contatos'}
-            </Text>
-          </View>
-          <Button
-            accessibilityHint="Abre o formulário para adicionar um cliente."
-            haptic="selection"
-            icon={
-              <MaterialCommunityIcons
-                color={colors.textOnPrimary}
-                name="account-plus-outline"
-                size={20}
-              />
-            }
-            label="Novo cliente"
-            size="small"
-            onPress={() => router.push('/clients/new')}
+      <Screen
+        safeAreaEdges={[]}
+        contentContainerStyle={styles.screenContent}
+        refreshControl={
+          <RefreshControl
+            colors={[colors.brandPrimary]}
+            onRefresh={() => void query.refetch()}
+            refreshing={query.isFetching}
+            tintColor={colors.brandPrimary}
           />
-        </View>
-        <Input
+        }
+      >
+        <ListPageHeader
+          title="Clientes"
+          summary={
+            query.isSuccess
+              ? `${clients.length}${clients.length === CLIENT_PAGE_SIZE ? '+' : ''} encontrados`
+              : 'Consulte e organize seus contatos'
+          }
+          action={
+            <CompactCreateButton
+              accessibilityHint="Abre o formulário para adicionar um cliente."
+              icon="account-plus-outline"
+              label="Novo cliente"
+              onPress={() => router.push('/clients/new')}
+            />
+          }
+        />
+        <SearchInput
           label="Buscar clientes"
           placeholder="Nome, documento, telefone ou e-mail"
           reserveMessageSpace={false}
@@ -197,8 +199,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingTop: spacing.sm,
   },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  titleCopy: { flex: 1, gap: spacing.xs },
   loading: { gap: spacing.sm },
   list: { gap: 0, padding: 0, overflow: 'hidden' },
   row: {

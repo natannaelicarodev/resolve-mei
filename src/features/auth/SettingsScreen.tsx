@@ -1,12 +1,12 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Screen,
   SegmentedControl,
@@ -29,28 +29,21 @@ export function SettingsScreen() {
   const { colors, preference, setPreference } = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const [logoutConfirmationVisible, setLogoutConfirmationVisible] =
+    useState(false);
   const logout = async () => {
     if (isLoading) return;
     setIsLoading(true);
     setError(undefined);
     try {
       await signOut();
+      setLogoutConfirmationVisible(false);
       router.replace('/sign-in');
       void triggerHaptic('selection');
     } catch (caught) {
       setError(normalizeError(caught).message);
       setIsLoading(false);
     }
-  };
-  const confirmLogout = () => {
-    Alert.alert(
-      'Sair da conta?',
-      'Você precisará entrar novamente para acessar seus dados.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        { text: 'Sair', style: 'destructive', onPress: () => void logout() },
-      ],
-    );
   };
   return (
     <SafeAreaView
@@ -86,10 +79,20 @@ export function SettingsScreen() {
             disabled={isLoading}
             label="Sair da conta"
             loading={isLoading}
-            onPress={confirmLogout}
-            variant="secondary"
+            onPress={() => setLogoutConfirmationVisible(true)}
+            variant="outline"
           />
         </Card>
+        <ConfirmationDialog
+          confirmLabel="Sair"
+          description="Você precisará entrar novamente para acessar seus dados."
+          destructive
+          loading={isLoading}
+          onCancel={() => setLogoutConfirmationVisible(false)}
+          onConfirm={() => void logout()}
+          title="Sair da conta?"
+          visible={logoutConfirmationVisible}
+        />
         <Card>
           <Text variant="cardTitle">Sobre</Text>
           <Text color="textSecondary">

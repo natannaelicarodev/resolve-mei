@@ -3,12 +3,15 @@ import { StyleSheet, View } from 'react-native';
 import type { PressableProps, ViewProps } from 'react-native';
 
 import { AnimatedPressable } from '@/components/motion';
-import { radii, shadows, spacing, useTheme } from '@/theme';
+import { getThemeShadows, radii, spacing, useTheme } from '@/theme';
 
 export type CardVariant =
   | 'default'
+  | 'subtle'
   | 'elevated'
   | 'interactive'
+  | 'selected'
+  | 'summary'
   | 'highlighted'
   | 'success'
   | 'warning'
@@ -27,13 +30,27 @@ export function Card({
   style,
   ...props
 }: CardProps) {
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
+  const shadows = getThemeShadows(resolvedTheme);
   const variants = {
     default: {},
+    subtle: {
+      backgroundColor: colors.backgroundSubtle,
+      borderColor: 'transparent',
+    },
     elevated: { ...shadows.card, borderColor: 'transparent' },
     interactive: {
+      backgroundColor: colors.surfaceInteractive,
+      borderColor: colors.borderSubtle,
+    },
+    selected: {
+      backgroundColor: colors.surfaceSelected,
+      borderColor: colors.primary,
+    },
+    summary: {
+      ...shadows.subtle,
       backgroundColor: colors.surfaceElevated,
-      borderColor: colors.borderStrong,
+      borderColor: 'transparent',
     },
     highlighted: {
       backgroundColor: colors.primarySubtle,
@@ -56,7 +73,7 @@ export function Card({
     <View
       style={[
         styles.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
         variants[variant],
         style,
       ]}
@@ -81,9 +98,9 @@ export function Card({
 const styles = StyleSheet.create({
   pressable: { width: '100%' },
   card: {
-    borderRadius: radii.card,
+    borderRadius: radii.large,
     borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing[5],
   },
 });

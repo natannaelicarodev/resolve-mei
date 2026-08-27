@@ -1,26 +1,121 @@
 # Design system ResolveMEI
 
+## Pesquisa de produto e decisão visual
+
+Foram consultadas páginas oficiais em 27/08/2026. A análise extrai princípios de produto, não identidade visual nem trade dress.
+
+| Produto           | Público                       | Força visual/UX                            | Listas e finanças                             | Princípio aplicável                         | Não copiar                                |
+| ----------------- | ----------------------------- | ------------------------------------------ | --------------------------------------------- | ------------------------------------------- | ----------------------------------------- |
+| Conta Azul        | PMEs brasileiras              | organização operacional e linguagem direta | visão consolidada da gestão                   | reduzir carga cognitiva e explicar métricas | azul dominante, estrutura de ERP          |
+| Asaas             | pequenos negócios e cobrança  | ação financeira evidente                   | cobranças e pagamentos em um só lugar         | separar ação principal do resumo            | aparência de conta bancária               |
+| Square Invoices   | autônomos e pequenos negócios | fluxo rápido para orçamento/fatura         | clientes, estimativas e pagamentos conectados | linhas densas e CTA inequívoco              | composição e linguagem comercial próprias |
+| QuickBooks Mobile | pequenos negócios             | continuidade entre resumo e detalhe        | números priorizados com contexto              | valores legíveis e navegação previsível     | densidade de software contábil            |
+| Wave              | micro e pequenos negócios     | faturamento simples                        | invoices como coleção operacional             | empty states orientados à primeira ação     | identidade e ilustrações                  |
+| FreshBooks        | prestadores de serviço        | tom próximo e profissional                 | clientes e faturas com status claros          | status textual e ações fáceis de encontrar  | paleta e componentes proprietários        |
+| Zoho Invoice      | pequenos prestadores          | cobertura funcional sem tabela no mobile   | filtros por status e documentos               | filtros curtos, operáveis e persistentes    | densidade de suíte corporativa            |
+| Family            | pessoas iniciando em cripto   | interface amigável e baixa carga cognitiva | conteúdo principal com ações previsíveis      | clareza, respiro e progressão sem ansiedade | marca, paleta, layouts e linguagem Web3   |
+
+Fontes: páginas oficiais da [Conta Azul](https://contaazul.com/), [Asaas](https://www.asaas.com/), [Square Invoices](https://squareup.com/us/en/invoices), [QuickBooks Mobile](https://quickbooks.intuit.com/accounting/mobile/), [Wave](https://www.waveapps.com/invoicing), [FreshBooks](https://www.freshbooks.com/invoice), [Zoho Invoice](https://www.zoho.com/invoice), [Family](https://family.co/) e sua listagem oficial na App Store. A documentação de implementação segue a referência oficial do [Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/).
+
+### Direções de paleta consideradas
+
+| Opção                | Base                              | Acento           | Vantagem                                    | Risco                                   | Decisão     |
+| -------------------- | --------------------------------- | ---------------- | ------------------------------------------- | --------------------------------------- | ----------- |
+| A — Atlântico humano | azul profundo e neutros aquecidos | âmbar controlado | confiança, leitura documental e proximidade | exige evitar composição típica de banco | selecionada |
+| B — terra e noite    | terracota e azul-noite            | areia luminosa   | acolhedora e memorável                      | ação principal pesada no uso prolongado | rejeitada   |
+| C — mineral preciso  | grafite e azul-cobalto            | amarelo seco     | alta precisão e excelente contraste         | fria demais para autônomos iniciantes   | rejeitada   |
+
+A opção A separa confiança de linguagem bancária: azul Atlântico identifica ação, seleção e foco; âmbar sinaliza energia e destaque editorial; verde aparece exclusivamente em sucesso, resultado positivo e estado ativo. Neutros aquecidos mantêm proximidade. O tema escuro usa carvão azulado e superfícies distintas, sem inversão mecânica.
+
+### Contraste calculado
+
+Razões calculadas com luminância relativa WCAG, também protegidas por `tests/colorContrast.test.ts`:
+
+| Par                      |   Claro |  Escuro |
+| ------------------------ | ------: | ------: |
+| texto principal / fundo  | 14,23:1 | 16,56:1 |
+| texto secundário / fundo |  7,12:1 | 11,09:1 |
+| placeholder / superfície |  4,95:1 |  6,15:1 |
+| texto / botão principal  |  6,47:1 |  8,16:1 |
+
+Badges positive, warning, negative e info também são testados em 4,5:1. Texto desabilitado é visualmente distinto e semanticamente desabilitado; não carrega informação essencial sozinho.
+
+## Contrato canônico v2
+
+O sistema visual é mobile-first, humano e calmo. Usa superfícies quentes, azul Atlântico, âmbar pontual, Manrope, hierarquia por composição e elevação funcional. Não usa estética bancária, gradientes decorativos, glassmorphism, card em toda seção ou animação ornamental.
+
+### Cores e temas
+
+Componentes novos usam `brandPrimary`, `brandPrimaryPressed`, `brandPrimarySoft`, `brandOnPrimary`, `background`, `backgroundSubtle`, `surface`, `surfaceElevated`, `surfacePressed`, `surfaceSelected`, `border`, `borderStrong`, `textPrimary`, `textSecondary`, `textMuted`, `textDisabled`, `positive`, `positiveSoft`, `warning`, `warningSoft`, `negative`, `negativeSoft`, `info`, `infoSoft`, `overlay`, `skeleton` e `focusRing`. Nomes anteriores continuam somente como aliases de compatibilidade durante a migração.
+
+O tema claro diferencia o fundo quente `#F7F5F2` das superfícies e usa `#24556F` como ação principal. O escuro usa planos carvão-azulados (`#121A1F`, `#1B252B`, `#222E35`) e ação `#8EC5DE`, nunca preto absoluto. Cada tema possui estados pressed, selected, disabled, focus e scrim próprios; o escuro não é uma inversão do claro.
+
+### Tipografia
+
+Manrope permanece por legibilidade de acentos e números. A escala é `display`, `pageTitle`, `sectionTitle`, `cardTitle`, `body`, `bodyMedium`, `bodySmall`, `label`, `caption`, `button`, `monetaryHero`, `monetaryValue`, `badge` e `navigation`. Títulos curtos aceitam até duas linhas; corpo reflow sem limite; badges e navegação usam textos curtos; valores monetários usam numerais tabulares e preservam uma linha. Truncamento só pode ser explícito.
+
+### Espaço, forma e elevação
+
+O ritmo usa 4/8 dp. Gutter de telefone: 16; telas largas: 24; seções: 24; card: 20; formulários: 16 entre campos; navegação inferior reserva 76 mais safe area. Raios: `small`, `input`, `button`, `card`, `largeCard`, `pill`, `modal`. Elevações: `none`, `subtle`, `card`, `elevated`, `overlay`, `modal`; listas extensas preferem borda em vez de sombra.
+
+### Motion
+
+Tokens públicos: `durationFast` (140 ms), `durationNormal` (220 ms), `durationSlow` (320 ms), `easingStandard`, `easingEnter`, `easingExit`, `springGentle`. Saídas são mais curtas que entradas; animações usam transform/opacity, são interrompíveis e chegam imediatamente ao estado final com Reduced Motion. Haptic é reservado a seleção importante, confirmação, sucesso e erro relevante.
+
+### Biblioteca compartilhada
+
+- Estrutura: `Screen`, `AppHeader`, `SectionHeader`, `FormSection`, `Card`, `ElevatedCard`, `ListContainer`, `ListItem`, `MetricCard`, `Divider`.
+- Entrada: `Input`, `SearchInput`, `MoneyInput`, `DateInput`, `Select`, `Checkbox`, `Switch`, `SegmentedControl`, `Chip`.
+- Ação e status: `Button`, `CompactCreateButton`, `IconButton`, `FloatingAction`, `StatusBadge`.
+- Feedback: `EmptyState`, `ErrorState`, `Skeleton`, `Banner`, `Toast`, `Dialog`, `BottomSheet`.
+
+Toda ação compacta tem nome acessível e alvo mínimo de 48 dp. Chips anunciam seleção, switches usam o controle nativo, erros permanecem junto ao campo e status nunca depende apenas de cor.
+
+### Responsividade, dados e acessibilidade
+
+- 320–430 px: uma coluna; títulos e CTAs fazem reflow; valores financeiros não são cortados.
+- Tablet/web: largura de leitura limitada; formulários não esticam; métricas podem usar duas colunas.
+- Safe areas e teclado: headers, tabs e CTAs fixos reservam os insets e nunca encobrem o foco.
+- Dynamic Type: texto cresce sem clipping; badges e valores têm política explícita.
+- Web: foco visível, ordem de teclado igual à visual e interação não dependente de hover.
+- Gráficos: linha/área para série temporal com quatro ou mais pontos, legenda textual, resumo acessível, valores exatos e estados loading/vazio/erro completos.
+
 ## Princípios
 
 1. Humano antes de burocrático: linguagem curta, estados claros e ações previsíveis.
-2. Confiança sem aparência bancária: verde funcional, grafite suave e superfícies leves.
-3. Inclusão prática: alvos de toque de 44 px, fonte ampliável, contraste AA e status com texto.
+2. Confiança sem aparência bancária: azul profundo contido, âmbar humano e superfícies leves.
+3. Inclusão prática: alvos de toque de 48 px, fonte ampliável, contraste AA e status com texto.
 4. Movimento com propósito: confirmar causa e efeito, nunca atrasar trabalho ou esconder conteúdo.
 5. Densidade móvel saudável: espaço suficiente para leitura sem transformar cada seção em card.
 
 ## Identidade
 
-O fundo levemente quente reduz a aparência de painel corporativo. O verde representa ação e progresso; azul, amarelo e coral são acentos limitados para informação, atenção e ênfase. A composição usa títulos fortes, superfícies brancas e raios amigáveis, sem copiar paleta, marca, assets ou composições da Family.
+O fundo levemente quente reduz a aparência de painel corporativo. Azul Atlântico representa marca, ação e seleção; âmbar oferece ênfase pontual; verde representa apenas sucesso, resultado positivo e estado ativo. A composição usa títulos fortes, superfícies claras e raios moderados, sem copiar paleta, marca, assets ou composições da Family.
 
 ## Tokens
 
 Os tokens ficam em `src/theme` e são semânticos. Componentes devem consumir nomes como `textSecondary`, `successSubtle` e `focusRing`, nunca hexadecimais locais. Espaçamentos seguem múltiplos de 4. Inputs e botões usam raios de 14 px; cards usam 24 px; pills e círculos usam raio total.
 
-As combinações principais foram escolhidas para WCAG AA: grafite sobre fundos claros, branco sobre verde principal, branco sobre vermelho de perigo e textos escuros nos fundos sutis. Status sempre inclui texto, símbolo ou papel acessível.
+As combinações principais foram escolhidas para WCAG AA: grafite sobre fundos claros, branco sobre azul principal, branco sobre vermelho de perigo e textos escuros nos fundos sutis. Status sempre inclui texto, símbolo ou papel acessível.
 
 ### Temas
 
-O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies em grafite esverdeado, sem preto absoluto, neon ou linguagem visual de fintech.
+O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies carvão-azuladas, sem preto absoluto, neon ou linguagem visual de fintech.
+
+## Redesign estrutural v3
+
+| Área         | Estrutura anterior                                    | Estrutura atual                                                                         |
+| ------------ | ----------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Autenticação | marca, título e formulário em uma pilha uniforme      | introdução editorial responsiva + coluna de tarefa focada                               |
+| Home         | painel financeiro pesado e ações com peso semelhante  | resumo tipográfico com faixa de ênfase + ação primária inequívoca + blocos operacionais |
+| Navegação    | ícones e labels comprimidos sobre uma linha divisória | superfície elevada, área de toque estável e cápsula de destino ativo                    |
+| Listas       | anatomias próprias por módulo                         | cabeçalho, busca, filtro e trailing content com hierarquia repetível                    |
+| Detalhes     | ações e informações em cards genéricos                | cabeçalho de entidade, grupos de informação e confirmação contextual                    |
+| Feedback     | alertas do sistema e mensagens textuais               | toast não bloqueante, banner inline, confirmação visual e sucesso animado               |
+
+As superfícies têm papéis explícitos: `default` agrupa conteúdo relacionado; `subtle` organiza sem elevar; `summary` destaca síntese; `interactive` indica navegação; `selected` representa escolha; variantes semânticas comunicam estado. Botões usam `primary`, `secondary`, `outline`, `ghost`, `danger`, `link` e `icon`; seus limites não mudam durante loading.
+
+O Family foi usado somente como referência estratégica de redução de ruído, ação principal evidente, conteúdo protagonista, feedback imediato e consistência de movimento. Não houve cópia de código, assets, paleta, componentes, textos, layouts ou identidade Web3.
 
 ## Referência Nucleus UI Lite
 

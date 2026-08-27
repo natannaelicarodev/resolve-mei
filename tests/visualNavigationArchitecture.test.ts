@@ -23,10 +23,12 @@ it('keeps the status bar icon style synchronized with the active theme', () => {
 it('matches the grouped Clients structure with shared controls', () => {
   const list = source('src/features/quotes/QuoteListScreen.tsx');
   const clients = source('src/features/clients/ClientListScreen.tsx');
-  expect(list).toContain('<ProtectedPageHeader title="Orçamentos" />');
-  expect(clients).toContain('<ProtectedPageHeader title="Clientes" />');
-  expect(list).toContain('<Input');
-  expect(clients).toContain('<Input');
+  expect(list).toContain('<ListPageHeader');
+  expect(list).toContain('title="Orçamentos"');
+  expect(clients).toContain('<ListPageHeader');
+  expect(clients).toContain('title="Clientes"');
+  expect(list).toContain('<SearchInput');
+  expect(clients).toContain('<SearchInput');
   expect(list).toContain('<SegmentedControl');
   expect(list).toContain('scrollable');
   expect(list).toContain('<Card style={styles.groupedList}>');
@@ -44,9 +46,9 @@ it('keeps the shared segmented control integrated and optionally scrollable', ()
   expect(segmented).toContain('optionContainerScrollable');
 });
 
-it('preserves light tokens while giving dark cards stronger separation', () => {
-  expect(lightColors.surface).toBe('#FFFFFF');
-  expect(lightColors.border).toBe('#D7DDD8');
+it('gives both themes distinct layers and dark cards stronger separation', () => {
+  expect(lightColors.surface).not.toBe(lightColors.background);
+  expect(lightColors.surfaceElevated).not.toBe(lightColors.surface);
   expect(getThemeShadows('light')).toBe(shadows);
   expect(darkColors.surface).not.toBe(darkColors.background);
   expect(darkColors.surfaceElevated).not.toBe(darkColors.surface);
