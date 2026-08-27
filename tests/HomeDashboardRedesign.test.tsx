@@ -1,7 +1,20 @@
-import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import type { ReactElement } from 'react';
+import {
+  act,
+  fireEvent,
+  render as rtlRender,
+  waitFor,
+} from '@testing-library/react-native';
 
 import { HomeDashboard } from '@/features/home/HomeDashboard';
 import type { HomeDashboardData } from '@/features/home/api';
+
+function render(element: ReactElement) {
+  return rtlRender(
+    <BottomSheetModalProvider>{element}</BottomSheetModalProvider>,
+  );
+}
 
 jest.mock('@/components/motion', () => {
   const { Pressable, View } = jest.requireActual('react-native');

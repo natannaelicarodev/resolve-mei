@@ -152,7 +152,7 @@ export function ServiceDetailsScreen({
         variant={service.status === 'active' ? 'danger' : 'secondary'}
       />
       <ConfirmationDialog
-        confirmLabel="Confirmar"
+        confirmLabel={nextStatus === 'inactive' ? 'Inativar' : 'Ativar'}
         description={`Confirma a alteração de status de ${service.name}?`}
         destructive={nextStatus === 'inactive'}
         loading={status.isPending}

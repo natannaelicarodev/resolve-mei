@@ -7,6 +7,8 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { AppProviders } from '@/providers/AppProviders';
@@ -29,11 +31,13 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <AppErrorBoundary>
-      <AppProviders>
-        <ThemedNavigation />
-      </AppProviders>
-    </AppErrorBoundary>
+    <GestureHandlerRootView style={styles.root}>
+      <AppErrorBoundary>
+        <AppProviders>
+          <ThemedNavigation />
+        </AppProviders>
+      </AppErrorBoundary>
+    </GestureHandlerRootView>
   );
 }
 
@@ -65,3 +69,5 @@ function ThemedNavigation() {
     </>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

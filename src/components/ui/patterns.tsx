@@ -20,7 +20,7 @@ export function Divider() {
   return (
     <View
       accessibilityElementsHidden
-      style={[styles.divider, { backgroundColor: colors.border }]}
+      style={[styles.divider, { backgroundColor: colors.borderSubtle }]}
     />
   );
 }
@@ -77,15 +77,15 @@ export function CompactCreateButton({
       <View
         style={[
           styles.compactCreateVisual,
-          { backgroundColor: colors.brandPrimary },
+          { backgroundColor: colors.primary },
         ]}
       >
         <MaterialCommunityIcons
-          color={colors.brandOnPrimary}
+          color={colors.textInverse}
           name={icon}
           size={17}
         />
-        <Text color="brandOnPrimary" numberOfLines={1} variant="badge">
+        <Text color="textInverse" numberOfLines={1} variant="badge">
           {label}
         </Text>
       </View>
@@ -243,13 +243,9 @@ export function EmptyState({
   return (
     <View style={styles.state}>
       <View
-        style={[styles.stateIcon, { backgroundColor: colors.brandPrimarySoft }]}
+        style={[styles.stateIcon, { backgroundColor: colors.primarySubtle }]}
       >
-        <MaterialCommunityIcons
-          color={colors.brandPrimary}
-          name={icon}
-          size={28}
-        />
+        <MaterialCommunityIcons color={colors.primary} name={icon} size={28} />
       </View>
       <Text align="center" variant="cardTitle">
         {title}
@@ -309,18 +305,14 @@ export function Chip({
         styles.chip,
         {
           backgroundColor: selected ? colors.surfaceSelected : colors.surface,
-          borderColor: selected ? colors.brandPrimary : colors.border,
+          borderColor: selected ? colors.primary : colors.borderSubtle,
         },
       ]}
     >
       {selected ? (
-        <MaterialCommunityIcons
-          color={colors.brandPrimary}
-          name="check"
-          size={16}
-        />
+        <MaterialCommunityIcons color={colors.primary} name="check" size={16} />
       ) : null}
-      <Text color={selected ? 'brandPrimary' : 'textSecondary'} variant="badge">
+      <Text color={selected ? 'primary' : 'textSecondary'} variant="badge">
         {label}
       </Text>
     </AnimatedPressable>
@@ -355,7 +347,7 @@ export function Switch({
         accessibilityLabel={label}
         disabled={disabled}
         onValueChange={onValueChange}
-        trackColor={{ false: colors.borderStrong, true: colors.brandPrimary }}
+        trackColor={{ false: colors.borderStrong, true: colors.primary }}
         thumbColor={colors.surface}
         value={value}
       />
@@ -428,14 +420,14 @@ export function FloatingAction({
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      style={[styles.fab, { backgroundColor: colors.brandPrimary }]}
+      style={[styles.fab, { backgroundColor: colors.primary }]}
     >
       <MaterialCommunityIcons
-        color={colors.brandOnPrimary}
+        color={colors.textInverse}
         name={icon}
         size={24}
       />
-      <Text color="brandOnPrimary" variant="button">
+      <Text color="textInverse" variant="button">
         {label}
       </Text>
     </AnimatedPressable>
@@ -468,7 +460,7 @@ export function Select({
           styles.select,
           {
             backgroundColor: colors.surface,
-            borderColor: error ? colors.negative : colors.border,
+            borderColor: error ? colors.danger : colors.borderSubtle,
           },
         ]}
       >
@@ -482,11 +474,7 @@ export function Select({
         />
       </AnimatedPressable>
       {error ? (
-        <Text
-          accessibilityLiveRegion="polite"
-          color="negative"
-          variant="caption"
-        >
+        <Text accessibilityLiveRegion="polite" color="danger" variant="caption">
           {error}
         </Text>
       ) : null}
@@ -544,8 +532,6 @@ export function Dialog({
     </Modal>
   );
 }
-
-export const BottomSheet = Dialog;
 
 export function ConfirmationDialog({
   visible,

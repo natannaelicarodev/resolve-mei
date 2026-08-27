@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { Animated, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { triggerHaptic } from '@/lib/haptics';
 import { motion, radii, spacing, useTheme } from '@/theme';
@@ -14,40 +19,40 @@ export function SuccessTransition({
   message: string;
   haptic?: boolean;
 }) {
-  const [progress] = useState(() => new Animated.Value(0));
+  const progress = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   const { colors } = useTheme();
   useEffect(() => {
     if (haptic) void triggerHaptic('success');
-    const animation = Animated.spring(progress, {
-      toValue: 1,
-      useNativeDriver: true,
-      ...(reducedMotion ? { damping: 100, stiffness: 1000 } : motion.spring),
-    });
-    animation.start();
-    return () => animation.stop();
+    progress.value = withSpring(
+      1,
+      reducedMotion ? { damping: 100, stiffness: 1000 } : motion.spring.press,
+    );
   }, [haptic, progress, reducedMotion]);
+
+  const containerStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+  }));
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale: reducedMotion ? 1 : 0.82 + progress.value * 0.18,
+      },
+    ],
+  }));
+
   return (
     <Animated.View
       accessible
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
-      style={[styles.container, { opacity: progress }]}
+      style={[styles.container, containerStyle]}
     >
       <Animated.View
         style={[
           styles.icon,
           { backgroundColor: colors.successSurface },
-          {
-            transform: [
-              {
-                scale: progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: reducedMotion ? [1, 1] : [0.82, 1],
-                }),
-              },
-            ],
-          },
+          iconStyle,
         ]}
       >
         <MaterialCommunityIcons

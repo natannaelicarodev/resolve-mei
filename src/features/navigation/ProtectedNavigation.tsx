@@ -4,10 +4,24 @@ import type { Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { AnimatedPressable } from '@/components/motion';
+import { AnimatedPressable, useReducedMotion } from '@/components/motion';
 import { IconButton, Text } from '@/components/ui';
-import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
+import {
+  getThemeShadows,
+  motion,
+  radii,
+  sizes,
+  spacing,
+  useTheme,
+} from '@/theme';
 
 type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 type ProtectedDestination =
@@ -37,24 +51,43 @@ function NavigationItem({
   onPress?: () => void;
 }) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(selected ? 1 : 0);
+  useEffect(() => {
+    const target = selected ? 1 : 0;
+    progress.value = reducedMotion
+      ? withTiming(target, { duration: motion.duration.instant })
+      : withSpring(target, motion.spring.gentle);
+  }, [progress, reducedMotion, selected]);
+  const pillStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ scale: 0.6 + progress.value * 0.4 }],
+  }));
   const color = selected
     ? colors.primary
     : disabled
-      ? colors.disabledText
+      ? colors.textDisabled
       : colors.textSecondary;
   const content: ReactNode = (
     <>
-      <View
-        style={[
-          styles.navigationIcon,
-          selected && { backgroundColor: colors.primaryMuted },
-        ]}
-      >
-        <MaterialCommunityIcons color={color} name={icon} size={23} />
+      <View style={styles.navigationIconWrap}>
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.navigationPill,
+            { backgroundColor: colors.primaryMuted },
+            pillStyle,
+          ]}
+        />
+        <MaterialCommunityIcons
+          color={color}
+          name={icon}
+          size={sizes.iconLarge}
+        />
       </View>
       <Text
         color={
-          selected ? 'primary' : disabled ? 'disabledText' : 'textSecondary'
+          selected ? 'primary' : disabled ? 'textDisabled' : 'textSecondary'
         }
         numberOfLines={1}
         variant="navigation"
@@ -98,6 +131,7 @@ export function ProtectedBottomNavigation({
   selected: ProtectedDestination;
 }) {
   const { colors, resolvedTheme } = useTheme();
+  const insets = useSafeAreaInsets();
   return (
     <View
       accessibilityLabel="Navegação principal"
@@ -108,6 +142,7 @@ export function ProtectedBottomNavigation({
         {
           backgroundColor: colors.surfaceElevated,
           borderTopColor: colors.borderSubtle,
+          paddingBottom: Math.max(insets.bottom, spacing.sm),
         },
       ]}
     >
@@ -232,24 +267,30 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     minHeight: sizes.bottomNavigationHeight,
-    paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.sm,
-    paddingTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
   },
   navigationSlot: { flex: 1, minWidth: 0 },
   navigationItem: {
     alignItems: 'center',
-    gap: 1,
+    gap: 2,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     width: '100%',
   },
-  navigationIcon: {
+  navigationIconWrap: {
     alignItems: 'center',
-    borderRadius: radii.pill,
-    height: 32,
+    height: 36,
     justifyContent: 'center',
-    width: 48,
+    width: 56,
+  },
+  navigationPill: {
+    borderRadius: radii.pill,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   pageHeader: {
     alignItems: 'center',

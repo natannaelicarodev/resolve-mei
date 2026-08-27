@@ -46,7 +46,7 @@ O sistema visual é mobile-first, humano e calmo. Usa superfícies quentes, azul
 
 ### Cores e temas
 
-Componentes novos usam `brandPrimary`, `brandPrimaryPressed`, `brandPrimarySoft`, `brandOnPrimary`, `background`, `backgroundSubtle`, `surface`, `surfaceElevated`, `surfacePressed`, `surfaceSelected`, `border`, `borderStrong`, `textPrimary`, `textSecondary`, `textMuted`, `textDisabled`, `positive`, `positiveSoft`, `warning`, `warningSoft`, `negative`, `negativeSoft`, `info`, `infoSoft`, `overlay`, `skeleton` e `focusRing`. Nomes anteriores continuam somente como aliases de compatibilidade durante a migração.
+Componentes usam o conjunto canônico consolidado: `primary`, `primaryPressed`, `primarySubtle`, `primaryMuted`, `textInverse`, `background`, `backgroundSubtle`, `surface`, `surfaceElevated`, `surfaceInteractive`, `surfaceSelected`, `surfaceDisabled`, `surfacePressed`, `borderSubtle`, `borderStrong`, `textPrimary`, `textSecondary`, `textMuted`, `textDisabled`, `accent`, `success`, `successSurface`, `warning`, `warningSurface`, `danger`, `dangerSurface`, `info`, `infoSurface`, `overlay`, `skeletonBase`, `skeletonHighlight` e `focusRing`. Os aliases redundantes (`brandPrimary*`, `secondary`, `accentCoral`, `positive*`, `negative*`, variantes `*Subtle`/`*Soft`, `border`, `disabled`, `text`, `focus`, `disabledText`, `divider`, `textOnPrimary`, `textOnDanger`) foram removidos nesta rodada — não são mais válidos, o `tsc` falha se algum for referenciado.
 
 O tema claro diferencia o fundo quente `#F7F5F2` das superfícies e usa `#24556F` como ação principal. O escuro usa planos carvão-azulados (`#121A1F`, `#1B252B`, `#222E35`) e ação `#8EC5DE`, nunca preto absoluto. Cada tema possui estados pressed, selected, disabled, focus e scrim próprios; o escuro não é uma inversão do claro.
 
@@ -60,7 +60,7 @@ O ritmo usa 4/8 dp. Gutter de telefone: 16; telas largas: 24; seções: 24; card
 
 ### Motion
 
-Tokens públicos: `durationFast` (140 ms), `durationNormal` (220 ms), `durationSlow` (320 ms), `easingStandard`, `easingEnter`, `easingExit`, `springGentle`. Saídas são mais curtas que entradas; animações usam transform/opacity, são interrompíveis e chegam imediatamente ao estado final com Reduced Motion. Haptic é reservado a seleção importante, confirmação, sucesso e erro relevante.
+Tokens públicos: `duration.instant` (0 ms), `duration.press` (100 ms), `duration.fast` (180 ms), `duration.standard` (220 ms), `duration.enter` (260 ms), `duration.route` (320 ms), `easingStandard`, `easingEnter`, `easingExit`, `spring.press`, `spring.gentle`. Saídas são mais curtas que entradas; animações usam transform/opacity, são interrompíveis e chegam imediatamente ao estado final com Reduced Motion. Haptic é reservado a seleção importante, confirmação, sucesso e erro relevante.
 
 ### Biblioteca compartilhada
 

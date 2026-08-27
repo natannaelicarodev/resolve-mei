@@ -1,3 +1,4 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import type { PropsWithChildren } from 'react';
@@ -22,9 +23,11 @@ export function AppProviders({ children }: PropsWithChildren) {
     <SafeAreaProvider>
       <ThemeProvider>
         <QueryClientProvider client={queryClient}>
-          <ToastProvider>
-            <AuthProvider>{children}</AuthProvider>
-          </ToastProvider>
+          <BottomSheetModalProvider>
+            <ToastProvider>
+              <AuthProvider>{children}</AuthProvider>
+            </ToastProvider>
+          </BottomSheetModalProvider>
         </QueryClientProvider>
       </ThemeProvider>
     </SafeAreaProvider>

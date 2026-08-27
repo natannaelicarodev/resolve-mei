@@ -128,7 +128,10 @@ export function OnboardingScreen() {
         <View
           accessibilityLabel={`${Math.round(((step + 1) / steps.length) * 100)}% concluído`}
           accessibilityRole="progressbar"
-          style={[styles.progressTrack, { backgroundColor: colors.border }]}
+          style={[
+            styles.progressTrack,
+            { backgroundColor: colors.borderSubtle },
+          ]}
         >
           <View
             style={[

@@ -1,12 +1,24 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import type { ReactElement } from 'react';
+import { fireEvent, render as rtlRender } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 import { HomeDashboard } from '@/features/home/HomeDashboard';
 import type { HomeDashboardData } from '@/features/home/api';
 
+function render(element: ReactElement) {
+  return rtlRender(
+    <BottomSheetModalProvider>{element}</BottomSheetModalProvider>,
+  );
+}
+
 jest.mock('@/components/motion', () => {
   const { Pressable, View } = jest.requireActual('react-native');
-  return { AnimatedPressable: Pressable, FadeInView: View };
+  return {
+    AnimatedPressable: Pressable,
+    FadeInView: View,
+    useReducedMotion: () => true,
+  };
 });
 
 export const dashboardFixture: HomeDashboardData = {

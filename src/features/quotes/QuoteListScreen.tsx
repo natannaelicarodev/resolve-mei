@@ -10,6 +10,7 @@ import {
   Button,
   Card,
   CompactCreateButton,
+  EmptyState,
   InlineFeedback,
   ListPageHeader,
   SearchInput,
@@ -58,7 +59,7 @@ function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
       style={[
         styles.row,
         divided && {
-          borderTopColor: colors.border,
+          borderTopColor: colors.borderSubtle,
           borderTopWidth: StyleSheet.hairlineWidth,
         },
       ]}
@@ -158,7 +159,7 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
   );
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.page, { backgroundColor: colors.background }]}
     >
       {query.isLoading ? (
@@ -198,27 +199,25 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
             ) : null
           }
           ListEmptyComponent={
-            <Card style={styles.empty}>
-              <MaterialCommunityIcons
-                color={colors.textMuted}
-                name="file-document-outline"
-                size={40}
-              />
-              <Text variant="cardTitle">
-                {search || status !== 'all'
-                  ? 'Nenhum orçamento encontrado'
-                  : 'Você ainda não criou nenhum orçamento.'}
-              </Text>
-              <Text color="textSecondary">
-                {search || status !== 'all'
+            <EmptyState
+              action={
+                <Button
+                  label="Criar orçamento"
+                  onPress={() => router.push('/quotes/new')}
+                />
+              }
+              description={
+                search || status !== 'all'
                   ? 'Tente alterar a busca ou os filtros.'
-                  : 'Seus orçamentos aparecerão aqui conforme você criá-los.'}
-              </Text>
-              <Button
-                label="Criar orçamento"
-                onPress={() => router.push('/quotes/new')}
-              />
-            </Card>
+                  : 'Seus orçamentos aparecerão aqui conforme você criá-los.'
+              }
+              icon="file-document-outline"
+              title={
+                search || status !== 'all'
+                  ? 'Nenhum orçamento encontrado'
+                  : 'Você ainda não criou nenhum orçamento.'
+              }
+            />
           }
           renderItem={({ item: group }) => (
             <Card style={styles.groupedList}>
@@ -265,5 +264,4 @@ const styles = StyleSheet.create({
   rowTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   quoteTitle: { flex: 1, minWidth: 0 },
   quoteValue: { fontSize: 16, lineHeight: 22, minWidth: 0 },
-  empty: { alignItems: 'center', gap: spacing.md },
 });

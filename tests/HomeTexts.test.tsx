@@ -1,3 +1,4 @@
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import type { ReactElement } from 'react';
@@ -80,7 +81,9 @@ async function renderWithClient(element: ReactElement) {
     defaultOptions: { queries: { gcTime: 0, retry: false } },
   });
   const screen = await render(
-    <QueryClientProvider client={queryClient}>{element}</QueryClientProvider>,
+    <QueryClientProvider client={queryClient}>
+      <BottomSheetModalProvider>{element}</BottomSheetModalProvider>
+    </QueryClientProvider>,
   );
   return { queryClient, screen };
 }

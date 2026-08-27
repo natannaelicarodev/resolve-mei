@@ -212,7 +212,7 @@ export function ProfileScreen() {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}
     >
       <Screen keyboardAvoiding safeAreaEdges={[]} scrollRef={scrollRef}>

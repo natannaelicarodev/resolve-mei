@@ -240,7 +240,11 @@ export function QuoteDetailsScreen({
       />
       <ConfirmationDialog
         cancelLabel="Voltar"
-        confirmLabel="Confirmar"
+        confirmLabel={
+          pendingStatus
+            ? (actionLabels[pendingStatus] ?? 'Confirmar')
+            : 'Confirmar'
+        }
         destructive={
           pendingStatus === 'canceled' || pendingStatus === 'rejected'
         }

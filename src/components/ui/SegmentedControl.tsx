@@ -53,13 +53,13 @@ export function SegmentedControl<T extends string>({
       >
         {selected ? (
           <MaterialCommunityIcons
-            color={colors.textOnPrimary}
+            color={colors.textInverse}
             name="check"
             size={16}
           />
         ) : null}
         <Text
-          color={selected ? 'textOnPrimary' : 'textSecondary'}
+          color={selected ? 'textInverse' : 'textSecondary'}
           numberOfLines={1}
           variant="label"
         >

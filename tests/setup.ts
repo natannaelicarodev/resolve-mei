@@ -10,6 +10,30 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   ),
 );
 
+// react-native-worklets (react-native-reanimated 4's runtime) ships its own
+// Jest mock; without it, importing it in tests tries to load the native
+// TurboModule and crashes. See https://docs.swmansion.com/react-native-worklets/docs/guides/testing/
+jest.mock('react-native-worklets', () =>
+  jest.requireActual('react-native-worklets/src/mock'),
+);
+
+// useSafeAreaInsets() throws without a <SafeAreaProvider> ancestor (unlike
+// SafeAreaView, which degrades gracefully). Components that call the hook
+// directly (e.g. the bottom navigation bar) need this in every test that
+// renders them, regardless of whether the test itself wraps a Provider.
+jest.mock(
+  'react-native-safe-area-context',
+  () => jest.requireActual('react-native-safe-area-context/jest/mock').default,
+);
+
+// @gorhom/bottom-sheet's own animated/gesture internals aren't meaningful to
+// exercise in Jest; its official mock always renders sheet content instead of
+// gating it on present()/dismiss(), which is the documented, accepted
+// simplification for this library in tests.
+jest.mock('@gorhom/bottom-sheet', () =>
+  jest.requireActual('@gorhom/bottom-sheet/mock'),
+);
+
 jest.mock('expo-router', () => ({
   router: {
     back: jest.fn(),

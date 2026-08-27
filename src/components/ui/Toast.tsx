@@ -9,12 +9,20 @@ import {
   useState,
 } from 'react';
 import type { PropsWithChildren } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  cancelAnimation,
+  runOnJS,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { useReducedMotion } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
-import { getThemeShadows, radii, spacing, useTheme } from '@/theme';
+import { getThemeShadows, motion, radii, spacing, useTheme } from '@/theme';
 import type { FeedbackVariant } from './InlineFeedback';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
@@ -40,34 +48,36 @@ export function ToastProvider({ children }: PropsWithChildren) {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const [toast, setToast] = useState<ToastInput>();
-  const [progress] = useState(() => new Animated.Value(0));
+  const progress = useSharedValue(0);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const dismiss = useCallback(() => {
     if (timer.current) clearTimeout(timer.current);
-    Animated.timing(progress, {
-      duration: reducedMotion ? 0 : 140,
-      toValue: 0,
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) setToast(undefined);
-    });
+    const clearToast = () => setToast(undefined);
+    progress.value = withTiming(
+      0,
+      {
+        duration: reducedMotion
+          ? motion.duration.instant
+          : motion.duration.fast,
+      },
+      (finished) => {
+        if (finished) runOnJS(clearToast)();
+      },
+    );
   }, [progress, reducedMotion]);
 
   const showToast = useCallback(
     (next: ToastInput) => {
       if (timer.current) clearTimeout(timer.current);
-      progress.stopAnimation();
+      cancelAnimation(progress);
       setToast(next);
-      progress.setValue(reducedMotion ? 1 : 0);
+      progress.value = reducedMotion ? 1 : 0;
       if (next.variant === 'success') void triggerHaptic('success');
       if (next.variant === 'error') void triggerHaptic('error');
-      Animated.spring(progress, {
-        damping: 22,
-        stiffness: 240,
-        toValue: 1,
-        useNativeDriver: true,
-      }).start();
+      progress.value = reducedMotion
+        ? withTiming(1, { duration: motion.duration.instant })
+        : withSpring(1, motion.spring.gentle);
       timer.current = setTimeout(dismiss, next.duration ?? 4500);
     },
     [dismiss, progress, reducedMotion],
@@ -83,6 +93,11 @@ export function ToastProvider({ children }: PropsWithChildren) {
     info: { color: colors.info, icon: 'information-outline' as const },
   }[variant];
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: reducedMotion ? 0 : -12 + progress.value * 12 }],
+  }));
+
   return (
     <ToastContext.Provider value={value}>
       {children}
@@ -97,17 +112,9 @@ export function ToastProvider({ children }: PropsWithChildren) {
             {
               backgroundColor: colors.surfaceElevated,
               borderColor: colors.borderSubtle,
-              opacity: progress,
               top: insets.top + spacing.sm,
-              transform: [
-                {
-                  translateY: progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: reducedMotion ? [0, 0] : [-12, 0],
-                  }),
-                },
-              ],
             },
+            animatedStyle,
           ]}
         >
           <View style={[styles.icon, { backgroundColor: `${config.color}20` }]}>

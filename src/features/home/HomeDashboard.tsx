@@ -5,8 +5,6 @@ import type { ComponentProps } from 'react';
 import { useState } from 'react';
 import {
   Image,
-  Modal,
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -15,7 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
-import { Button, IconButton, Skeleton, Text } from '@/components/ui';
+import {
+  BottomSheet,
+  Button,
+  IconButton,
+  Skeleton,
+  Text,
+} from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { getProfileInitial } from '@/features/profile/avatar';
 import { formatMoney } from '@/features/quotes/domain';
@@ -181,7 +185,7 @@ function PeriodPicker({
         accessibilityRole="button"
         hitSlop={6}
         onPress={() => setOpen(true)}
-        style={[styles.periodButton, { borderColor: colors.border }]}
+        style={[styles.periodButton, { borderColor: colors.borderSubtle }]}
       >
         <Text numberOfLines={1} style={styles.periodButtonLabel}>
           {selected.compactLabel}
@@ -192,46 +196,38 @@ function PeriodPicker({
           size={16}
         />
       </AnimatedPressable>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-        transparent
+      <BottomSheet
+        onClose={() => setOpen(false)}
+        title="Selecionar período"
         visible={open}
       >
-        <Pressable
-          accessibilityLabel="Fechar seletor de período"
-          onPress={() => setOpen(false)}
-          style={[styles.modalBackdrop, { backgroundColor: colors.overlay }]}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={[
-              styles.periodMenu,
-              { backgroundColor: colors.surfaceElevated },
-            ]}
+        {PERIODS.map((period) => (
+          <AnimatedPressable
+            accessibilityRole="radio"
+            accessibilityState={{ checked: period.value === value }}
+            key={period.value}
+            onPress={() => {
+              onChange(period.value);
+              setOpen(false);
+            }}
+            style={styles.periodOption}
           >
-            {PERIODS.map((period) => (
-              <AnimatedPressable
-                accessibilityRole="radio"
-                accessibilityState={{ checked: period.value === value }}
-                key={period.value}
-                onPress={() => {
-                  onChange(period.value);
-                  setOpen(false);
-                }}
-                style={styles.periodOption}
-              >
-                <Text
-                  color={period.value === value ? 'primary' : 'textPrimary'}
-                  variant="label"
-                >
-                  {period.label}
-                </Text>
-              </AnimatedPressable>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
+            <Text
+              color={period.value === value ? 'primary' : 'textPrimary'}
+              variant="label"
+            >
+              {period.label}
+            </Text>
+            {period.value === value ? (
+              <MaterialCommunityIcons
+                color={colors.primary}
+                name="check"
+                size={20}
+              />
+            ) : null}
+          </AnimatedPressable>
+        ))}
+      </BottomSheet>
     </>
   );
 }
@@ -380,7 +376,9 @@ function Balance({
               {comparison(data.approvedCents, data.previousApprovedCents)}
             </Text>
           )}
-          <View style={[styles.divider, { backgroundColor: colors.divider }]} />
+          <View
+            style={[styles.divider, { backgroundColor: colors.borderSubtle }]}
+          />
           <View style={[styles.metrics, compact && styles.metricsCompact]}>
             <Metric
               compact={compact}
@@ -463,14 +461,14 @@ function QuickAction({
         ]}
       >
         <MaterialCommunityIcons
-          color={primary ? colors.brandOnPrimary : colors.primary}
+          color={primary ? colors.textInverse : colors.primary}
           name={icon}
           size={25}
         />
       </View>
       <Text
         align="center"
-        color={primary ? 'brandOnPrimary' : 'textPrimary'}
+        color={primary ? 'textInverse' : 'textPrimary'}
         variant="label"
       >
         {label}
@@ -551,7 +549,7 @@ function Overview({
         styles.chartCard,
         resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
         singleMonth && styles.chartCardSingle,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
       ]}
     >
       <SectionHeader
@@ -686,7 +684,7 @@ function Clients({ data, loading, error, retry }: DashboardStateProps) {
       style={[
         styles.clientsCard,
         resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
       ]}
     >
       <SectionHeader title="Clientes" subtitle="Situação atual" />
@@ -748,7 +746,7 @@ function Services({ data, loading, error, retry }: DashboardStateProps) {
         style={[
           styles.servicesCard,
           resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
+          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
         ]}
       >
         {loading ? (
@@ -779,7 +777,7 @@ function Services({ data, loading, error, retry }: DashboardStateProps) {
                 style={[
                   styles.serviceRow,
                   index > 0 && {
-                    borderTopColor: colors.border,
+                    borderTopColor: colors.borderSubtle,
                     borderTopWidth: StyleSheet.hairlineWidth,
                   },
                 ]}
@@ -892,7 +890,7 @@ export function HomeDashboard(props: HomeDashboardProps) {
   };
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.safeArea, { backgroundColor: colors.background }]}
     >
       <ScrollView
@@ -1002,23 +1000,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   periodButtonLabel: { fontSize: 13, lineHeight: 18 },
-  modalBackdrop: {
-    flex: 1,
-    justifyContent: 'center',
-    padding: spacing[5],
-  },
-  periodMenu: {
-    alignSelf: 'center',
-    borderRadius: radii.medium,
-    maxWidth: 360,
-    overflow: 'hidden',
-    padding: spacing.sm,
-    width: '100%',
-  },
   periodOption: {
-    justifyContent: 'center',
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     minHeight: 48,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.sm,
   },
   loading: { gap: spacing.sm, paddingVertical: spacing.md },
   balanceValue: { fontSize: 30, lineHeight: 38 },

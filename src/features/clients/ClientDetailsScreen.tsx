@@ -199,7 +199,7 @@ export function ClientDetailsScreen({
         onPress={() => setStatusConfirmationVisible(true)}
       />
       <ConfirmationDialog
-        confirmLabel="Confirmar"
+        confirmLabel={nextStatus === 'inactive' ? 'Inativar' : 'Ativar'}
         description={`Confirma a alteração de status de ${client.name}?`}
         destructive={nextStatus === 'inactive'}
         loading={status.isPending}

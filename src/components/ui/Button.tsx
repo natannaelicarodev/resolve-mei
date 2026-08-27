@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { PressableProps } from 'react-native';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { AnimatedPressable } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
@@ -23,6 +24,20 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
   haptic?: HapticIntent | false;
 }
 
+const RADIUS_BY_SIZE: Record<ButtonSize, number> = {
+  small: 10,
+  compact: 12,
+  medium: radii.medium,
+  large: 16,
+};
+
+const MIN_HEIGHT_BY_SIZE: Record<ButtonSize, number> = {
+  small: 44,
+  compact: 48,
+  medium: sizes.buttonMinHeight,
+  large: 56,
+};
+
 export function Button({
   label,
   loading = false,
@@ -41,12 +56,23 @@ export function Button({
   const isDisabled = disabled || loading;
   const foreground =
     variant === 'primary' || variant === 'danger' || state === 'success'
-      ? colors.textOnPrimary
+      ? colors.textInverse
       : variant === 'ghost'
         ? colors.textPrimary
-        : variant === 'link' || variant === 'icon'
-          ? colors.primary
-          : colors.primary;
+        : colors.primary;
+  // Ação destrutiva nunca pode depender só da cor vermelha: todo botão
+  // `danger` carrega um ícone de alerta por padrão, além do label textual
+  // que já descreve a ação (ex.: "Inativar", "Excluir").
+  const resolvedIcon =
+    icon ??
+    (variant === 'danger' && !loading ? (
+      <MaterialCommunityIcons
+        color={foreground}
+        name="alert-outline"
+        size={sizes.iconMedium}
+        testID="button-danger-icon"
+      />
+    ) : undefined);
   return (
     <AnimatedPressable
       accessibilityLabel={accessibilityLabel}
@@ -60,14 +86,19 @@ export function Button({
       style={(pressState) => [
         styles.base,
         styles[size],
+        { borderRadius: RADIUS_BY_SIZE[size] },
         variant === 'primary' && { backgroundColor: colors.primary },
         variant === 'secondary' && {
           backgroundColor: colors.primaryMuted,
+          borderColor: colors.borderSubtle,
+          borderRadius: RADIUS_BY_SIZE[size] - 2,
+          borderWidth: StyleSheet.hairlineWidth,
         },
         variant === 'outline' && {
           backgroundColor: colors.surfaceInteractive,
           borderColor: colors.borderStrong,
           borderWidth: StyleSheet.hairlineWidth,
+          minHeight: MIN_HEIGHT_BY_SIZE[size] - 4,
         },
         variant === 'ghost' && styles.ghost,
         variant === 'link' && styles.link,
@@ -76,8 +107,8 @@ export function Button({
         state === 'success' && { backgroundColor: colors.success },
         pressState.pressed && !isDisabled && styles.pressed,
         isDisabled && {
-          backgroundColor: colors.disabled,
-          borderColor: colors.disabled,
+          backgroundColor: colors.surfaceDisabled,
+          borderColor: colors.surfaceDisabled,
         },
         typeof style === 'function' ? style(pressState) : style,
       ]}
@@ -90,7 +121,7 @@ export function Button({
             color={foreground}
           />
         ) : (
-          icon
+          resolvedIcon
         )}
         <Text style={[styles.label, { color: foreground }]}>{label}</Text>
       </View>
@@ -101,7 +132,6 @@ export function Button({
 const styles = StyleSheet.create({
   base: {
     alignItems: 'center',
-    borderRadius: radii.medium,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     paddingHorizontal: spacing.md,
@@ -110,7 +140,7 @@ const styles = StyleSheet.create({
   compact: { minHeight: 48, paddingHorizontal: spacing[3] },
   medium: { minHeight: sizes.buttonMinHeight },
   large: { minHeight: 56, paddingHorizontal: spacing.lg },
-  ghost: { backgroundColor: 'transparent' },
+  ghost: { backgroundColor: 'transparent', paddingHorizontal: spacing.sm },
   link: {
     alignSelf: 'flex-start',
     backgroundColor: 'transparent',

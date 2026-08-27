@@ -3,6 +3,8 @@ export type { ButtonProps } from './Button';
 export { Card } from './Card';
 export type { CardProps, CardVariant } from './Card';
 export { Badge } from './Badge';
+export { BottomSheet } from './BottomSheet';
+export type { BottomSheetProps } from './BottomSheet';
 export { Checkbox } from './Checkbox';
 export { IconButton } from './IconButton';
 export { InlineFeedback } from './InlineFeedback';
@@ -18,7 +20,6 @@ export type { TextProps } from './Text';
 export { ToastProvider, useToast } from './Toast';
 export {
   AppHeader,
-  BottomSheet,
   Chip,
   CompactCreateButton,
   ConfirmationDialog,

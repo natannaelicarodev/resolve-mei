@@ -1,6 +1,9 @@
 packages:
   - .
 
+storeDir: .pnpm-store
+nodeLinker: hoisted
+
 allowBuilds:
   unrs-resolver: true
 

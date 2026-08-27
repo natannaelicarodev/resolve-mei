@@ -1,16 +1,16 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
-  Card,
   CompactCreateButton,
+  Divider,
+  EmptyState,
   InlineFeedback,
+  ListItem,
   ListPageHeader,
   SearchInput,
   SegmentedControl,
@@ -25,53 +25,31 @@ import { useServices } from './hooks';
 import { useAuth } from '@/providers/AuthProvider';
 
 function ServiceRow({ service }: { service: Service }) {
-  const { colors } = useTheme();
   const duration = formatDuration(service.estimated_duration_minutes);
+  const subtitle = [service.description, duration].filter(Boolean).join(' · ');
   return (
-    <AnimatedPressable
-      accessibilityHint="Abre os detalhes do serviço."
+    <ListItem
       accessibilityLabel={`${service.name}, ${formatPriceCents(service.price_cents)}${duration ? `, ${duration}` : ''}${service.status === 'inactive' ? ', inativo' : ''}`}
-      accessibilityRole="button"
       onPress={() =>
         router.push({
           pathname: '/services/[id]',
           params: { id: service.id },
         })
       }
-      style={[styles.row, { borderBottomColor: colors.border }]}
-    >
-      <View style={styles.rowCopy}>
-        <Text numberOfLines={1} variant="label">
-          {service.name}
-        </Text>
-        {service.description ? (
-          <Text color="textSecondary" numberOfLines={1} variant="caption">
-            {service.description}
+      subtitle={subtitle || undefined}
+      title={service.name}
+      trailing={
+        <View style={styles.trailing}>
+          <Text numberOfLines={1} style={styles.price} variant="monetaryValue">
+            {formatPriceCents(service.price_cents)}
           </Text>
-        ) : null}
-        {duration ? (
-          <Text color="textMuted" numberOfLines={1} variant="caption">
-            {duration}
-          </Text>
-        ) : null}
-      </View>
-      <View style={styles.trailing}>
-        <Text numberOfLines={1} style={styles.price} variant="monetaryValue">
-          {formatPriceCents(service.price_cents)}
-        </Text>
-        <View style={styles.trailingMeta}>
           <Badge
             label={service.status === 'active' ? 'Ativo' : 'Inativo'}
             variant={service.status === 'active' ? 'success' : 'neutral'}
           />
-          <MaterialCommunityIcons
-            color={colors.textMuted}
-            name="chevron-right"
-            size={20}
-          />
         </View>
-      </View>
-    </AnimatedPressable>
+      }
+    />
   );
 }
 
@@ -137,7 +115,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.page, { backgroundColor: colors.background }]}
     >
       {query.isLoading ? (
@@ -173,39 +151,37 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
           data={services}
           keyExtractor={(service) => service.id}
           ListEmptyComponent={
-            <Card style={styles.empty}>
-              <MaterialCommunityIcons
-                color={colors.textMuted}
-                name="briefcase-search-outline"
-                size={40}
-              />
-              <Text align="center" variant="cardTitle">
-                {search || status !== 'all'
-                  ? 'Nenhum serviço encontrado'
-                  : 'Nenhum serviço cadastrado'}
-              </Text>
-              <Text align="center" color="textSecondary">
-                {search || status !== 'all'
+            <EmptyState
+              action={
+                search || status !== 'all' ? (
+                  <Button
+                    label="Limpar busca e filtros"
+                    onPress={() => {
+                      setInput('');
+                      setSearch('');
+                      setStatus('all');
+                    }}
+                    variant="ghost"
+                  />
+                ) : (
+                  <Button
+                    label="Cadastrar serviço"
+                    onPress={() => router.push('/services/new')}
+                  />
+                )
+              }
+              description={
+                search || status !== 'all'
                   ? 'Revise a busca ou altere o filtro.'
-                  : 'Seus serviços aparecerão aqui conforme você cadastrá-los.'}
-              </Text>
-              {search || status !== 'all' ? (
-                <Button
-                  label="Limpar busca e filtros"
-                  onPress={() => {
-                    setInput('');
-                    setSearch('');
-                    setStatus('all');
-                  }}
-                  variant="ghost"
-                />
-              ) : (
-                <Button
-                  label="Cadastrar serviço"
-                  onPress={() => router.push('/services/new')}
-                />
-              )}
-            </Card>
+                  : 'Seus serviços aparecerão aqui conforme você cadastrá-los.'
+              }
+              icon="briefcase-search-outline"
+              title={
+                search || status !== 'all'
+                  ? 'Nenhum serviço encontrado'
+                  : 'Nenhum serviço cadastrado'
+              }
+            />
           }
           ListFooterComponent={
             query.isFetchingNextPage ? (
@@ -216,6 +192,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
               />
             ) : null
           }
+          ItemSeparatorComponent={Divider}
           ListHeaderComponent={header}
           onEndReached={loadMore}
           onEndReachedThreshold={0.35}
@@ -249,22 +226,7 @@ const styles = StyleSheet.create({
   },
   header: { gap: spacing.lg, marginBottom: spacing.lg },
   loading: { gap: spacing.sm },
-  row: {
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 72,
-    padding: spacing.md,
-  },
-  rowCopy: { flex: 1, gap: 2, minWidth: 0 },
   trailing: { alignItems: 'flex-end', flexShrink: 0, gap: spacing.xs },
-  trailingMeta: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
   price: { flexShrink: 0 },
-  empty: { alignItems: 'center' },
   footer: { padding: spacing.lg },
 });

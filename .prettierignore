@@ -1,0 +1,6 @@
+coverage
+dist
+dist-*
+.expo
+.agents
+pnpm-lock.yaml

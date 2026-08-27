@@ -1,6 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Animated, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { StyleSheet } from 'react-native';
 import type { PropsWithChildren } from 'react';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { motion } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
@@ -13,39 +18,30 @@ export function StepTransition({
   step: string | number;
   direction?: 'forward' | 'back';
 }>) {
-  const [progress] = useState(() => new Animated.Value(0));
+  const progress = useSharedValue(0);
   const reducedMotion = useReducedMotion();
   useEffect(() => {
-    progress.setValue(0);
-    const animation = Animated.timing(progress, {
-      toValue: 1,
+    progress.value = 0;
+    progress.value = withTiming(1, {
       duration: reducedMotion ? motion.duration.fast : motion.duration.enter,
-      useNativeDriver: true,
     });
-    animation.start();
-    return () => animation.stop();
   }, [progress, reducedMotion, step]);
   const offset =
     direction === 'forward' ? motion.distance.step : -motion.distance.step;
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateX: reducedMotion ? 0 : (1 - progress.value) * offset,
+      },
+    ],
+  }));
+
   return (
     <Animated.View
       accessibilityLiveRegion="polite"
-      style={[
-        styles.container,
-        {
-          opacity: progress,
-          transform: [
-            {
-              translateX: reducedMotion
-                ? 0
-                : progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [offset, 0],
-                  }),
-            },
-          ],
-        },
-      ]}
+      style={[styles.container, animatedStyle]}
     >
       {children}
     </Animated.View>

@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
-import { Animated } from 'react-native';
+import { useEffect } from 'react';
 import type { PropsWithChildren } from 'react';
 import type { ViewProps } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { motion } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
@@ -19,37 +24,25 @@ export function FadeInView({
   ...props
 }: FadeInViewProps) {
   const reducedMotion = useReducedMotion();
-  const [progress] = useState(() => new Animated.Value(0));
+  const progress = useSharedValue(0);
   useEffect(() => {
-    const animation = Animated.timing(progress, {
-      toValue: 1,
+    const animation = withTiming(1, {
       duration: reducedMotion ? motion.duration.fast : motion.duration.enter,
-      delay: reducedMotion ? 0 : delay,
-      useNativeDriver: true,
     });
-    animation.start();
-    return () => animation.stop();
+    progress.value = reducedMotion ? animation : withDelay(delay, animation);
   }, [delay, progress, reducedMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [
+      {
+        translateY: reducedMotion ? 0 : (1 - progress.value) * distance,
+      },
+    ],
+  }));
+
   return (
-    <Animated.View
-      {...props}
-      style={[
-        style,
-        {
-          opacity: progress,
-          transform: [
-            {
-              translateY: reducedMotion
-                ? 0
-                : progress.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [distance, 0],
-                  }),
-            },
-          ],
-        },
-      ]}
-    >
+    <Animated.View {...props} style={[style, animatedStyle]}>
       {children}
     </Animated.View>
   );

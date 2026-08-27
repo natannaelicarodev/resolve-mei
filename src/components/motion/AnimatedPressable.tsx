@@ -1,6 +1,11 @@
-import { useState } from 'react';
-import { Animated, Pressable } from 'react-native';
+import { Pressable } from 'react-native';
 import type { PressableProps, StyleProp, ViewStyle } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { motion, opacity } from '@/theme';
 import { useReducedMotion } from './useReducedMotion';
@@ -21,33 +26,23 @@ export function AnimatedPressable({
   children,
   ...props
 }: AnimatedPressableProps) {
-  const [value] = useState(() => new Animated.Value(1));
+  const value = useSharedValue(1);
   const reducedMotion = useReducedMotion();
   const animate = (pressed: boolean) => {
     const target =
       pressed && !disableScale && !reducedMotion ? motion.pressScale : 1;
-    Animated.spring(value, {
-      toValue: target,
-      useNativeDriver: true,
-      ...motion.spring,
-    }).start();
+    value.value = withSpring(target, motion.spring.press);
   };
 
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: disabled
+      ? opacity.disabled
+      : interpolate(value.value, [motion.pressScale, 1], [opacity.pressed, 1]),
+    transform: [{ scale: value.value }],
+  }));
+
   return (
-    <Animated.View
-      style={[
-        containerStyle,
-        {
-          opacity: disabled
-            ? opacity.disabled
-            : value.interpolate({
-                inputRange: [motion.pressScale, 1],
-                outputRange: [opacity.pressed, 1],
-              }),
-          transform: [{ scale: value }],
-        },
-      ]}
-    >
+    <Animated.View style={[containerStyle, animatedStyle]}>
       <Pressable
         disabled={disabled}
         onPressIn={(event) => {

@@ -32,10 +32,10 @@ export function Badge({
   const { colors } = useTheme();
   const backgroundColor = {
     neutral: colors.backgroundSubtle,
-    success: colors.successSubtle,
-    warning: colors.warningSubtle,
-    danger: colors.dangerSubtle,
-    info: colors.infoSubtle,
+    success: colors.successSurface,
+    warning: colors.warningSurface,
+    danger: colors.dangerSurface,
+    info: colors.infoSurface,
   }[variant];
   return (
     <View

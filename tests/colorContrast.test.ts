@@ -27,11 +27,11 @@ describe.each([
     ['secondary text/background', colors.textSecondary, colors.background],
     ['primary text/surface', colors.textPrimary, colors.surface],
     ['placeholder/surface', colors.textMuted, colors.surface],
-    ['brand button', colors.brandOnPrimary, colors.brandPrimary],
-    ['positive badge', colors.positive, colors.positiveSoft],
-    ['warning badge', colors.warning, colors.warningSoft],
-    ['negative badge', colors.negative, colors.negativeSoft],
-    ['info badge', colors.info, colors.infoSoft],
+    ['brand button', colors.textInverse, colors.primary],
+    ['success badge', colors.success, colors.successSurface],
+    ['warning badge', colors.warning, colors.warningSurface],
+    ['danger badge', colors.danger, colors.dangerSurface],
+    ['info badge', colors.info, colors.infoSurface],
   ])('%s meets WCAG AA', (_label, foreground, background) => {
     expect(contrast(foreground, background)).toBeGreaterThanOrEqual(4.5);
   });
@@ -41,20 +41,29 @@ describe.each([
     expect(colors.surface).not.toBe(colors.surfaceElevated);
     expect(colors.surfacePressed).not.toBe(colors.surfaceSelected);
   });
+
+  it('keeps disabled text visually distinct from muted text without claiming AA', () => {
+    // Texto desabilitado é intencionalmente isento de WCAG AA (estado inerte,
+    // nunca carrega informação essencial sozinho) mas precisa continuar
+    // visivelmente diferente do texto secundário/muted para não parecer o
+    // mesmo token por acidente.
+    expect(colors.textDisabled).not.toBe(colors.textMuted);
+    expect(contrast(colors.textDisabled, colors.surface)).toBeLessThan(
+      contrast(colors.textMuted, colors.surface),
+    );
+  });
 });
 
 describe('brand and semantic color separation', () => {
   it('keeps the selected Atlantic blue palette as the brand in both themes', () => {
-    expect(lightColors.brandPrimary).toBe('#24556F');
-    expect(darkColors.brandPrimary).toBe('#8EC5DE');
+    expect(lightColors.primary).toBe('#24556F');
+    expect(darkColors.primary).toBe('#8EC5DE');
   });
 
   it.each([lightColors, darkColors])(
     'reserves green tokens for positive semantics',
     (colors) => {
-      expect(colors.brandPrimary).not.toBe(colors.positive);
       expect(colors.primary).not.toBe(colors.success);
-      expect(colors.positive).toBe(colors.success);
     },
   );
 });

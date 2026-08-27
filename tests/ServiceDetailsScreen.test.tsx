@@ -87,7 +87,7 @@ it('confirms and inactivates the existing service', async () => {
     screen.getByRole('button', { name: 'Inativar serviço' }),
   );
   await fireEvent.press(
-    await screen.findByRole('button', { name: 'Confirmar' }),
+    await screen.findByRole('button', { name: 'Inativar' }),
   );
   await waitFor(() =>
     expect(setServiceStatus).toHaveBeenCalledWith(

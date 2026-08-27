@@ -1,16 +1,17 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
   Card,
   CompactCreateButton,
+  Divider,
+  EmptyState,
   InlineFeedback,
+  ListItem,
   ListPageHeader,
   SearchInput,
   Screen,
@@ -29,44 +30,38 @@ import { useAuth } from '@/providers/AuthProvider';
 function ClientRow({ client }: { client: Client }) {
   const { colors } = useTheme();
   return (
-    <AnimatedPressable
+    <ListItem
       accessibilityLabel={`Abrir cliente ${client.name}`}
-      accessibilityRole="button"
+      leading={
+        <View
+          style={[styles.avatar, { backgroundColor: colors.primarySubtle }]}
+        >
+          <Text color="primary" variant="label">
+            {clientInitials(client.name)}
+          </Text>
+        </View>
+      }
       onPress={() =>
         router.push({
           pathname: '/clients/[id]',
           params: { id: client.id },
         })
       }
-      style={[styles.row, { borderBottomColor: colors.border }]}
-    >
-      <View style={[styles.avatar, { backgroundColor: colors.primarySubtle }]}>
-        <Text color="primary" variant="label">
-          {clientInitials(client.name)}
-        </Text>
-      </View>
-      <View style={styles.rowCopy}>
-        <Text numberOfLines={1} variant="label">
-          {client.name}
-        </Text>
-        <Text color="textSecondary" numberOfLines={1} variant="caption">
-          {client.phone
-            ? formatPhone(client.phone)
-            : client.document
-              ? formatClientDocument(client.document, client.type)
-              : (client.email ?? 'Sem contato informado')}
-        </Text>
-      </View>
-      <Badge
-        label={client.status === 'active' ? 'Ativo' : 'Inativo'}
-        variant={client.status === 'active' ? 'success' : 'neutral'}
-      />
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+      subtitle={
+        client.phone
+          ? formatPhone(client.phone)
+          : client.document
+            ? formatClientDocument(client.document, client.type)
+            : (client.email ?? 'Sem contato informado')
+      }
+      title={client.name}
+      trailing={
+        <Badge
+          label={client.status === 'active' ? 'Ativo' : 'Inativo'}
+          variant={client.status === 'active' ? 'success' : 'neutral'}
+        />
+      }
+    />
   );
 }
 
@@ -85,7 +80,7 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
 
   return (
     <SafeAreaView
-      edges={['top', 'bottom']}
+      edges={['top']}
       style={[styles.page, { backgroundColor: colors.background }]}
     >
       <Screen
@@ -93,10 +88,10 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
         contentContainerStyle={styles.screenContent}
         refreshControl={
           <RefreshControl
-            colors={[colors.brandPrimary]}
+            colors={[colors.primary]}
             onRefresh={() => void query.refetch()}
             refreshing={query.isFetching}
-            tintColor={colors.brandPrimary}
+            tintColor={colors.primary}
           />
         }
       >
@@ -154,36 +149,41 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
           </>
         ) : null}
         {query.isSuccess && clients.length === 0 ? (
-          <Card style={styles.empty}>
-            <MaterialCommunityIcons name="account-search-outline" size={40} />
-            <Text align="center" variant="cardTitle">
-              {search
-                ? 'Nenhum resultado encontrado'
-                : 'Nenhum cliente cadastrado'}
-            </Text>
-            <Text align="center" color="textSecondary">
-              {search
+          <EmptyState
+            action={
+              search ? (
+                <Button
+                  variant="ghost"
+                  label="Limpar busca"
+                  onPress={() => setInput('')}
+                />
+              ) : (
+                <Button
+                  label="Cadastrar cliente"
+                  onPress={() => router.push('/clients/new')}
+                />
+              )
+            }
+            description={
+              search
                 ? 'Revise a busca ou limpe os filtros.'
-                : 'Seus clientes aparecerão aqui conforme você cadastrá-los.'}
-            </Text>
-            {search ? (
-              <Button
-                variant="ghost"
-                label="Limpar busca"
-                onPress={() => setInput('')}
-              />
-            ) : (
-              <Button
-                label="Cadastrar cliente"
-                onPress={() => router.push('/clients/new')}
-              />
-            )}
-          </Card>
+                : 'Seus clientes aparecerão aqui conforme você cadastrá-los.'
+            }
+            icon="account-search-outline"
+            title={
+              search
+                ? 'Nenhum resultado encontrado'
+                : 'Nenhum cliente cadastrado'
+            }
+          />
         ) : null}
         {clients.length ? (
           <Card style={styles.list}>
-            {clients.map((client) => (
-              <ClientRow client={client} key={client.id} />
+            {clients.map((client, index) => (
+              <View key={client.id}>
+                {index > 0 ? <Divider /> : null}
+                <ClientRow client={client} />
+              </View>
             ))}
           </Card>
         ) : null}
@@ -201,14 +201,6 @@ const styles = StyleSheet.create({
   },
   loading: { gap: spacing.sm },
   list: { gap: 0, padding: 0, overflow: 'hidden' },
-  row: {
-    alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 72,
-    padding: spacing.md,
-  },
   avatar: {
     alignItems: 'center',
     borderRadius: radii.circular,
@@ -216,6 +208,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 42,
   },
-  rowCopy: { flex: 1, minWidth: 0, gap: 2 },
-  empty: { alignItems: 'center' },
 });

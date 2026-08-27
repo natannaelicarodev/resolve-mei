@@ -23,7 +23,7 @@ export function Checkbox({ checked, label, onChange, error }: CheckboxProps) {
         <View
           style={[
             styles.box,
-            { borderColor: themeColors.border },
+            { borderColor: themeColors.borderSubtle },
             checked && {
               backgroundColor: themeColors.primary,
               borderColor: themeColors.primary,
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   },
   box: {
     alignItems: 'center',
-    borderColor: colors.border,
+    borderColor: colors.borderSubtle,
     borderRadius: radii.sm,
     borderWidth: 2,
     height: 24,

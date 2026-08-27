@@ -9,21 +9,37 @@ import {
 } from '@/components/motion';
 import {
   Badge,
+  BottomSheet,
   Button,
   Card,
+  Checkbox,
+  Chip,
+  CompactCreateButton,
   ConfirmationDialog,
+  DateInput,
   EmptyState,
+  FloatingAction,
+  FormSection,
   IconButton,
   InlineFeedback,
   Input,
   ListContainer,
   ListItem,
+  MetricCard,
+  MoneyInput,
   Screen,
+  SearchInput,
   SegmentedControl,
+  Select,
   Skeleton,
+  Switch as PatternSwitch,
   Text,
   useToast,
 } from '@/components/ui';
+import {
+  ProtectedBottomNavigation,
+  ProtectedPageHeader,
+} from '@/features/navigation/ProtectedNavigation';
 import {
   isHapticsEnabled,
   setHapticsEnabled,
@@ -54,14 +70,19 @@ export function DesignSystemCatalog({
     ['Superfície', colors.surface],
     ['Texto', colors.textPrimary],
     ['Azul Atlântico', colors.primary],
-    ['Azul apoio', colors.secondary],
     ['Âmbar', colors.accent],
     ['Sucesso', colors.success],
+    ['Aviso', colors.warning],
   ] as const;
   const [step, setStep] = useState(1);
   const [haptics, setHaptics] = useState(isHapticsEnabled());
   const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
   const [confirmationVisible, setConfirmationVisible] = useState(false);
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const [chipSelected, setChipSelected] = useState(true);
+  const [checked, setChecked] = useState(true);
+  const [notifyEnabled, setNotifyEnabled] = useState(true);
+  const [search, setSearch] = useState('');
   const { showToast } = useToast();
   const reducedMotion = useReducedMotion();
   useEffect(() => {
@@ -87,7 +108,7 @@ export function DesignSystemCatalog({
                 accessibilityLabel={`${label}: ${value}`}
                 style={[
                   styles.swatch,
-                  { backgroundColor: value, borderColor: colors.border },
+                  { backgroundColor: value, borderColor: colors.borderSubtle },
                 ]}
               />
               <Text variant="caption">{label}</Text>
@@ -127,7 +148,7 @@ export function DesignSystemCatalog({
               style={[
                 styles.spaceBlock,
                 {
-                  backgroundColor: colors.secondary,
+                  backgroundColor: colors.primary,
                   height: size,
                   width: size,
                 },
@@ -196,6 +217,25 @@ export function DesignSystemCatalog({
           showCounter
           value="Descrição curta"
         />
+        <SearchInput onChangeText={setSearch} value={search} />
+        <MoneyInput label="Valor" placeholder="0,00" />
+        <DateInput label="Data" placeholder="00/00/0000" />
+        <Select
+          label="Categoria"
+          onPress={() => undefined}
+          placeholder="Selecionar"
+        />
+        <Checkbox
+          checked={checked}
+          label="Aceito os termos de uso"
+          onChange={setChecked}
+        />
+        <PatternSwitch
+          description="Receba um resumo semanal por e-mail."
+          label="Notificações por e-mail"
+          onValueChange={setNotifyEnabled}
+          value={notifyEnabled}
+        />
       </Section>
 
       <Section title="Cards">
@@ -236,6 +276,37 @@ export function DesignSystemCatalog({
         <Card variant="danger">
           <Text>Falha no envio</Text>
         </Card>
+        <View style={styles.wrap}>
+          <MetricCard
+            label="Aprovados"
+            value="R$ 2.450,00"
+            supportingText="6 orçamentos"
+          />
+          <MetricCard
+            label="Em negociação"
+            value="R$ 1.280,00"
+            supportingText="3 orçamentos"
+          />
+        </View>
+      </Section>
+
+      <Section title="Formulário e ações de lista">
+        <FormSection
+          description="Agrupamento estrutural para campos relacionados."
+          title="Dados do negócio"
+        >
+          <Input label="Nome fantasia" placeholder="Como você é conhecido" />
+        </FormSection>
+        <CompactCreateButton
+          icon="account-plus-outline"
+          label="Novo cliente"
+          onPress={() => void triggerHaptic('selection')}
+        />
+        <FloatingAction
+          icon="file-document-plus-outline"
+          label="Novo orçamento"
+          onPress={() => void triggerHaptic('selection')}
+        />
       </Section>
 
       <Section title="Listas e estados vazios">
@@ -265,6 +336,18 @@ export function DesignSystemCatalog({
           <Badge label="Pendente" variant="warning" />
           <Badge label="Falhou" variant="danger" />
           <Badge label="Novo" variant="info" />
+        </View>
+        <View style={styles.wrap}>
+          <Chip
+            label="Todos"
+            onPress={() => setChipSelected(false)}
+            selected={!chipSelected}
+          />
+          <Chip
+            label="Ativos"
+            onPress={() => setChipSelected(true)}
+            selected={chipSelected}
+          />
         </View>
         <InlineFeedback
           message="As alterações foram salvas."
@@ -315,6 +398,26 @@ export function DesignSystemCatalog({
           title="Confirmar ação?"
           visible={confirmationVisible}
         />
+        <Button
+          label="Abrir bottom sheet"
+          onPress={() => setBottomSheetVisible(true)}
+          variant="outline"
+        />
+        <BottomSheet
+          description="Gesto de arrastar e snap ajustado ao conteúdo."
+          onClose={() => setBottomSheetVisible(false)}
+          title="Exemplo de bottom sheet"
+          visible={bottomSheetVisible}
+        >
+          <Text>Conteúdo de exemplo dentro do sheet.</Text>
+        </BottomSheet>
+      </Section>
+
+      <Section title="Navegação">
+        <ProtectedPageHeader back settings title="Título de página" />
+        <View style={styles.navPreview}>
+          <ProtectedBottomNavigation selected="home" />
+        </View>
       </Section>
 
       <Section title="Animações">
@@ -400,4 +503,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 44,
   },
+  navPreview: { borderRadius: radii.large, overflow: 'hidden' },
 });

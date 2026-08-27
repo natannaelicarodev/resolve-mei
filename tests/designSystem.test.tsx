@@ -21,10 +21,10 @@ describe('design system foundation', () => {
         backgroundSubtle: expect.any(String),
         surface: expect.any(String),
         primary: expect.any(String),
-        successSubtle: expect.any(String),
-        dangerSubtle: expect.any(String),
+        successSurface: expect.any(String),
+        dangerSurface: expect.any(String),
         focusRing: expect.any(String),
-        disabled: expect.any(String),
+        surfaceDisabled: expect.any(String),
       }),
     );
     expect(spacing).toEqual(
@@ -79,6 +79,14 @@ describe('design system foundation', () => {
     );
     expect(screen.getByText('Salvo')).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Bloqueado' })).toBeDisabled();
+  });
+
+  it('never signals a destructive button by color alone', async () => {
+    const screen = await render(
+      <Button label="Excluir" onPress={jest.fn()} variant="danger" />,
+    );
+    // Label already names the action; the icon is the required non-color signal.
+    expect(screen.getByTestId('button-danger-icon')).toBeTruthy();
   });
 
   it('supports filled, focused, error, disabled, read-only and counted inputs', async () => {
@@ -140,6 +148,67 @@ describe('design system foundation', () => {
       height: sizes.touchTarget,
       width: sizes.touchTarget,
     });
+  });
+
+  it('differentiates card variants structurally, not only by color', async () => {
+    const screen = await render(
+      <>
+        <Card
+          onPress={jest.fn()}
+          testID="interactive-card"
+          variant="interactive"
+        >
+          <Text>Item</Text>
+        </Card>
+        <Card testID="selected-card" variant="selected">
+          <Text>Selecionado</Text>
+        </Card>
+        <Card testID="summary-card" title="Resumo" variant="summary">
+          <Text>Conteúdo</Text>
+        </Card>
+      </>,
+    );
+    // interactive: chevron affordance appended automatically when onPress is set.
+    expect(screen.getByTestId('card-trailing-chevron')).toBeTruthy();
+    // selected: status is carried by a structural accent bar, not color alone.
+    const selectedCard = screen.getByTestId('selected-card');
+    const selectedStyle = Array.isArray(selectedCard.props.style)
+      ? Object.assign({}, ...selectedCard.props.style.flat(Infinity))
+      : selectedCard.props.style;
+    expect(selectedStyle.paddingLeft).toBeGreaterThan(spacing[5]);
+    // summary: title renders in a dedicated header, not mixed into children.
+    expect(screen.getByText('Resumo')).toBeTruthy();
+    expect(screen.getByTestId('summary-card')).toBeTruthy();
+  });
+
+  it('resolves surface/surfaceElevated distinction structurally, not by color value', async () => {
+    // A Fase 1 tentou separar surface/surfaceElevated escurecendo o token de
+    // cor e quebrou contraste AA; a correção real (adiada para a Fase 3) é
+    // elevação estrutural: raio maior + sombra mais forte + o token correto.
+    const screen = await render(
+      <>
+        <Card testID="default-card" variant="default">
+          <Text>Padrão</Text>
+        </Card>
+        <Card testID="elevated-card" variant="elevated">
+          <Text>Elevado</Text>
+        </Card>
+      </>,
+    );
+    const flattenStyle = (style: unknown) =>
+      Array.isArray(style) ? Object.assign({}, ...style.flat(Infinity)) : style;
+    const defaultStyle = flattenStyle(
+      screen.getByTestId('default-card').props.style,
+    );
+    const elevatedStyle = flattenStyle(
+      screen.getByTestId('elevated-card').props.style,
+    );
+    expect(elevatedStyle.borderRadius).toBeGreaterThan(
+      defaultStyle.borderRadius,
+    );
+    expect(elevatedStyle.backgroundColor).toBe(colors.surfaceElevated);
+    expect(elevatedStyle.elevation).toBeGreaterThan(2);
+    expect(elevatedStyle.boxShadow).toBeTruthy();
   });
 
   it('distributes segmented options across the available width', async () => {

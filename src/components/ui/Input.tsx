@@ -72,14 +72,14 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             Boolean(trailing) && styles.inputTrailing,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
               color: colors.textPrimary,
             },
             Boolean(value) && { borderColor: colors.borderStrong },
             focused && { borderColor: colors.focusRing, borderWidth: 2 },
             !isEditable && {
-              backgroundColor: colors.disabled,
-              color: colors.disabledText,
+              backgroundColor: colors.surfaceDisabled,
+              color: colors.textDisabled,
             },
             error && { borderColor: colors.danger, borderWidth: 2 },
             style,

@@ -8,25 +8,25 @@ export type FeedbackVariant = 'success' | 'error' | 'warning' | 'info';
 const config = {
   success: {
     icon: 'check-circle-outline',
-    background: 'successSubtle',
+    background: 'successSurface',
     color: 'success',
     label: 'Sucesso',
   },
   error: {
     icon: 'alert-circle-outline',
-    background: 'dangerSubtle',
+    background: 'dangerSurface',
     color: 'danger',
     label: 'Erro',
   },
   warning: {
     icon: 'alert-outline',
-    background: 'warningSubtle',
+    background: 'warningSurface',
     color: 'warning',
     label: 'Atenção',
   },
   info: {
     icon: 'information-outline',
-    background: 'infoSubtle',
+    background: 'infoSurface',
     color: 'info',
     label: 'Informação',
   },
