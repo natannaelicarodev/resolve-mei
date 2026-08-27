@@ -59,6 +59,15 @@ O splash permanece visível durante o carregamento. Se a fonte falhar, o aplicat
 - `InlineFeedback`: success, error, warning e info com live region.
 - `Skeleton`: dimensões estáveis e pulsação leve, sem shimmer pesado.
 - `SegmentedControl`: escolhas curtas e mutuamente exclusivas com estado selecionado textual e haptic semântico.
+- `ConfirmationDialog`: confirmação de ação sobre `Modal` centralizado, com backdrop, dismiss seguro, foco anunciado, Reduced Motion e bloqueio de toque duplicado.
+
+## Confirmações
+
+Toda ação destrutiva ou irreversível usa `ConfirmationDialog`, nunca `Alert.alert`. O diálogo nativo não oferece foco previsível, backdrop próprio, Reduced Motion nem prevenção de toque duplicado, e no iOS sinaliza destruição apenas por cor — ignorada no Android.
+
+A implementação é um modal centralizado sobre o `Modal` do React Native, mesmo padrão do seletor de período da Home. O plano permite modal ou bottom sheet; foi escolhido `Modal` por já existir no projeto e não exigir dependência nativa adicional. Não há bottom sheet com gesto de arrastar ou snap points no aplicativo.
+
+O botão de confirmação usa `Button variant="danger"` quando a ação é destrutiva, o que garante o ícone de alerta e evita depender de cor. O rótulo nomeia a ação ("Inativar cliente", "Descartar alterações"), nunca "Confirmar" genérico. Backdrop e botão físico de voltar sempre cancelam.
 
 ## Aplicação nas telas
 

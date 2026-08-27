@@ -11,6 +11,7 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmationDialog,
   IconButton,
   InlineFeedback,
   Input,
@@ -50,6 +51,7 @@ export function DesignSystemCatalog() {
     ['Coral', colors.accentCoral],
   ] as const;
   const [step, setStep] = useState(1);
+  const [confirmVisible, setConfirmVisible] = useState(false);
   const [haptics, setHaptics] = useState(isHapticsEnabled());
   const [documentType, setDocumentType] = useState<'cpf' | 'cnpj'>('cpf');
   const reducedMotion = useReducedMotion();
@@ -146,6 +148,20 @@ export function DesignSystemCatalog() {
         <Button label="Ação secundária" variant="secondary" />
         <Button label="Ação discreta" variant="ghost" />
         <Button label="Excluir" variant="danger" />
+        <Button
+          label="Confirmar ação destrutiva"
+          onPress={() => setConfirmVisible(true)}
+          variant="secondary"
+        />
+        <ConfirmationDialog
+          confirmLabel="Excluir permanentemente"
+          description="Demonstração do diálogo usado em toda ação destrutiva do aplicativo."
+          destructive
+          onCancel={() => setConfirmVisible(false)}
+          onConfirm={() => setConfirmVisible(false)}
+          title="Excluir registro?"
+          visible={confirmVisible}
+        />
         <Button label="Carregando" loading />
         <Button label="Concluído" state="success" />
         <Button disabled label="Indisponível" />
