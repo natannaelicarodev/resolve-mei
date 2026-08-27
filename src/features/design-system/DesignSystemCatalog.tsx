@@ -45,10 +45,11 @@ export function DesignSystemCatalog() {
     ['Fundo', colors.background],
     ['Superfície', colors.surface],
     ['Texto', colors.textPrimary],
-    ['Verde', colors.primary],
+    ['Índigo (marca)', colors.primary],
+    ['Âmbar (acento)', colors.accent],
     ['Azul', colors.secondary],
-    ['Amarelo', colors.accent],
     ['Coral', colors.accentCoral],
+    ['Verde (sucesso)', colors.success],
   ] as const;
   const [step, setStep] = useState(1);
   const [confirmVisible, setConfirmVisible] = useState(false);

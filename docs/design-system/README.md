@@ -10,7 +10,41 @@
 
 ## Identidade
 
-O fundo levemente quente reduz a aparência de painel corporativo. O verde representa ação e progresso; azul, amarelo e coral são acentos limitados para informação, atenção e ênfase. A composição usa títulos fortes, superfícies brancas e raios amigáveis, sem copiar paleta, marca, assets ou composições da Family.
+A marca é **índigo** (`#4C3A9E` claro, `#A99CF5` escuro), com **âmbar** (`#B45309` claro, `#F0A742` escuro) como acento de dado. A composição usa títulos fortes, superfícies claras e raios amigáveis, sem copiar paleta, marca, assets ou composições da Family.
+
+### Por que índigo, e por que não é o roxo anterior
+
+Este projeto já rejeitou uma direção roxa antes ("ameixa e pêssego"). A diferença é deliberada e vale registrar para não repetir o erro:
+
+- O índigo escolhido é **profundo e sóbrio**, puxado para o azul (matiz ~253°), não um roxo puro e frio como `#8B5CF6`. Em superfícies claras ele lê como tinta, não como cor decorativa.
+- O acento é **âmbar quente**, não pêssego. Ele contrapõe a temperatura fria do índigo e evita a monocromia que tornava a tentativa anterior monótona.
+- O âmbar é **acento de dado**, não segunda cor de marca: aparece em tendências, gráficos e destaques pontuais. Não existe variante `accent` de `Button` — colocar âmbar e índigo na mesma forma de componente, na mesma tela, seria disputa, não contraponto.
+
+### Verde é semântico, nunca marca
+
+O verde deixou de ser `primary`. Ele agora significa exclusivamente estado: `success`, aprovado, ativo. Um teste de matiz em `visualNavigationArchitecture.test.ts` trava essa regra — `primary` precisa ficar na faixa 230–290° e `success` na faixa 90–180°, então uma regressão para verde de marca falha o gate.
+
+### Modo escuro: quase-preto com subtom roxo
+
+`background` é `#0E0B14` — quase-preto com subtom roxo, nunca `#000000`. Preto absoluto achata a elevação e é meta a evitar neste projeto. As camadas sobem em luminância de forma monotônica:
+
+| Camada             | Valor     | Luminância |
+| ------------------ | --------- | ---------- |
+| `background`       | `#0E0B14` | 0,0038     |
+| `backgroundSubtle` | `#15111D` | 0,0065     |
+| `surface`          | `#1E1829` | 0,0109     |
+| `surfaceElevated`  | `#2A2338` | 0,0198     |
+| `surfacePressed`   | `#332B45` | 0,0286     |
+
+Cada passo é 45–82% mais claro que o anterior, o que mantém cartão e modal legíveis sobre o fundo. Dois testes cobrem isso: um exige a progressão monotônica, outro proíbe `#000000` como fundo.
+
+### Modo claro: branco com índigo contido
+
+`background` é `#FBFAFC` e `surface` é branco puro. O índigo aparece com contenção — botões, seleção, ícones ativos, avatares — nunca pintando grandes superfícies.
+
+### Contraste verificado, não estimado
+
+Todos os pares que a interface realmente renderiza foram calculados e são verificados no gate por `meets WCAG AA on the pairs the interface actually renders`: texto sobre fundo/superfície/superfície elevada, texto sobre primary e danger, primary e âmbar como texto, pares semânticos sobre seus `Subtle`, texto desabilitado, e `borderStrong`/`focusRing` como elementos de interface (mínimo 3:1). Ambos os temas passam em todos.
 
 ## Tokens
 
