@@ -253,169 +253,173 @@ function OrganicHeader({ large }: { large: boolean }) {
   }, [progress, reducedMotion]);
   const translateX = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-10, 10],
+    outputRange: [-4, 4],
   });
   const translateY = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [-5, 7],
+    outputRange: [-3, 5],
   });
-  const contourScale = progress.interpolate({
+  const artworkScale = progress.interpolate({
     inputRange: [0, 1],
-    outputRange: [1.04, 1.075],
+    outputRange: [1.025, 1.045],
   });
   const height = large ? 570 : 350;
   const basePath =
     'M0 0H393V493C355 510 329 538 279 547C222 557 190 527 146 491C103 456 64 449 0 462Z';
   return (
     <View pointerEvents="none" style={[styles.organicHeader, { height }]}>
-      <Svg
-        height={height}
-        preserveAspectRatio="none"
-        viewBox="0 0 393 550"
-        width="100%"
-      >
-        <Path d={basePath} fill={lightColors.primary} />
-      </Svg>
       <Animated.View
         style={[
-          styles.contours,
+          styles.organicArtwork,
           {
             transform: [
               { translateX },
               { translateY },
-              { scale: contourScale },
+              { scale: artworkScale },
             ],
           },
         ]}
       >
         <Svg
-          height={height + 40}
+          height="100%"
           preserveAspectRatio="none"
           viewBox="0 0 393 550"
           width="100%"
         >
-          <Defs>
-            <ClipPath id={large ? 'organic-large' : 'organic-standard'}>
-              <Path d="M-20-20H413V471C355 488 329 516 279 525C222 535 190 505 146 469C103 434 64 427-20 440Z" />
-            </ClipPath>
-          </Defs>
-          <G clipPath={`url(#${large ? 'organic-large' : 'organic-standard'})`}>
-            <Path
-              d="M-40 80C12 15 86 8 126 66C161 117 127 176 66 181C8 185-25 144-40 80Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.23)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M-12 91C23 45 73 39 99 77C123 112 99 150 58 153C18 156-3 128-12 91Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.23)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M16 100C39 70 70 67 87 91C102 114 87 139 59 141C33 143 21 124 16 100Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.23)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M145-20C226-45 317-6 324 73C331 148 271 199 201 168C131 137 94 63 145-20Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M174 9C229-10 291 16 295 70C299 120 259 154 211 133C163 112 139 65 174 9Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M197 30C234 17 276 35 279 71C282 105 255 128 223 114C190 100 174 68 197 30Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M214 49C236 42 260 52 262 73C264 92 248 105 229 97C210 89 200 70 214 49Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M326-22C377-18 418 22 416 75C414 127 373 159 330 139C287 119 283 69 300 25C307 7 316-9 326-22Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M341 7C375 5 401 32 400 69C399 104 372 124 344 111C316 98 314 65 326 35C330 23 336 13 341 7Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M352 32C372 31 387 47 386 68C385 89 370 101 353 93C336 85 335 66 342 48C345 41 349 35 352 32Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M13 244C68 204 105 205 150 238C196 272 245 262 289 231C329 202 369 213 382 256C395 301 347 320 302 303C239 280 197 290 143 315C87 341 36 315 13 281Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M53 254C87 229 112 229 142 251C181 280 229 277 273 247C303 226 335 232 344 262C353 292 322 303 291 291C239 272 196 281 146 302C102 321 68 300 53 276Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M89 261C110 246 126 246 145 260C176 283 218 284 257 259C275 247 294 251 300 269C305 287 286 293 267 286C226 272 191 280 151 294C121 304 99 290 89 276Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.22)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M58 416C116 353 208 349 266 409C320 464 292 537 225 550C156 563 84 526 58 416Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M302 351C348 318 409 337 426 389C443 440 405 482 358 465C312 449 276 391 302 351Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M329 370C358 350 395 362 405 394C415 425 392 450 363 440C334 430 313 394 329 370Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="2"
-            />
-            <Path
-              d="M347 385C363 374 383 381 388 398C394 415 381 428 366 423C350 417 339 398 347 385Z"
-              fill="none"
-              stroke="rgba(255,255,255,0.2)"
-              strokeWidth="2"
-            />
-          </G>
+          <Path d={basePath} fill={lightColors.primary} />
         </Svg>
+        <View style={styles.contours}>
+          <Svg
+            height={height + 40}
+            preserveAspectRatio="none"
+            viewBox="0 0 393 550"
+            width="100%"
+          >
+            <Defs>
+              <ClipPath id={large ? 'organic-large' : 'organic-standard'}>
+                <Path d="M-20-20H413V471C355 488 329 516 279 525C222 535 190 505 146 469C103 434 64 427-20 440Z" />
+              </ClipPath>
+            </Defs>
+            <G
+              clipPath={`url(#${large ? 'organic-large' : 'organic-standard'})`}
+            >
+              <Path
+                d="M-40 80C12 15 86 8 126 66C161 117 127 176 66 181C8 185-25 144-40 80Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.23)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M-12 91C23 45 73 39 99 77C123 112 99 150 58 153C18 156-3 128-12 91Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.23)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M16 100C39 70 70 67 87 91C102 114 87 139 59 141C33 143 21 124 16 100Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.23)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M145-20C226-45 317-6 324 73C331 148 271 199 201 168C131 137 94 63 145-20Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M174 9C229-10 291 16 295 70C299 120 259 154 211 133C163 112 139 65 174 9Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M197 30C234 17 276 35 279 71C282 105 255 128 223 114C190 100 174 68 197 30Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M214 49C236 42 260 52 262 73C264 92 248 105 229 97C210 89 200 70 214 49Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M326-22C377-18 418 22 416 75C414 127 373 159 330 139C287 119 283 69 300 25C307 7 316-9 326-22Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M341 7C375 5 401 32 400 69C399 104 372 124 344 111C316 98 314 65 326 35C330 23 336 13 341 7Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M352 32C372 31 387 47 386 68C385 89 370 101 353 93C336 85 335 66 342 48C345 41 349 35 352 32Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M13 244C68 204 105 205 150 238C196 272 245 262 289 231C329 202 369 213 382 256C395 301 347 320 302 303C239 280 197 290 143 315C87 341 36 315 13 281Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M53 254C87 229 112 229 142 251C181 280 229 277 273 247C303 226 335 232 344 262C353 292 322 303 291 291C239 272 196 281 146 302C102 321 68 300 53 276Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M89 261C110 246 126 246 145 260C176 283 218 284 257 259C275 247 294 251 300 269C305 287 286 293 267 286C226 272 191 280 151 294C121 304 99 290 89 276Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M58 416C116 353 208 349 266 409C320 464 292 537 225 550C156 563 84 526 58 416Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M302 351C348 318 409 337 426 389C443 440 405 482 358 465C312 449 276 391 302 351Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M329 370C358 350 395 362 405 394C415 425 392 450 363 440C334 430 313 394 329 370Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+              <Path
+                d="M347 385C363 374 383 381 388 398C394 415 381 428 366 423C350 417 339 398 347 385Z"
+                fill="none"
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth="2"
+              />
+            </G>
+          </Svg>
+        </View>
       </Animated.View>
       <View style={styles.headerMark}>
         <Image
@@ -585,6 +589,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 0,
+  },
+  organicArtwork: {
+    bottom: -10,
+    left: -8,
+    position: 'absolute',
+    right: -8,
+    top: -10,
   },
   contours: {
     bottom: -20,
