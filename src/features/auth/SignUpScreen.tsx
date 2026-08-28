@@ -6,13 +6,14 @@ import { StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
-import { InlineFeedback, Text } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { darkColors, radii, spacing } from '@/theme';
 import { signUp } from './api';
 import {
   AuthField,
   AuthFieldGroup,
+  AuthErrorFeedback,
   AuthHeading,
   AuthPrimaryButton,
   AuthScreen,
@@ -230,7 +231,10 @@ export function SignUpScreen() {
             )}
           />
           {errors.root?.message ? (
-            <InlineFeedback message={errors.root.message} variant="error" />
+            <AuthErrorFeedback
+              message={errors.root.message}
+              title="Não foi possível criar sua conta"
+            />
           ) : null}
           <AuthPrimaryButton
             label="Criar conta"

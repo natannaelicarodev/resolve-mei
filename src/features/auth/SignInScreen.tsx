@@ -5,13 +5,14 @@ import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
 import { FadeInView } from '@/components/motion';
-import { InlineFeedback, Text } from '@/components/ui';
+import { Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { darkColors, spacing } from '@/theme';
 import { signIn } from './api';
 import {
   AuthField,
   AuthFieldGroup,
+  AuthErrorFeedback,
   AuthHeading,
   AuthPrimaryButton,
   AuthScreen,
@@ -104,7 +105,7 @@ export function SignInScreen() {
             </Text>
           ) : null}
           {errors.root?.message ? (
-            <InlineFeedback message={errors.root.message} variant="error" />
+            <AuthErrorFeedback message={errors.root.message} />
           ) : null}
           <Link
             accessibilityRole="link"

@@ -5,7 +5,7 @@ import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
 import type { ScrollViewProps, TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { ClipPath, Defs, G, Path } from 'react-native-svg';
 
 import {
   AnimatedPressable,
@@ -198,6 +198,13 @@ export function AuthScreen({
 }>) {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.authRoot}>
+      <View
+        pointerEvents="none"
+        style={[
+          styles.authBodyBackground,
+          { top: headerVariant === 'large' ? 450 : 215 },
+        ]}
+      />
       <OrganicHeader large={headerVariant === 'large'} />
       <Screen
         background="transparent"
@@ -257,54 +264,97 @@ function OrganicHeader({ large }: { large: boolean }) {
         ]}
       >
         <Svg height={height + 40} viewBox="0 0 393 600" width="100%">
-          <Path
-            d="M-40 80C12 15 86 8 126 66C161 117 127 176 66 181C8 185-25 144-40 80Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.23)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M-12 91C23 45 73 39 99 77C123 112 99 150 58 153C18 156-3 128-12 91Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.23)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M145-20C226-45 317-6 324 73C331 148 271 199 201 168C131 137 94 63 145-20Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M174 9C229-10 291 16 295 70C299 120 259 154 211 133C163 112 139 65 174 9Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M13 244C68 204 105 205 150 238C196 272 245 262 289 231C329 202 369 213 382 256C395 301 347 320 302 303C239 280 197 290 143 315C87 341 36 315 13 281Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.22)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M58 416C116 353 208 349 266 409C320 464 292 537 225 550C156 563 84 526 58 416Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="2"
-          />
-          <Path
-            d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
-            fill="none"
-            stroke="rgba(255,255,255,0.2)"
-            strokeWidth="2"
-          />
+          <Defs>
+            <ClipPath id={large ? 'organic-large' : 'organic-standard'}>
+              <Path
+                d={
+                  large
+                    ? 'M-20-20H413V475C315 510 286 536 225 516C168 497 132 442 76 437C45 434 20 441-20 447Z'
+                    : 'M-20-20H413V238C338 262 302 295 242 276C187 259 151 206 98 202C59 199 28 208-20 217Z'
+                }
+              />
+            </ClipPath>
+          </Defs>
+          <G clipPath={`url(#${large ? 'organic-large' : 'organic-standard'})`}>
+            <Path
+              d="M-40 80C12 15 86 8 126 66C161 117 127 176 66 181C8 185-25 144-40 80Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.23)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M-12 91C23 45 73 39 99 77C123 112 99 150 58 153C18 156-3 128-12 91Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.23)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M16 100C39 70 70 67 87 91C102 114 87 139 59 141C33 143 21 124 16 100Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.23)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M145-20C226-45 317-6 324 73C331 148 271 199 201 168C131 137 94 63 145-20Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M174 9C229-10 291 16 295 70C299 120 259 154 211 133C163 112 139 65 174 9Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M197 30C234 17 276 35 279 71C282 105 255 128 223 114C190 100 174 68 197 30Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M214 49C236 42 260 52 262 73C264 92 248 105 229 97C210 89 200 70 214 49Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M13 244C68 204 105 205 150 238C196 272 245 262 289 231C329 202 369 213 382 256C395 301 347 320 302 303C239 280 197 290 143 315C87 341 36 315 13 281Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M53 254C87 229 112 229 142 251C181 280 229 277 273 247C303 226 335 232 344 262C353 292 322 303 291 291C239 272 196 281 146 302C102 321 68 300 53 276Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M89 261C110 246 126 246 145 260C176 283 218 284 257 259C275 247 294 251 300 269C305 287 286 293 267 286C226 272 191 280 151 294C121 304 99 290 89 276Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M58 416C116 353 208 349 266 409C320 464 292 537 225 550C156 563 84 526 58 416Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="2"
+            />
+          </G>
         </Svg>
       </Animated.View>
       <View style={styles.headerMark}>
@@ -428,8 +478,47 @@ export function AuthPrimaryButton({
   );
 }
 
+export function AuthErrorFeedback({
+  message,
+  title = 'Não foi possível entrar',
+}: {
+  message: string;
+  title?: string;
+}) {
+  return (
+    <View
+      accessibilityLiveRegion="polite"
+      accessibilityRole="alert"
+      style={styles.authError}
+    >
+      <View style={styles.authErrorIcon}>
+        <MaterialCommunityIcons
+          color={lightColors.danger}
+          name="alert-circle-outline"
+          size={20}
+        />
+      </View>
+      <View style={styles.authErrorCopy}>
+        <Text style={styles.authErrorTitle} variant="label">
+          {title}
+        </Text>
+        <Text style={styles.authErrorMessage} variant="caption">
+          {message}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  authRoot: { backgroundColor: lightColors.surface, flex: 1 },
+  authRoot: { backgroundColor: lightColors.primary, flex: 1 },
+  authBodyBackground: {
+    backgroundColor: lightColors.surface,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+  },
   organicHeader: {
     left: 0,
     overflow: 'hidden',
@@ -633,4 +722,27 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   primaryLabel: { color: lightColors.textOnPrimary },
+  authError: {
+    alignItems: 'center',
+    backgroundColor: lightColors.dangerSubtle,
+    borderColor: 'rgba(180,35,24,0.18)',
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 60,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  authErrorIcon: {
+    alignItems: 'center',
+    backgroundColor: lightColors.surface,
+    borderRadius: radii.circular,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  authErrorCopy: { flex: 1, gap: 2 },
+  authErrorTitle: { color: lightColors.danger },
+  authErrorMessage: { color: lightColors.textSecondary },
 });

@@ -11,6 +11,7 @@ import { requestPasswordReset } from './api';
 import {
   AuthField,
   AuthFieldGroup,
+  AuthErrorFeedback,
   AuthHeading,
   AuthPrimaryButton,
   AuthScreen,
@@ -65,7 +66,10 @@ export function ForgotPasswordScreen() {
           <InlineFeedback message={errors.email.message} variant="error" />
         ) : null}
         {errors.root?.message ? (
-          <InlineFeedback message={errors.root.message} variant="error" />
+          <AuthErrorFeedback
+            message={errors.root.message}
+            title="Não foi possível enviar as instruções"
+          />
         ) : null}
         {isSubmitSuccessful ? (
           <SuccessTransition message="Se o e-mail estiver cadastrado, enviaremos as instruções." />
