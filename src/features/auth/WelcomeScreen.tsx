@@ -6,7 +6,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, {
   Circle,
   Defs,
-  Path,
   Pattern,
   RadialGradient,
   Rect,
@@ -41,6 +40,8 @@ const palettes = {
     textMuted: '#85888E',
   },
 } as const;
+
+type WelcomePalette = (typeof palettes)[keyof typeof palettes];
 
 function AmbientBackground({ dark }: { dark: boolean }) {
   const reducedMotion = useReducedMotion();
@@ -101,13 +102,6 @@ function AmbientBackground({ dark }: { dark: boolean }) {
           </Pattern>
         </Defs>
         <Rect fill="url(#dots)" height="430" opacity={0.72} width="390" />
-        <Path
-          d="M0 350C76 330 119 371 189 354C259 337 302 296 390 321"
-          fill="none"
-          opacity={0.12}
-          stroke={palette.accent}
-          strokeWidth="1"
-        />
       </Svg>
       <Animated.View style={[styles.glow, { opacity, transform: [{ scale }] }]}>
         <Svg height="100%" viewBox="0 0 300 300" width="100%">
@@ -133,6 +127,112 @@ function AmbientBackground({ dark }: { dark: boolean }) {
   );
 }
 
+function BusinessSignals({ palette }: { palette: WelcomePalette }) {
+  const reducedMotion = useReducedMotion();
+  const [progress] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(progress, {
+          duration: 5200,
+          easing: Easing.inOut(Easing.sin),
+          isInteraction: false,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progress, {
+          duration: 5200,
+          easing: Easing.inOut(Easing.sin),
+          isInteraction: false,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [progress, reducedMotion]);
+
+  const rise = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [3, -6],
+  });
+  const fall = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-5, 4],
+  });
+  const drift = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-3, 5],
+  });
+
+  const signals = [
+    {
+      icon: 'account-group-outline' as const,
+      label: 'Clientes',
+      position: styles.signalClients,
+      transform: [{ translateY: rise }],
+    },
+    {
+      icon: 'briefcase-outline' as const,
+      label: 'Serviços',
+      position: styles.signalServices,
+      transform: [{ translateY: fall }],
+    },
+    {
+      icon: 'file-check-outline' as const,
+      label: 'Orçamentos',
+      position: styles.signalQuotes,
+      transform: [{ translateX: drift }, { translateY: rise }],
+    },
+  ];
+
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      pointerEvents="none"
+      style={StyleSheet.absoluteFill}
+    >
+      {signals.map((signal) => (
+        <Animated.View
+          key={signal.label}
+          style={[
+            styles.signal,
+            signal.position,
+            {
+              backgroundColor: palette.surface,
+              borderColor: palette.border,
+              transform: signal.transform,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.signalIcon,
+              { backgroundColor: `${palette.accent}20` },
+            ]}
+          >
+            <MaterialCommunityIcons
+              color={palette.accent}
+              name={signal.icon}
+              size={16}
+            />
+          </View>
+          <Text style={[styles.signalLabel, { color: palette.textSecondary }]}>
+            {signal.label}
+          </Text>
+          <View
+            style={[styles.signalLed, { backgroundColor: palette.accent }]}
+          />
+        </Animated.View>
+      ))}
+    </View>
+  );
+}
+
 export function WelcomeScreen() {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === 'dark';
@@ -144,6 +244,7 @@ export function WelcomeScreen() {
       <AmbientBackground dark={dark} />
       <FadeInView style={styles.layout}>
         <View style={styles.hero}>
+          <BusinessSignals palette={palette} />
           <View
             style={[
               styles.brandMark,
@@ -221,6 +322,33 @@ const styles = StyleSheet.create({
     height: 300,
     justifyContent: 'center',
     paddingTop: spacing.md,
+  },
+  signal: {
+    alignItems: 'center',
+    borderRadius: 7,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 7,
+    minHeight: 42,
+    paddingHorizontal: 8,
+    position: 'absolute',
+  },
+  signalClients: { left: 0, top: 52 },
+  signalServices: { right: 0, top: 82 },
+  signalQuotes: { bottom: 22, left: 12 },
+  signalIcon: {
+    alignItems: 'center',
+    borderRadius: 5,
+    height: 28,
+    justifyContent: 'center',
+    width: 28,
+  },
+  signalLabel: { fontSize: 10, fontWeight: '700', lineHeight: 14 },
+  signalLed: {
+    borderRadius: 2,
+    height: 5,
+    marginLeft: 1,
+    width: 5,
   },
   glow: {
     height: 300,
