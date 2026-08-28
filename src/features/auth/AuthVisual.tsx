@@ -5,6 +5,7 @@ import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
 import type { ScrollViewProps, TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 import {
   AnimatedPressable,
@@ -190,12 +191,14 @@ export function AuthBackdrop() {
 export function AuthScreen({
   children,
   contentContainerStyle,
+  headerVariant = 'standard',
 }: PropsWithChildren<{
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
+  headerVariant?: 'standard' | 'large';
 }>) {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.authRoot}>
-      <AuthBackdrop />
+      <OrganicHeader large={headerVariant === 'large'} />
       <Screen
         background="transparent"
         contentContainerStyle={contentContainerStyle}
@@ -208,21 +211,121 @@ export function AuthScreen({
   );
 }
 
+function OrganicHeader({ large }: { large: boolean }) {
+  const reducedMotion = useReducedMotion();
+  const [progress] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (reducedMotion) return;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(progress, {
+          duration: 4500,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progress, {
+          duration: 4500,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [progress, reducedMotion]);
+  const translateX = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-10, 10],
+  });
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-5, 7],
+  });
+  const height = large ? 570 : 310;
+  const basePath = large
+    ? 'M0 0H393V495C315 530 286 556 225 536C168 517 132 462 76 457C45 454 20 461 0 467Z'
+    : 'M0 0H393V238C330 266 292 285 239 266C188 248 155 206 99 205C59 205 28 215 0 221Z';
+  return (
+    <View pointerEvents="none" style={[styles.organicHeader, { height }]}>
+      <Svg height={height} viewBox={`0 0 393 ${height}`} width="100%">
+        <Path d={basePath} fill={darkColors.primary} />
+      </Svg>
+      <Animated.View
+        style={[
+          styles.contours,
+          { transform: [{ translateX }, { translateY }, { scale: 1.08 }] },
+        ]}
+      >
+        <Svg height={height + 40} viewBox="0 0 393 600" width="100%">
+          <Path
+            d="M-40 80C12 15 86 8 126 66C161 117 127 176 66 181C8 185-25 144-40 80Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.23)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M-12 91C23 45 73 39 99 77C123 112 99 150 58 153C18 156-3 128-12 91Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.23)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M145-20C226-45 317-6 324 73C331 148 271 199 201 168C131 137 94 63 145-20Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M174 9C229-10 291 16 295 70C299 120 259 154 211 133C163 112 139 65 174 9Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M13 244C68 204 105 205 150 238C196 272 245 262 289 231C329 202 369 213 382 256C395 301 347 320 302 303C239 280 197 290 143 315C87 341 36 315 13 281Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.22)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M58 416C116 353 208 349 266 409C320 464 292 537 225 550C156 563 84 526 58 416Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="2"
+          />
+          <Path
+            d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
+            fill="none"
+            stroke="rgba(255,255,255,0.2)"
+            strokeWidth="2"
+          />
+        </Svg>
+      </Animated.View>
+      <View style={styles.headerMark}>
+        <Image
+          accessibilityLabel="Logotipo do ResolveMEI"
+          resizeMode="contain"
+          source={require('../../../assets/resolve-mei-mark.png')}
+          style={styles.headerMarkImage}
+        />
+      </View>
+    </View>
+  );
+}
+
 export function AuthHeading({
   title,
   children,
 }: PropsWithChildren<{ title: string }>) {
   return (
     <FadeInView style={styles.heading}>
-      <View style={styles.markGlow}>
-        <Image
-          accessibilityLabel="Logotipo do ResolveMEI"
-          resizeMode="contain"
-          source={require('../../../assets/resolve-mei-mark.png')}
-          style={styles.mark}
-        />
-      </View>
-      <Text align="center" style={styles.title} variant="pageTitle">
+      <Text style={styles.title} variant="pageTitle">
         {title}
       </Text>
       <View style={styles.headingSubtitle}>{children}</View>
@@ -247,7 +350,10 @@ export function AuthField({
   rightAccessory?: ReactNode;
 }) {
   return (
-    <View>
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldLabel} variant="label">
+        {label}
+      </Text>
       <View style={[styles.fieldRow, !last && styles.fieldDivider]}>
         <MaterialCommunityIcons
           color={lightColors.primary}
@@ -323,7 +429,34 @@ export function AuthPrimaryButton({
 }
 
 const styles = StyleSheet.create({
-  authRoot: { backgroundColor: darkColors.background, flex: 1 },
+  authRoot: { backgroundColor: lightColors.surface, flex: 1 },
+  organicHeader: {
+    left: 0,
+    overflow: 'hidden',
+    position: 'absolute',
+    right: 0,
+    top: 0,
+  },
+  contours: {
+    bottom: -20,
+    left: -16,
+    position: 'absolute',
+    right: -16,
+    top: -20,
+  },
+  headerMark: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: radii.medium,
+    height: 48,
+    justifyContent: 'center',
+    left: '50%',
+    marginLeft: -24,
+    position: 'absolute',
+    top: 70,
+    width: 48,
+  },
+  headerMarkImage: { height: 32, width: 32 },
   backdrop: {
     backgroundColor: darkColors.background,
     bottom: 0,
@@ -435,7 +568,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 11,
   },
-  heading: { alignItems: 'center', gap: spacing.md },
+  heading: { alignItems: 'flex-start', gap: spacing.sm },
   markGlow: {
     alignItems: 'center',
     backgroundColor: darkColors.primarySubtle,
@@ -446,7 +579,7 @@ const styles = StyleSheet.create({
   },
   mark: { height: 36, width: 36 },
   title: {
-    color: darkColors.textPrimary,
+    color: lightColors.textPrimary,
     fontSize: 31,
     lineHeight: 38,
     maxWidth: 320,
@@ -455,23 +588,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   fieldGroup: {
-    backgroundColor: lightColors.surface,
-    borderRadius: radii.medium,
-    overflow: 'hidden',
+    gap: spacing.md,
   },
+  fieldBlock: { gap: spacing.xs },
+  fieldLabel: { color: lightColors.textPrimary, fontSize: 13, lineHeight: 18 },
   fieldRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
-    minHeight: 58,
-    paddingHorizontal: spacing.md,
+    borderBottomColor: lightColors.borderStrong,
+    borderBottomWidth: 1,
+    minHeight: 46,
+    paddingHorizontal: 0,
   },
   fieldDivider: {
-    borderBottomColor: lightColors.border,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: darkColors.primary,
   },
   fieldInput: {
     color: lightColors.textPrimary,

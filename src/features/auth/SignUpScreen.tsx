@@ -245,11 +245,12 @@ export function SignUpScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: darkColors.background,
-    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
     overflow: 'hidden',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingBottom: spacing.lg,
+    paddingTop: 225,
   },
   content: { gap: spacing.lg, width: '100%' },
   form: { gap: spacing.sm },
@@ -291,5 +292,5 @@ const styles = StyleSheet.create({
     backgroundColor: darkColors.primary,
     borderColor: darkColors.primary,
   },
-  lightText: { color: darkColors.textPrimary },
+  lightText: { color: '#6B6880' },
 });

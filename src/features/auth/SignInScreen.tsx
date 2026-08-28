@@ -42,7 +42,7 @@ export function SignInScreen() {
   return (
     <AuthScreen contentContainerStyle={styles.screen}>
       <View style={styles.content}>
-        <AuthHeading title="Entre na sua conta">
+        <AuthHeading title="Entrar">
           <Text style={styles.lightText} variant="caption">
             Ainda não tem uma conta?
           </Text>
@@ -126,10 +126,11 @@ export function SignInScreen() {
 
 const styles = StyleSheet.create({
   screen: {
-    backgroundColor: darkColors.background,
-    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    justifyContent: 'flex-start',
     overflow: 'hidden',
     paddingHorizontal: spacing.lg,
+    paddingTop: 245,
   },
   content: { gap: spacing.xl, width: '100%' },
   form: { gap: spacing.md },
@@ -148,5 +149,5 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     textDecorationLine: 'underline',
   },
-  lightText: { color: darkColors.textPrimary },
+  lightText: { color: '#6B6880' },
 });
