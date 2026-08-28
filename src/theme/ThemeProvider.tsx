@@ -82,3 +82,20 @@ export function ThemeProvider({ children }: PropsWithChildren) {
 export function useTheme(): ThemeContextValue {
   return useContext(ThemeContext);
 }
+
+export function DarkThemeScope({ children }: PropsWithChildren) {
+  const parent = useTheme();
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      colors: darkColors,
+      preference: 'dark',
+      resolvedTheme: 'dark',
+      setPreference: parent.setPreference,
+    }),
+    [parent.setPreference],
+  );
+
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
+}

@@ -20,7 +20,7 @@ import {
   useReducedMotion,
 } from '@/components/motion';
 import { Screen, Text } from '@/components/ui';
-import { darkColors, lightColors, radii, spacing, typography } from '@/theme';
+import { darkColors, radii, spacing, typography } from '@/theme';
 
 const stars = [
   ['8%', '13%'],
@@ -286,7 +286,7 @@ function OrganicHeader({ large }: { large: boolean }) {
           viewBox="0 0 393 550"
           width="100%"
         >
-          <Path d={basePath} fill={lightColors.primary} />
+          <Path d={basePath} fill={darkColors.primary} />
         </Svg>
         <View style={styles.contours}>
           <Svg
@@ -470,14 +470,14 @@ export function AuthField({
       </Text>
       <View style={[styles.fieldRow, !last && styles.fieldDivider]}>
         <MaterialCommunityIcons
-          color={lightColors.primary}
+          color={darkColors.primary}
           name={icon}
           size={21}
         />
         <TextInput
           accessibilityLabel={label}
           placeholder={label}
-          placeholderTextColor={lightColors.textMuted}
+          placeholderTextColor={darkColors.textMuted}
           style={styles.fieldInput}
           {...props}
         />
@@ -502,7 +502,7 @@ export function PasswordEye({
       style={styles.eye}
     >
       <MaterialCommunityIcons
-        color={lightColors.textMuted}
+        color={darkColors.textMuted}
         name={visible ? 'eye-off-outline' : 'eye-outline'}
         size={22}
       />
@@ -529,7 +529,7 @@ export function AuthPrimaryButton({
       style={styles.primaryButton}
     >
       <LinearGradient
-        colors={[lightColors.primaryPressed, lightColors.primary]}
+        colors={[darkColors.primaryPressed, darkColors.primary]}
         end={{ x: 0, y: 1 }}
         start={{ x: 0, y: 0 }}
         style={styles.primaryGradient}
@@ -557,7 +557,7 @@ export function AuthErrorFeedback({
     >
       <View style={styles.authErrorIcon}>
         <MaterialCommunityIcons
-          color={lightColors.danger}
+          color={darkColors.danger}
           name="alert-circle-outline"
           size={20}
         />
@@ -575,9 +575,9 @@ export function AuthErrorFeedback({
 }
 
 const styles = StyleSheet.create({
-  authRoot: { backgroundColor: lightColors.primary, flex: 1 },
+  authRoot: { backgroundColor: darkColors.background, flex: 1 },
   authBodyBackground: {
-    backgroundColor: lightColors.surface,
+    backgroundColor: darkColors.background,
     bottom: 0,
     left: 0,
     position: 'absolute',
@@ -739,7 +739,7 @@ const styles = StyleSheet.create({
   },
   mark: { height: 36, width: 36 },
   title: {
-    color: lightColors.textPrimary,
+    color: darkColors.textPrimary,
     fontSize: 31,
     lineHeight: 38,
     maxWidth: 320,
@@ -754,12 +754,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   fieldBlock: { gap: spacing.xs },
-  fieldLabel: { color: lightColors.textPrimary, fontSize: 13, lineHeight: 18 },
+  fieldLabel: { color: darkColors.textPrimary, fontSize: 13, lineHeight: 18 },
   fieldRow: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
-    borderBottomColor: lightColors.borderStrong,
+    borderBottomColor: darkColors.borderStrong,
     borderBottomWidth: 1,
     minHeight: 46,
     paddingHorizontal: 0,
@@ -768,7 +768,7 @@ const styles = StyleSheet.create({
     borderBottomColor: darkColors.primary,
   },
   fieldInput: {
-    color: lightColors.textPrimary,
+    color: darkColors.textPrimary,
     flex: 1,
     minHeight: 56,
     paddingVertical: 0,
@@ -792,10 +792,10 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: spacing.md,
   },
-  primaryLabel: { color: lightColors.textOnPrimary },
+  primaryLabel: { color: darkColors.textOnPrimary },
   authError: {
     alignItems: 'center',
-    backgroundColor: lightColors.dangerSubtle,
+    backgroundColor: darkColors.dangerSubtle,
     borderColor: 'rgba(180,35,24,0.18)',
     borderRadius: radii.medium,
     borderWidth: 1,
@@ -807,13 +807,13 @@ const styles = StyleSheet.create({
   },
   authErrorIcon: {
     alignItems: 'center',
-    backgroundColor: lightColors.surface,
+    backgroundColor: darkColors.surface,
     borderRadius: radii.circular,
     height: 36,
     justifyContent: 'center',
     width: 36,
   },
   authErrorCopy: { flex: 1, gap: 2 },
-  authErrorTitle: { color: lightColors.danger },
-  authErrorMessage: { color: lightColors.textSecondary },
+  authErrorTitle: { color: darkColors.danger },
+  authErrorMessage: { color: darkColors.textSecondary },
 });

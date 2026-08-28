@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { SuccessTransition } from '@/components/motion';
 import { Text } from '@/components/ui';
 import { AuthHeading, AuthScreen } from '@/features/auth/AuthVisual';
-import { lightColors, spacing } from '@/theme';
+import { darkColors, spacing } from '@/theme';
 
 export function maskEmail(value: string | undefined): string | null {
   if (!value) return null;
@@ -49,9 +49,9 @@ export default function ConfirmEmailRoute() {
 
 const styles = StyleSheet.create({
   screen: { gap: spacing.xl, paddingTop: 325 },
-  subtitle: { color: lightColors.textSecondary },
+  subtitle: { color: darkColors.textSecondary },
   content: { gap: spacing.lg },
-  email: { color: lightColors.textPrimary, fontSize: 17 },
-  body: { color: lightColors.textSecondary },
-  link: { color: lightColors.primary, fontWeight: '700' },
+  email: { color: darkColors.textPrimary, fontSize: 17 },
+  body: { color: darkColors.textSecondary },
+  link: { color: darkColors.primary, fontWeight: '700' },
 });

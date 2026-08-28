@@ -3,7 +3,7 @@ import type { ViewStyle } from 'react-native';
 export { colors } from './colors';
 export { darkColors, lightColors } from './colors';
 export type { ColorToken, ThemeColors } from './colors';
-export { ThemeProvider, useTheme } from './ThemeProvider';
+export { DarkThemeScope, ThemeProvider, useTheme } from './ThemeProvider';
 export type { ThemePreference } from './ThemeProvider';
 export { motion } from './motion';
 export { opacity, radii, sizes, spacing } from './spacing';

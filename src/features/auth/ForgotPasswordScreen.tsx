@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { SuccessTransition } from '@/components/motion';
 import { InlineFeedback, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { lightColors, spacing } from '@/theme';
+import { darkColors, spacing } from '@/theme';
 import { requestPasswordReset } from './api';
 import {
   AuthField,
@@ -89,7 +89,7 @@ export function ForgotPasswordScreen() {
 
 const styles = StyleSheet.create({
   screen: { gap: spacing.xl, paddingTop: 325 },
-  subtitle: { color: lightColors.textSecondary },
+  subtitle: { color: darkColors.textSecondary },
   form: { gap: spacing.lg },
-  link: { color: lightColors.primary, fontWeight: '700' },
+  link: { color: darkColors.primary, fontWeight: '700' },
 });
