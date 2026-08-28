@@ -220,12 +220,12 @@ export function ClientDetailsScreen({
                 icon="phone-outline"
                 label="Ligar"
                 onPress={() => void contact('phone', client.phone!)}
-                primary
               />
               <ContactAction
                 icon="whatsapp"
                 label="WhatsApp"
                 onPress={() => void contact('whatsapp', client.phone!)}
+                primary
               />
             </>
           ) : null}
