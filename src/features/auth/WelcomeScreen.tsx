@@ -24,7 +24,7 @@ export function WelcomeScreen() {
         <AnimatedPressable
           accessibilityLabel="Continuar"
           accessibilityRole="button"
-          onPress={() => router.replace('/sign-in')}
+          onPress={() => router.replace('/home')}
           style={styles.continueButton}
         >
           <Text style={styles.continueLabel} variant="label">

@@ -1,5 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import type { FieldPath } from 'react-hook-form';
@@ -93,12 +94,12 @@ export function OnboardingScreen() {
       if (!user) throw new Error('Missing user');
       return completeOnboarding(user.id, data);
     },
-    onSuccess: async () => {
+    onSuccess: (completedBusiness) => {
       void triggerHaptic('success');
-      if (user)
-        await queryClient.invalidateQueries({
-          queryKey: businessQueryKey(user.id),
-        });
+      if (user) {
+        queryClient.setQueryData(businessQueryKey(user.id), completedBusiness);
+      }
+      router.replace('/welcome');
     },
     onError: (error) =>
       setError('root', { message: normalizeError(error).message }),
