@@ -7,10 +7,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 
+import { AnimatedPressable } from '@/components/motion';
 import {
   Button,
   ConfirmationDialog,
-  FormSection,
   InlineFeedback,
   Input,
   Screen,
@@ -22,11 +22,7 @@ import { listServices } from '@/features/services/api';
 import { normalizeError } from '@/lib/errors';
 import { spacing, useTheme } from '@/theme';
 import { quotesQueryKey } from './hooks';
-import {
-  calculateQuoteTotals,
-  centsToMoneyInput,
-  moneyInputToCents,
-} from './domain';
+import { calculateQuoteTotals, centsToMoneyInput } from './domain';
 import { saveQuote } from './api';
 import type { QuoteWithItems } from './api';
 import { defaultQuoteValues, quoteSchema } from './schemas';
@@ -84,6 +80,8 @@ function QuoteForm({
   const locked = useRef(false);
   const allowNavigation = useRef(false);
   const [pendingExit, setPendingExit] = useState<(() => void) | null>(null);
+  const [choosingClient, setChoosingClient] = useState(false);
+  const [choosingItem, setChoosingItem] = useState(false);
   useEffect(
     () => () => {
       mounted.current = false;
@@ -123,6 +121,9 @@ function QuoteForm({
   const discount =
     useWatch({ control: form.control, name: 'discountCents' }) ?? 0;
   const totals = calculateQuoteTotals(items, discount);
+  const selectedClient = (clients.data ?? []).find(
+    (client) => client.id === selectedClientId,
+  );
   useEffect(() => {
     const removeListener = navigation.addListener('beforeRemove', (event) => {
       if (!form.formState.isDirty || allowNavigation.current) return;
@@ -198,152 +199,183 @@ function QuoteForm({
     })();
 
   return (
-    <Screen keyboardAvoiding safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      keyboardAvoiding
+      safeAreaEdges={['top', 'bottom']}
+    >
       <ProtectedPageHeader
         back
         backFallback={'/quotes' as Href}
         title={quote ? 'Editar orçamento' : 'Novo orçamento'}
       />
-      <FormSection
-        description="Escolha quem receberá este orçamento."
-        title="Cliente"
-      >
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          CLIENTE
+        </Text>
         {clients.isLoading ? (
           <Text color="textSecondary">Carregando clientes...</Text>
         ) : null}
-        {(clients.data ?? []).map((client) => (
-          <Button
-            key={client.id}
-            label={client.name}
-            onPress={() =>
-              form.setValue('clientId', client.id, { shouldValidate: true })
-            }
-            state={selectedClientId === client.id ? 'success' : 'normal'}
-            variant="secondary"
-          />
-        ))}
+        {selectedClient && !choosingClient ? (
+          <View
+            style={[
+              styles.clientCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={[styles.avatar, { backgroundColor: colors.primary }]}>
+              <Text color="textOnPrimary" variant="label">
+                {selectedClient.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+            <View style={styles.clientInfo}>
+              <Text numberOfLines={1} variant="label">
+                {selectedClient.name}
+              </Text>
+              <Text color="textMuted" numberOfLines={1} variant="caption">
+                {selectedClient.phone ||
+                  selectedClient.email ||
+                  'Sem contato informado'}
+              </Text>
+            </View>
+            <AnimatedPressable
+              accessibilityLabel="Trocar cliente"
+              accessibilityRole="button"
+              onPress={() => setChoosingClient(true)}
+            >
+              <Text color="primary" variant="label">
+                Trocar
+              </Text>
+            </AnimatedPressable>
+          </View>
+        ) : (
+          <View style={styles.choices}>
+            {(clients.data ?? []).map((client) => (
+              <Button
+                key={client.id}
+                label={client.name}
+                onPress={() => {
+                  form.setValue('clientId', client.id, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  });
+                  setChoosingClient(false);
+                }}
+                variant="secondary"
+              />
+            ))}
+          </View>
+        )}
         {form.formState.errors.clientId ? (
           <InlineFeedback
             message={form.formState.errors.clientId.message ?? ''}
             variant="error"
           />
         ) : null}
-      </FormSection>
-      <FormSection
-        description="Serviços, quantidades e valores cobrados."
-        title="Itens do orçamento"
-      >
-        {(services.data?.items ?? []).map((service) => (
-          <Button
-            key={service.id}
-            label={`Adicionar ${service.name}`}
-            onPress={() =>
-              fields.append({
-                serviceId: service.id,
-                name: service.name,
-                description: service.description ?? '',
-                quantity: 1,
-                unitPriceCents: service.price_cents,
-              })
-            }
-            variant="secondary"
-          />
-        ))}
-        <Button
-          icon={
-            <MaterialCommunityIcons
-              color={colors.primary}
-              name="plus"
-              size={20}
-            />
-          }
-          label="Adicionar item personalizado"
-          onPress={() =>
-            fields.append({
-              serviceId: null,
-              name: '',
-              description: '',
-              quantity: 1,
-              unitPriceCents: 0,
-            })
-          }
-          variant="secondary"
-        />
+      </View>
+
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          ITENS DO ORÇAMENTO
+        </Text>
         {fields.fields.map((field, index) => (
-          <View key={field.id} style={styles.item}>
-            <Controller
-              control={form.control}
-              name={`items.${index}.name`}
-              render={({ field: itemField, fieldState }) => (
-                <Input
-                  label={`Nome do item ${index + 1}`}
-                  value={itemField.value}
-                  onChangeText={itemField.onChange}
-                  error={fieldState.error?.message}
-                />
+          <View
+            key={field.id}
+            style={[
+              styles.itemCard,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <View style={styles.itemInfo}>
+              <Text numberOfLines={1} variant="label">
+                {items[index]?.name}
+              </Text>
+              <Text color="textMuted" variant="caption">
+                {items[index]?.quantity}{' '}
+                {items[index]?.quantity === 1 ? 'unidade' : 'unidades'}
+              </Text>
+            </View>
+            <Text variant="label">
+              {centsToMoneyInput(
+                (items[index]?.unitPriceCents ?? 0) *
+                  (items[index]?.quantity ?? 0),
               )}
-            />
-            <Controller
-              control={form.control}
-              name={`items.${index}.description`}
-              render={({ field: itemField }) => (
-                <Input
-                  label="Descrição complementar"
-                  maxLength={2000}
-                  multiline
-                  showCounter
-                  value={itemField.value}
-                  onChangeText={itemField.onChange}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name={`items.${index}.quantity`}
-              render={({ field: itemField, fieldState }) => (
-                <Input
-                  label="Quantidade"
-                  keyboardType="number-pad"
-                  value={String(itemField.value)}
-                  onChangeText={(value) =>
-                    itemField.onChange(Number(value.replace(/\D/g, '')))
-                  }
-                  error={fieldState.error?.message}
-                />
-              )}
-            />
-            <Controller
-              control={form.control}
-              name={`items.${index}.unitPriceCents`}
-              render={({ field: itemField }) => (
-                <Input
-                  label="Valor unitário"
-                  keyboardType="number-pad"
-                  value={centsToMoneyInput(itemField.value)}
-                  onChangeText={(value) =>
-                    itemField.onChange(moneyInputToCents(value))
-                  }
-                />
-              )}
-            />
-            <Button
-              label="Remover item"
+            </Text>
+            <AnimatedPressable
+              accessibilityLabel={`Remover ${items[index]?.name || `item ${index + 1}`}`}
+              accessibilityRole="button"
+              hitSlop={10}
               onPress={() => fields.remove(index)}
-              variant="ghost"
-            />
+            >
+              <MaterialCommunityIcons
+                color={colors.textMuted}
+                name="close"
+                size={18}
+              />
+            </AnimatedPressable>
           </View>
         ))}
+        {choosingItem ? (
+          <View style={styles.choices}>
+            {(services.data?.items ?? []).map((service) => (
+              <Button
+                key={service.id}
+                label={service.name}
+                onPress={() => {
+                  const existingIndex = items.findIndex(
+                    (item) => item.serviceId === service.id,
+                  );
+                  const existing = items[existingIndex];
+                  if (existingIndex >= 0 && existing)
+                    fields.update(existingIndex, {
+                      description: existing.description,
+                      name: existing.name,
+                      quantity: existing.quantity + 1,
+                      serviceId: existing.serviceId,
+                      unitPriceCents: existing.unitPriceCents,
+                    });
+                  else
+                    fields.append({
+                      serviceId: service.id,
+                      name: service.name,
+                      description: service.description ?? '',
+                      quantity: 1,
+                      unitPriceCents: service.price_cents,
+                    });
+                  setChoosingItem(false);
+                }}
+                variant="secondary"
+              />
+            ))}
+          </View>
+        ) : null}
+        <AnimatedPressable
+          accessibilityLabel="Adicionar item"
+          accessibilityRole="button"
+          onPress={() => setChoosingItem((current) => !current)}
+          style={[styles.addItem, { borderColor: colors.borderStrong }]}
+        >
+          <MaterialCommunityIcons
+            color={colors.primary}
+            name="plus"
+            size={18}
+          />
+          <Text color="primary" variant="label">
+            Adicionar item
+          </Text>
+        </AnimatedPressable>
         {form.formState.errors.items?.root?.message ? (
           <InlineFeedback
             message={form.formState.errors.items.root.message}
             variant="error"
           />
         ) : null}
-      </FormSection>
-      <FormSection
-        description="Prazo, desconto e informações finais."
-        title="Condições e total"
-      >
+      </View>
+
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          VALIDADE E OBSERVAÇÕES
+        </Text>
         <Controller
           control={form.control}
           name="validUntil"
@@ -354,21 +386,9 @@ function QuoteForm({
               label="Validade"
               maxLength={10}
               placeholder="DD/MM/AAAA"
+              reserveMessageSpace={Boolean(fieldState.error)}
               value={field.value}
               onChangeText={(value) => field.onChange(maskDateInput(value))}
-              error={fieldState.error?.message}
-            />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="discountCents"
-          render={({ field, fieldState }) => (
-            <Input
-              label="Desconto"
-              keyboardType="number-pad"
-              value={centsToMoneyInput(field.value)}
-              onChangeText={(value) => field.onChange(moneyInputToCents(value))}
               error={fieldState.error?.message}
             />
           )}
@@ -379,7 +399,9 @@ function QuoteForm({
           render={({ field }) => (
             <Input
               label="Observações"
-              maxLength={4000}
+              maxLength={500}
+              placeholder="Condições de pagamento, prazos etc."
+              reserveMessageSpace
               value={field.value}
               onChangeText={field.onChange}
               multiline
@@ -387,11 +409,16 @@ function QuoteForm({
             />
           )}
         />
-        <Text>Subtotal: {centsToMoneyInput(totals.subtotalCents)}</Text>
-        <Text variant="cardTitle">
-          Total: {centsToMoneyInput(totals.totalCents)}
+      </View>
+
+      <View style={[styles.totalCard, { backgroundColor: colors.surface }]}>
+        <Text color="primary" variant="label">
+          Total do orçamento
         </Text>
-      </FormSection>
+        <Text style={styles.totalValue} variant="cardTitle">
+          {centsToMoneyInput(totals.totalCents)}
+        </Text>
+      </View>
       {form.formState.errors.root?.message ? (
         <InlineFeedback
           message={form.formState.errors.root.message}
@@ -401,14 +428,8 @@ function QuoteForm({
       <Button
         disabled={mutation.isPending}
         loading={mutation.isPending}
-        label="Salvar como rascunho"
+        label="Salvar orçamento"
         onPress={() => void submit('draft')}
-      />
-      <Button
-        disabled={mutation.isPending}
-        label="Salvar e marcar como enviado"
-        onPress={() => void submit('sent')}
-        variant="secondary"
       />
       <ConfirmationDialog
         cancelLabel="Continuar editando"
@@ -429,5 +450,55 @@ function QuoteForm({
 }
 
 const styles = StyleSheet.create({
-  item: { gap: spacing.sm, paddingVertical: spacing.sm },
+  screenContent: { paddingHorizontal: spacing.lg },
+  section: { gap: spacing.sm },
+  sectionTitle: { fontSize: 10, lineHeight: 14 },
+  choices: { gap: spacing.sm },
+  clientCard: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 56,
+    paddingHorizontal: spacing.sm,
+  },
+  avatar: {
+    alignItems: 'center',
+    borderRadius: 18,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  clientInfo: { flex: 1, minWidth: 0 },
+  itemCard: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 52,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  itemInfo: { flex: 1, minWidth: 0 },
+  addItem: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  totalCard: {
+    alignItems: 'center',
+    borderRadius: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 64,
+    paddingHorizontal: spacing.md,
+  },
+  totalValue: { fontSize: 22, lineHeight: 28 },
 });
