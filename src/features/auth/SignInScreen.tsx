@@ -5,16 +5,16 @@ import { StyleSheet, View } from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
 import { FadeInView } from '@/components/motion';
-import { InlineFeedback, Screen, Text } from '@/components/ui';
+import { InlineFeedback, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { darkColors, spacing } from '@/theme';
 import { signIn } from './api';
 import {
-  AuthBackdrop,
   AuthField,
   AuthFieldGroup,
   AuthHeading,
   AuthPrimaryButton,
+  AuthScreen,
   PasswordEye,
 } from './AuthVisual';
 import { signInSchema } from './schemas';
@@ -40,8 +40,7 @@ export function SignInScreen() {
   };
 
   return (
-    <Screen contentContainerStyle={styles.screen} keyboardAvoiding>
-      <AuthBackdrop />
+    <AuthScreen contentContainerStyle={styles.screen}>
       <View style={styles.content}>
         <AuthHeading title="Entre na sua conta">
           <Text style={styles.lightText} variant="caption">
@@ -121,7 +120,7 @@ export function SignInScreen() {
           />
         </FadeInView>
       </View>
-    </Screen>
+    </AuthScreen>
   );
 }
 

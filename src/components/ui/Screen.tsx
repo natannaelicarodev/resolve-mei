@@ -16,7 +16,7 @@ export interface ScreenProps extends PropsWithChildren<ScrollViewProps> {
   contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
   scroll?: boolean;
   keyboardAvoiding?: boolean;
-  background?: 'default' | 'subtle';
+  background?: 'default' | 'subtle' | 'transparent';
   scrollRef?: Ref<ScrollView>;
   safeAreaEdges?: readonly Edge[];
 }
@@ -60,9 +60,11 @@ export function Screen({
         styles.safeArea,
         {
           backgroundColor:
-            background === 'subtle'
-              ? colors.backgroundSubtle
-              : colors.background,
+            background === 'transparent'
+              ? 'transparent'
+              : background === 'subtle'
+                ? colors.backgroundSubtle
+                : colors.background,
         },
       ]}
     >

@@ -6,16 +6,16 @@ import { StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
-import { InlineFeedback, Screen, Text } from '@/components/ui';
+import { InlineFeedback, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { darkColors, radii, spacing } from '@/theme';
 import { signUp } from './api';
 import {
-  AuthBackdrop,
   AuthField,
   AuthFieldGroup,
   AuthHeading,
   AuthPrimaryButton,
+  AuthScreen,
   PasswordEye,
 } from './AuthVisual';
 import { passwordRequirementChecks } from './PasswordRequirements';
@@ -55,8 +55,7 @@ export function SignUpScreen() {
   };
 
   return (
-    <Screen contentContainerStyle={styles.screen} keyboardAvoiding>
-      <AuthBackdrop />
+    <AuthScreen contentContainerStyle={styles.screen}>
       <View style={styles.content}>
         <AuthHeading title="Crie sua conta">
           <Text style={styles.lightText} variant="caption">
@@ -240,7 +239,7 @@ export function SignUpScreen() {
           />
         </FadeInView>
       </View>
-    </Screen>
+    </AuthScreen>
   );
 }
 

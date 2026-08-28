@@ -2,10 +2,11 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
 import { Image, StyleSheet, TextInput, View } from 'react-native';
-import type { TextInputProps } from 'react-native';
+import type { ScrollViewProps, TextInputProps } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
-import { Text } from '@/components/ui';
+import { Screen, Text } from '@/components/ui';
 import { darkColors, lightColors, radii, spacing, typography } from '@/theme';
 
 const stars = [
@@ -66,6 +67,27 @@ export function AuthBackdrop() {
       <View style={styles.orbLarge} />
       <View style={styles.orbSmall} />
     </View>
+  );
+}
+
+export function AuthScreen({
+  children,
+  contentContainerStyle,
+}: PropsWithChildren<{
+  contentContainerStyle?: ScrollViewProps['contentContainerStyle'];
+}>) {
+  return (
+    <SafeAreaView edges={['top', 'bottom']} style={styles.authRoot}>
+      <AuthBackdrop />
+      <Screen
+        background="transparent"
+        contentContainerStyle={contentContainerStyle}
+        keyboardAvoiding
+        safeAreaEdges={[]}
+      >
+        {children}
+      </Screen>
+    </SafeAreaView>
   );
 }
 
@@ -184,6 +206,7 @@ export function AuthPrimaryButton({
 }
 
 const styles = StyleSheet.create({
+  authRoot: { backgroundColor: darkColors.background, flex: 1 },
   backdrop: {
     backgroundColor: darkColors.background,
     bottom: 0,
