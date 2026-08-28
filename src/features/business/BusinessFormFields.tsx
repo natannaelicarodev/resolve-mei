@@ -4,7 +4,7 @@ import type { Control, FieldPath, UseFormSetValue } from 'react-hook-form';
 import { TextInput, View } from 'react-native';
 import type { KeyboardTypeOptions } from 'react-native';
 
-import { Card, Input, SegmentedControl, Text } from '@/components/ui';
+import { FormSection, Input, SegmentedControl, Text } from '@/components/ui';
 import { formatDocument } from '@/utils/documents';
 import type { BusinessFormData } from './schemas';
 
@@ -79,8 +79,7 @@ export function BusinessFormFields({
   return (
     <>
       {show('business') ? (
-        <Card>
-          <Text variant="cardTitle">Negócio</Text>
+        <FormSection title="Negócio">
           <BusinessField
             control={control}
             inputRef={focusField === 'businessName' ? onFocusTarget : undefined}
@@ -123,12 +122,11 @@ export function BusinessFormFields({
               />
             )}
           />
-        </Card>
+        </FormSection>
       ) : null}
 
       {show('contact') ? (
-        <Card>
-          <Text variant="cardTitle">Contato profissional</Text>
+        <FormSection title="Contato profissional">
           <BusinessField
             control={control}
             inputRef={
@@ -148,12 +146,11 @@ export function BusinessFormFields({
             name="email"
             returnKeyType="done"
           />
-        </Card>
+        </FormSection>
       ) : null}
 
       {show('address') ? (
-        <Card>
-          <Text variant="cardTitle">Endereço</Text>
+        <FormSection title="Endereço">
           <BusinessField
             control={control}
             inputRef={focusField === 'street' ? onFocusTarget : undefined}
@@ -206,19 +203,18 @@ export function BusinessFormFields({
             name="postalCode"
             returnKeyType="done"
           />
-        </Card>
+        </FormSection>
       ) : null}
 
       {show('details') ? (
-        <Card>
-          <Text variant="cardTitle">Detalhes opcionais</Text>
+        <FormSection title="Detalhes opcionais">
           <BusinessField
             control={control}
             label="Chave Pix"
             name="pixKey"
             returnKeyType="done"
           />
-        </Card>
+        </FormSection>
       ) : null}
     </>
   );

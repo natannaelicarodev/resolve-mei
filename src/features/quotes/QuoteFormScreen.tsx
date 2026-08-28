@@ -9,8 +9,8 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
-  Card,
   ConfirmationDialog,
+  FormSection,
   InlineFeedback,
   Input,
   Screen,
@@ -204,8 +204,10 @@ function QuoteForm({
         backFallback={'/quotes' as Href}
         title={quote ? 'Editar orçamento' : 'Novo orçamento'}
       />
-      <Card>
-        <Text variant="cardTitle">Cliente</Text>
+      <FormSection
+        description="Escolha quem receberá este orçamento."
+        title="Cliente"
+      >
         {clients.isLoading ? (
           <Text color="textSecondary">Carregando clientes...</Text>
         ) : null}
@@ -226,9 +228,11 @@ function QuoteForm({
             variant="error"
           />
         ) : null}
-      </Card>
-      <Card>
-        <Text variant="cardTitle">Itens</Text>
+      </FormSection>
+      <FormSection
+        description="Serviços, quantidades e valores cobrados."
+        title="Itens do orçamento"
+      >
         {(services.data?.items ?? []).map((service) => (
           <Button
             key={service.id}
@@ -285,6 +289,9 @@ function QuoteForm({
               render={({ field: itemField }) => (
                 <Input
                   label="Descrição complementar"
+                  maxLength={2000}
+                  multiline
+                  showCounter
                   value={itemField.value}
                   onChangeText={itemField.onChange}
                 />
@@ -332,8 +339,11 @@ function QuoteForm({
             variant="error"
           />
         ) : null}
-      </Card>
-      <Card>
+      </FormSection>
+      <FormSection
+        description="Prazo, desconto e informações finais."
+        title="Condições e total"
+      >
         <Controller
           control={form.control}
           name="validUntil"
@@ -369,9 +379,11 @@ function QuoteForm({
           render={({ field }) => (
             <Input
               label="Observações"
+              maxLength={4000}
               value={field.value}
               onChangeText={field.onChange}
               multiline
+              showCounter
             />
           )}
         />
@@ -379,7 +391,7 @@ function QuoteForm({
         <Text variant="cardTitle">
           Total: {centsToMoneyInput(totals.totalCents)}
         </Text>
-      </Card>
+      </FormSection>
       {form.formState.errors.root?.message ? (
         <InlineFeedback
           message={form.formState.errors.root.message}

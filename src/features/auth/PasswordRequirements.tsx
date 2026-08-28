@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Text } from '@/components/ui';
+import { Icon, Text } from '@/components/ui';
 import { spacing, useTheme } from '@/theme';
 
 export const passwordRequirementChecks = [
@@ -26,14 +26,23 @@ export function PasswordRequirements({ password }: { password: string }) {
       {passwordRequirementChecks.map((requirement) => {
         const met = requirement.test(password);
         return (
-          <Text
+          <View
+            accessible
             accessibilityLabel={`${requirement.label}: ${met ? 'atendido' : 'pendente'}`}
-            color={met ? 'success' : 'textMuted'}
             key={requirement.label}
-            variant="caption"
+            style={styles.requirement}
           >
-            • {requirement.label}
-          </Text>
+            <View accessibilityElementsHidden importantForAccessibility="no">
+              <Icon
+                color={met ? 'success' : 'textMuted'}
+                name={met ? 'success' : 'statusNeutral'}
+                size="small"
+              />
+            </View>
+            <Text color={met ? 'success' : 'textMuted'} variant="caption">
+              {requirement.label}
+            </Text>
+          </View>
         );
       })}
     </View>
@@ -46,4 +55,5 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingLeft: spacing.sm,
   },
+  requirement: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
 });

@@ -6,7 +6,7 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
-  Card,
+  FormSection,
   InlineFeedback,
   Input,
   Screen,
@@ -84,7 +84,10 @@ export function ClientFormScreen({
           Mantenha apenas as informações necessárias para o atendimento.
         </Text>
       </View>
-      <Card>
+      <FormSection
+        description="Identificação usada em orçamentos e documentos."
+        title="Informações gerais"
+      >
         <Controller
           control={form.control}
           name="type"
@@ -133,6 +136,11 @@ export function ClientFormScreen({
             />
           )}
         />
+      </FormSection>
+      <FormSection
+        description="Canais usados para falar com o cliente."
+        title="Contato"
+      >
         <Controller
           control={form.control}
           name="phone"
@@ -160,6 +168,8 @@ export function ClientFormScreen({
             />
           )}
         />
+      </FormSection>
+      <FormSection title="Detalhes e situação">
         <Controller
           control={form.control}
           name="notes"
@@ -194,7 +204,7 @@ export function ClientFormScreen({
             )}
           />
         ) : null}
-      </Card>
+      </FormSection>
       {mutation.isError ? (
         <InlineFeedback
           variant="error"

@@ -6,8 +6,9 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Button,
-  Card,
   ConfirmationDialog,
+  FormSection,
+  Icon,
   InlineFeedback,
   Screen,
   Text,
@@ -158,8 +159,7 @@ export function QuoteDetailsScreen({
           }
         />
       </View>
-      <Card>
-        <Text variant="cardTitle">Cliente</Text>
+      <FormSection icon={<Icon name="client" />} title="Cliente">
         <Text>{quote.client_name_snapshot}</Text>
         {quote.client_phone_snapshot ? (
           <Text color="textSecondary">{quote.client_phone_snapshot}</Text>
@@ -173,9 +173,8 @@ export function QuoteDetailsScreen({
         <Text color="textSecondary">
           Validade: {formatDateForDisplay(quote.valid_until)}
         </Text>
-      </Card>
-      <Card>
-        <Text variant="cardTitle">Itens</Text>
+      </FormSection>
+      <FormSection icon={<Icon name="service" />} title="Itens">
         {quote.items.map((item) => (
           <View key={item.id} style={styles.item}>
             <View style={styles.copy}>
@@ -192,15 +191,15 @@ export function QuoteDetailsScreen({
             <Text>{formatMoney(item.item_total_cents)}</Text>
           </View>
         ))}
-      </Card>
-      <Card>
+      </FormSection>
+      <FormSection icon={<Icon name="money" />} title="Resumo financeiro">
         <Text>Subtotal: {formatMoney(quote.subtotal_cents)}</Text>
         <Text>Desconto: {formatMoney(quote.discount_cents)}</Text>
         <Text variant="sectionTitle">
           Total: {formatMoney(quote.total_cents)}
         </Text>
         {quote.notes ? <Text color="textSecondary">{quote.notes}</Text> : null}
-      </Card>
+      </FormSection>
       {statusMutation.isError || duplicateMutation.isError ? (
         <InlineFeedback
           message="Não foi possível concluir a operação."

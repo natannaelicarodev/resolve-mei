@@ -5,8 +5,9 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
-  Card,
   ConfirmationDialog,
+  FormSection,
+  Icon,
   InlineFeedback,
   Screen,
   Text,
@@ -155,8 +156,11 @@ export function ClientDetailsScreen({
           message="Não foi possível abrir o aplicativo de contato neste dispositivo."
         />
       ) : null}
-      <Card>
-        <Text variant="cardTitle">Informações</Text>
+      <FormSection
+        description="Dados de identificação e contato cadastrados."
+        icon={<Icon name="client" />}
+        title="Informações"
+      >
         <Detail
           label={client.type === 'person' ? 'CPF' : 'CNPJ'}
           value={
@@ -174,7 +178,7 @@ export function ClientDetailsScreen({
         {!client.document && !client.phone && !client.email && !client.notes ? (
           <Text color="textSecondary">Nenhuma informação adicional.</Text>
         ) : null}
-      </Card>
+      </FormSection>
       {status.isError ? (
         <InlineFeedback
           variant="error"

@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
@@ -15,10 +14,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { sizes, spacing, useTheme } from '@/theme';
 import type { Service, ServiceStatusFilter } from './api';
 import { formatDuration, formatPriceCents } from './format';
@@ -26,20 +22,19 @@ import { useServices } from './hooks';
 import { useAuth } from '@/providers/AuthProvider';
 
 function ServiceRow({ service }: { service: Service }) {
-  const { colors } = useTheme();
   const duration = formatDuration(service.estimated_duration_minutes);
   return (
-    <AnimatedPressable
+    <Card
       accessibilityHint="Abre os detalhes do serviço."
       accessibilityLabel={`${service.name}, ${formatPriceCents(service.price_cents)}${duration ? `, ${duration}` : ''}${service.status === 'inactive' ? ', inativo' : ''}`}
-      accessibilityRole="button"
       onPress={() =>
         router.push({
           pathname: '/services/[id]',
           params: { id: service.id },
         })
       }
-      style={[styles.row, { borderBottomColor: colors.border }]}
+      style={styles.row}
+      variant="interactive"
     >
       <View style={styles.rowCopy}>
         <Text numberOfLines={1} variant="label">
@@ -53,12 +48,7 @@ function ServiceRow({ service }: { service: Service }) {
       {service.status === 'inactive' ? (
         <Badge label="Inativo" variant="neutral" />
       ) : null}
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+    </Card>
   );
 }
 
@@ -86,7 +76,6 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
   };
   const header = (
     <View style={styles.header}>
-      <ProtectedPageHeader title="Serviços" />
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text variant="sectionTitle">Seus serviços</Text>
@@ -212,6 +201,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
               />
             ) : null
           }
+          ItemSeparatorComponent={ListGap}
           ListHeaderComponent={header}
           onEndReached={loadMore}
           onEndReachedThreshold={0.35}
@@ -224,7 +214,12 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
   );
 }
 
+function ListGap() {
+  return <View style={styles.listGap} />;
+}
+
 const styles = StyleSheet.create({
+  listGap: { height: spacing.sm },
   page: { flex: 1 },
   list: { flex: 1 },
   content: {
@@ -249,11 +244,9 @@ const styles = StyleSheet.create({
   loading: { gap: spacing.sm },
   row: {
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 72,
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   rowCopy: { flex: 1, gap: 2, minWidth: 0 },
   empty: { alignItems: 'center' },

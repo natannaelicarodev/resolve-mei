@@ -1,7 +1,9 @@
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet, processColor } from 'react-native';
 
 import { HomeDashboard } from '@/features/home/HomeDashboard';
 import type { HomeDashboardData } from '@/features/home/api';
+import { lightColors, spacing } from '@/theme';
 
 jest.mock('@/components/motion', () => {
   const { Pressable, View } = jest.requireActual('react-native');
@@ -97,6 +99,47 @@ it('renders real balance, comparison, clients and most quoted services', async (
   await screen.unmount();
 });
 
+it('applies the redesigned card hierarchy and primary quick action', async () => {
+  const screen = await render(<HomeDashboard {...props()} />);
+  expect(screen.getByTestId('balance-card')).toHaveStyle({
+    borderStartWidth: spacing.xs,
+  });
+  expect(screen.getByTestId('balance-trend')).toBeTruthy();
+  expect(screen.getByTestId('balance-composition')).toBeTruthy();
+  expect(
+    screen.getByLabelText('66% aprovado e 34% em negociação'),
+  ).toBeTruthy();
+  // The elevated card carries its layer through shadow and drops its outline;
+  // the interactive one keeps a hairline edge. What matters is that the two
+  // variants stay visually distinct, not the exact width in pixels.
+  expect(screen.getByTestId('overview-card')).toHaveStyle({ borderWidth: 0 });
+  expect(screen.getByTestId('clients-card')).toHaveStyle({
+    borderWidth: StyleSheet.hairlineWidth,
+  });
+  // The primary quick action is a gradient badge rather than a flat fill, so
+  // assert the gradient it renders instead of a single background colour.
+  // LinearGradient normalises colours to integers, so compare in that form.
+  expect(
+    screen.getByTestId('quick-action-primary-gradient').props.colors,
+  ).toEqual([
+    processColor(lightColors.primary),
+    processColor(lightColors.primaryPressed),
+  ]);
+  expect(
+    screen.getByTestId('approved-line-chart', { includeHiddenElements: true }),
+  ).toBeTruthy();
+  expect(screen.getByTestId('line-chart-tooltip')).toHaveStyle({
+    position: 'absolute',
+  });
+  expect(screen.getByTestId('clients-donut')).toBeTruthy();
+  expect(
+    screen.getByTestId('card-interactive-chevron', {
+      includeHiddenElements: true,
+    }),
+  ).toBeTruthy();
+  await screen.unmount();
+});
+
 it('renders structural skeletons without invented zero values', async () => {
   const screen = await render(
     <HomeDashboard
@@ -155,6 +198,7 @@ it('explains empty quotes, clients and services without fictitious metrics', asy
       'Ainda não há serviços adicionados a orçamentos neste período.',
     ),
   ).toBeTruthy();
+  expect(screen.getByLabelText('0% aprovado e 0% em negociação')).toBeTruthy();
   await screen.unmount();
 });
 

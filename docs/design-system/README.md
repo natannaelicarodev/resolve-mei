@@ -3,10 +3,32 @@
 ## Princípios
 
 1. Humano antes de burocrático: linguagem curta, estados claros e ações previsíveis.
-2. Confiança sem aparência bancária: verde funcional, grafite suave e superfícies leves.
+2. Confiança sem aparência bancária: índigo sóbrio, grafite suave e superfícies leves.
 3. Inclusão prática: alvos de toque de 44 px, fonte ampliável, contraste AA e status com texto.
 4. Movimento com propósito: confirmar causa e efeito, nunca atrasar trabalho ou esconder conteúdo.
 5. Densidade móvel saudável: espaço suficiente para leitura sem transformar cada seção em card.
+
+## Fundações
+
+### Tipografia
+
+Manrope nos pesos 400, 500, 600 e 700, com escala semântica e números tabulares para valores financeiros. A fonte do sistema é o fallback seguro.
+
+### Cor
+
+Índigo é marca, âmbar é acento de dado e verde é exclusivamente semântico. Todos os componentes consomem tokens dos temas claro e escuro, nunca hexadecimais locais.
+
+### Ícone
+
+Lucide é acessado pelo componente `Icon`, com nomes por papel, traço único e três tamanhos. A navegação estabelecida conserva Material Community Icons para não misturar famílias no mesmo contexto.
+
+### Grid
+
+Espaçamento em múltiplos de 4, largura máxima compartilhada, alvos de toque de pelo menos 44 px e raios semânticos. Coleções crescentes usam `FlatList` com um registro por item.
+
+## Componentes
+
+As primitives compartilhadas são a única camada autorizada a traduzir tokens em aparência. O catálogo demonstra variantes, estados, temas e acessibilidade com dados fictícios.
 
 ## Identidade
 
@@ -54,7 +76,7 @@ As combinações principais foram escolhidas para WCAG AA: grafite sobre fundos 
 
 ### Temas
 
-O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies em grafite esverdeado, sem preto absoluto, neon ou linguagem visual de fintech.
+O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies em grafite com subtom roxo, sem preto absoluto, neon ou linguagem visual de fintech.
 
 ## Referência Nucleus UI Lite
 
@@ -75,28 +97,29 @@ O arquivo completo foi inspecionado pelo plugin do Figma antes da revisão visua
 
 Foram rejeitados para a Home: tab bar somente com ícones (`762:5898`), por reduzir clareza; tabelas desktop, por não atenderem ao contexto mobile; bottom sheets (`878:7298`), popovers e gráficos, pois não existe conteúdo funcional que os justifique; e repetição de badges, que faria a interface parecer demonstração do kit.
 
-## Tipografia
+## Detalhes de tipografia
 
 Manrope foi escolhida pela leitura clara de acentos, números distinguíveis e boa presença em Android. São usados somente os pesos 400, 500, 600 e 700. A fonte está sob SIL Open Font License 1.1, conforme o pacote `@expo-google-fonts/manrope`.
 
 O splash permanece visível durante o carregamento. Se a fonte falhar, o aplicativo segue com a fonte do sistema. Textos permitem escala do sistema; truncamento só acontece quando `truncate` ou `numberOfLines` é explícito. Valores financeiros usam números tabulares.
 
-## Componentes
+## Inventário de componentes
 
 - `Text`: variantes semânticas, cor, alinhamento e truncamento explícito.
 - `Button`: primary, secondary, ghost e danger; três tamanhos; loading, success e disabled.
 - `Input`: label persistente, ajuda, erro, contador, foco, preenchido, disabled e read-only.
-- `Card`: default, elevated, interactive, highlighted e variantes de status.
+- `Card`: default com contorno leve; elevated sem borda e com sombra; interactive com chevron; highlighted com barra lateral; success com barra superior; warning com contorno tracejado; danger com contorno espesso.
 - `Screen`: safe area, largura máxima, fundo, scroll opcional e keyboard avoiding.
 - `IconButton`: alvo mínimo, label obrigatório, loading e disabled.
-- `Badge`: status textual em pill; cor nunca é o único sinal.
+- `Badge`: status textual em pill com símbolo semântico padrão; cor nunca é o único sinal.
 - `InlineFeedback`: success, error, warning e info com live region.
 - `Skeleton`: dimensões estáveis e pulsação leve, sem shimmer pesado.
 - `SegmentedControl`: escolhas curtas e mutuamente exclusivas com estado selecionado textual e haptic semântico.
 - `Icon`: catálogo Lucide com peso e tamanho únicos; nomes descrevem papel no produto, não desenho.
 - `ConfirmationDialog`: confirmação de ação sobre `Modal` centralizado, com backdrop, dismiss seguro, foco anunciado, Reduced Motion e bloqueio de toque duplicado.
+- `FormSection`: agrupa campos e detalhes relacionados com título, descrição e ícone opcionais, sem alterar payloads ou mutations.
 
-## Ícones
+## Proveniência dos ícones
 
 Os ícones vêm de `lucide-react-native` (1.34.0, licença ISC), que depende de `react-native-svg` (15.15.4, instalado por `expo install` para casar com o SDK 57). Nenhum glifo foi redesenhado à mão a partir de folha de referência: usamos o equivalente semântico mais próximo da biblioteca, cuja origem e licença são verificáveis.
 

@@ -8,7 +8,7 @@ import { StyleSheet, View } from 'react-native';
 import { SuccessTransition } from '@/components/motion';
 import {
   Button,
-  Card,
+  FormSection,
   InlineFeedback,
   Input,
   Screen,
@@ -110,7 +110,10 @@ export function ServiceFormScreen({
           Informe o que você oferece e o valor cobrado.
         </Text>
       </View>
-      <Card>
+      <FormSection
+        description="Como o serviço será identificado nos orçamentos."
+        title="Informações gerais"
+      >
         <Controller
           control={form.control}
           name="name"
@@ -146,6 +149,11 @@ export function ServiceFormScreen({
             />
           )}
         />
+      </FormSection>
+      <FormSection
+        description="Valor cobrado e tempo estimado de execução."
+        title="Preço e duração"
+      >
         <Controller
           control={form.control}
           name="price"
@@ -179,7 +187,9 @@ export function ServiceFormScreen({
             />
           )}
         />
-        {service ? (
+      </FormSection>
+      {service ? (
+        <FormSection title="Disponibilidade">
           <Controller
             control={form.control}
             name="status"
@@ -196,8 +206,8 @@ export function ServiceFormScreen({
               />
             )}
           />
-        ) : null}
-      </Card>
+        </FormSection>
+      ) : null}
       {mutation.isError ? (
         <InlineFeedback
           message="Não foi possível salvar o serviço. Revise os dados e tente novamente."

@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResolveMEI — mockup completo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --primary: #A99CF5; --primary-strong: #C4BAFA; --primary-soft: #2A2338;
+    --accent: #F0A742; --accent-soft: #3D2A0E;
+    --success: #5FCE9B; --success-soft: #12331F;
+    --danger: #FF9187; --danger-soft: rgba(255,145,135,0.12);
+    --bg: #0E0B14; --bg-subtle: #15111D; --surface: #1E1829; --surface-elevated: #2A2338; --surface-pressed: #332B45;
+    --border: #332B45; --border-soft: #241E30;
+    --text-primary: #F5F3FA; --text-secondary: #B4ACC7; --text-muted: #7A7392;
+    --shadow-card: 0 1px 2px rgba(5,3,10,0.4), 0 8px 24px rgba(5,3,10,0.35);
+    --shadow-btn: 0 4px 14px rgba(76,58,158,0.45);
+    --shadow-elevated: 0 2px 4px rgba(5,3,10,0.5), 0 16px 32px rgba(5,3,10,0.45);
+    --radius-sm: 10px; --radius-md: 16px; --radius-lg: 22px;
+  }
+  [data-theme="light"] {
+    --primary: #4C3A9E; --primary-strong: #3D2E82; --primary-soft: #EFEBFB;
+    --accent: #B45309; --accent-soft: #FCEEDD;
+    --success: #16734F; --success-soft: #E4F5EC;
+    --danger: #B42318; --danger-soft: rgba(180,35,24,0.08);
+    --bg: #F6F4FA; --bg-subtle: #FBFAFC; --surface: #FFFFFF; --surface-elevated: #FFFFFF; --surface-pressed: #F1EDF9;
+    --border: #E4E0EF; --border-soft: #ECE9F5;
+    --text-primary: #1E1B29; --text-secondary: #625B78; --text-muted: #948CAA;
+    --shadow-card: 0 1px 2px rgba(76,58,158,0.06), 0 6px 20px rgba(76,58,158,0.08);
+    --shadow-btn: 0 6px 16px rgba(76,58,158,0.28);
+    --shadow-elevated: 0 2px 6px rgba(76,58,158,0.08), 0 20px 36px rgba(76,58,158,0.14);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Manrope', sans-serif; background: #08060C; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 32px 16px 64px; gap: 20px; }
+
+  .controls { display: flex; align-items: center; gap: 10px; background: #15111D; border: 1px solid #2A2338; border-radius: 100px; padding: 6px 8px 6px 14px; }
+  .controls select { font-family: inherit; font-size: 13px; font-weight: 700; color: #F5F3FA; background: transparent; border: none; cursor: pointer; outline: none; }
+  .controls select option { background: #15111D; color: #fff; }
+  .controls .divider { width: 1px; height: 20px; background: #2A2338; }
+  .theme-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: transparent; border: none; cursor: pointer; color: #B4ACC7; }
+  .theme-btn:focus-visible, .controls select:focus-visible { outline: 2px solid #A99CF5; outline-offset: 2px; }
+
+  .phone { width: 390px; max-width: 92vw; background: var(--bg); border-radius: 44px; border: 8px solid #050308; box-shadow: 0 40px 80px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.4); overflow: hidden; }
+  [data-theme="light"] .phone { border-color: #E4E0EF; }
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 16px 26px 6px; font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .status-icons { display: flex; align-items: center; gap: 5px; }
+
+  .screen { display: none; padding: 8px 18px 28px; position: relative; }
+  .screen.active { display: block; }
+  .screen.has-nav { padding-bottom: 108px; }
+
+  /* header (Home) */
+  .home-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 2px 20px; }
+  .greet { display: flex; align-items: center; gap: 11px; }
+  .avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #7A6BC7); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 15px; flex-shrink: 0; }
+  .greet h1 { font-size: 15px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.1px; }
+  .greet p { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 12px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); flex-shrink: 0; cursor: pointer; }
+  .icon-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* saldo hero (menor, mais restrito) */
+  .saldo-card { background: var(--surface-elevated); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 18px; box-shadow: var(--shadow-elevated); margin-bottom: 12px; }
+  .saldo-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 2px; }
+  .saldo-top .label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); }
+  .period-chip { display: flex; align-items: center; gap: 5px; background: var(--surface-pressed); border: 1px solid var(--border); border-radius: 100px; padding: 5px 10px; font-size: 11.5px; font-weight: 600; color: var(--text-primary); cursor: pointer; }
+  .hero-value { font-size: 30px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.6px; font-variant-numeric: tabular-nums; line-height: 1.1; margin: 8px 0 8px; }
+  .trend-pill { display: inline-flex; align-items: center; gap: 4px; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; padding: 4px 10px 4px 8px; border-radius: 100px; margin-bottom: 12px; }
+  .chart-wrap { margin: 0 -18px; }
+  .chart-wrap svg { display: block; width: 100%; height: 56px; }
+  .sparkline-caption { font-size: 10.5px; color: var(--text-muted); text-align: center; margin-top: 4px; font-weight: 600; }
+
+  /* composição (card separado, secundário) */
+  .comp-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 15px 16px; box-shadow: var(--shadow-card); margin-bottom: 22px; }
+  .comp-card .ct { font-size: 12.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 10px; }
+  .comp-bar { height: 7px; border-radius: 100px; background: var(--surface-pressed); overflow: hidden; display: flex; margin-bottom: 10px; }
+  .comp-bar span:nth-child(1) { background: linear-gradient(90deg, var(--primary), var(--primary-strong)); }
+  .comp-bar span:nth-child(2) { background: var(--accent); }
+  .comp-legend { display: flex; justify-content: space-between; }
+  .comp-legend div { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
+  .comp-legend .v { color: var(--text-primary); font-weight: 700; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+  .section-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin: 4px 0 10px; display: flex; align-items: center; justify-content: space-between; }
+  .section-title a { font-size: 12px; font-weight: 600; color: var(--primary); text-decoration: none; }
+
+  .qa-row { display: flex; justify-content: space-between; gap: 6px; margin-bottom: 26px; padding: 4px 6px; }
+  .qa-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px; background: transparent; border: none; font-family: inherit; cursor: pointer; padding: 4px; }
+  .qa-item:focus-visible { outline: 2px solid var(--primary); outline-offset: 4px; border-radius: 16px; }
+  .qa-badge { width: 52px; height: 52px; border-radius: 17px; display: flex; align-items: center; justify-content: center; transition: transform 0.12s ease; }
+  .qa-item:active .qa-badge { transform: scale(0.93); }
+  .qa-badge.primary { background: linear-gradient(150deg, var(--primary), var(--primary-strong)); box-shadow: var(--shadow-btn); color: #fff; }
+  .qa-badge.tint { background: var(--primary-soft); color: var(--primary); }
+  .qa-label { font-size: 11.5px; font-weight: 700; color: var(--text-secondary); text-align: center; line-height: 1.25; }
+
+  /* listas genéricas */
+  .list { display: flex; flex-direction: column; gap: 9px; }
+  .list-item { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 12px 13px; box-shadow: var(--shadow-card); cursor: pointer; position: relative; }
+  .li-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 13.5px; flex-shrink: 0; }
+  .li-body { flex: 1; min-width: 0; }
+  .li-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .li-sub { font-size: 11.5px; color: var(--text-muted); font-weight: 500; }
+  .status-pill { font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 100px; flex-shrink: 0; white-space: nowrap; }
+  .chev { color: var(--text-muted); flex-shrink: 0; }
+
+  .li-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+  .li-price { font-size: 13.5px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  .barra-lateral { padding-left: 16px !important; }
+  .barra-lateral::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: var(--success); }
+  .barra-lateral.warn::before { background: var(--accent); }
+
+  /* bottom nav */
+  .bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: var(--bg-subtle); border-top: 1px solid var(--border-soft); padding: 10px 10px 20px; display: flex; justify-content: space-around; align-items: center; }
+  .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: var(--text-muted); cursor: pointer; padding: 4px 8px; border-radius: 12px; }
+  .nav-item span { font-size: 9.5px; font-weight: 700; }
+  .nav-item.active { color: var(--primary); }
+  .nav-item.active .nav-pill { background: var(--primary-soft); }
+  .nav-pill { width: 38px; height: 26px; border-radius: 100px; display: flex; align-items: center; justify-content: center; }
+
+  /* page header (listas) */
+  .page-header { padding: 8px 2px 16px; }
+  .page-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+  .page-title-row h1 { font-size: 21px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.4px; }
+  .new-btn { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; border: none; border-radius: 11px; padding: 9px 13px 9px 11px; font-family: inherit; font-size: 12px; font-weight: 700; box-shadow: var(--shadow-btn); cursor: pointer; flex-shrink: 0; }
+  .new-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .count { font-size: 12.5px; color: var(--text-muted); font-weight: 600; }
+
+  .search-box { display: flex; align-items: center; gap: 9px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 13px; margin: 14px 0 12px; color: var(--text-muted); }
+  .search-box input { border: none; background: transparent; outline: none; font-family: inherit; font-size: 13px; color: var(--text-primary); width: 100%; }
+  .search-box input::placeholder { color: var(--text-muted); }
+
+  .filters-scroll { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 16px; scrollbar-width: none; }
+  .filters-scroll::-webkit-scrollbar { display: none; }
+  .filter-chip { font-family: inherit; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 100px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; flex-shrink: 0; white-space: nowrap; }
+  .filter-chip.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+  .filter-chip:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* orçamento item de lista (3 linhas) */
+  .quote-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 13px 14px; box-shadow: var(--shadow-card); margin-bottom: 9px; cursor: pointer; }
+  .quote-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 3px; }
+  .quote-top .qi-title { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+  .quote-date { font-size: 11.5px; color: var(--text-muted); margin-bottom: 8px; }
+  .quote-bottom { display: flex; align-items: center; justify-content: space-between; }
+  .quote-bottom .qi-value { font-size: 16px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  /* forms */
+  .form-topbar { display: flex; align-items: center; gap: 12px; padding: 10px 2px 20px; }
+  .back-btn { width: 36px; height: 36px; border-radius: 11px; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); cursor: pointer; flex-shrink: 0; }
+  .back-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+  .form-topbar h1 { font-size: 16.5px; font-weight: 800; color: var(--text-primary); }
+
+  .form-section { margin-bottom: 22px; }
+  .form-section-title { font-size: 11.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+  .field { margin-bottom: 14px; }
+  .field:last-child { margin-bottom: 0; }
+  .field-label { font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+  .field-input, .field-textarea { width: 100%; font-family: inherit; font-size: 13.5px; color: var(--text-primary); background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 12px 13px; outline: none; }
+  .field-input:focus, .field-textarea:focus { border-color: var(--primary); }
+  .field-textarea { resize: none; min-height: 74px; line-height: 1.5; }
+  .field-counter { font-size: 11px; color: var(--text-muted); text-align: right; margin-top: 5px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .money-input { position: relative; }
+  .money-input .prefix { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 13.5px; color: var(--text-muted); font-weight: 600; }
+  .money-input input { padding-left: 33px; }
+
+  .segmented { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 3px; }
+  .segmented button { flex: 1; border: none; background: transparent; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--text-secondary); padding: 9px; border-radius: 9px; cursor: pointer; }
+  .segmented button.active { background: var(--primary); color: #fff; }
+
+  .switch-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 13px 14px; }
+  .switch-row .left { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+  .switch { width: 42px; height: 25px; border-radius: 100px; background: var(--primary); position: relative; flex-shrink: 0; }
+  .switch::after { content: ''; position: absolute; top: 3px; right: 3px; width: 19px; height: 19px; border-radius: 50%; background: #fff; }
+
+  .client-picked { display: flex; align-items: center; gap: 11px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 13px; }
+  .client-picked .change-link { font-size: 12px; font-weight: 700; color: var(--primary); background: none; border: none; font-family: inherit; cursor: pointer; }
+
+  .item-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; margin-bottom: 8px; }
+  .item-row .ir-body { flex: 1; min-width: 0; }
+  .item-row .ir-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
+  .item-row .ir-meta { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .item-row .ir-price { font-size: 13px; font-weight: 700; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .item-row .ir-remove { color: var(--text-muted); cursor: pointer; flex-shrink: 0; }
+
+  .add-item-btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px; background: transparent; border: 1.5px dashed var(--border); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 12.5px; font-weight: 700; color: var(--primary); cursor: pointer; margin-bottom: 4px; }
+  .add-item-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .total-card { background: var(--surface-elevated); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-card); margin-bottom: 14px; }
+  .total-row { display: flex; align-items: center; justify-content: space-between; }
+  .total-row .t-label { font-size: 13px; font-weight: 700; color: var(--text-secondary); }
+  .total-row .t-value { font-size: 22px; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+
+  .primary-btn-full { width: 100%; background: linear-gradient(135deg, var(--primary), var(--primary-strong)); color: #fff; border: none; border-radius: 14px; padding: 15px; font-family: inherit; font-size: 14px; font-weight: 700; box-shadow: var(--shadow-btn); cursor: pointer; }
+  .primary-btn-full:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  /* perfil */
+  .profile-head { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 18px 0 26px; }
+  .profile-avatar { width: 76px; height: 76px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #7A6BC7); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 26px; margin-bottom: 12px; }
+  .profile-head h1 { font-size: 17px; font-weight: 800; color: var(--text-primary); }
+  .profile-head p { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+
+  .menu-row { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 13px 14px; margin-bottom: 8px; cursor: pointer; }
+  .menu-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .menu-row .menu-label { flex: 1; font-size: 13.5px; font-weight: 600; color: var(--text-primary); }
+  .menu-row.danger .menu-icon { background: var(--danger-soft); color: var(--danger); }
+  .menu-row.danger .menu-label { color: var(--danger); }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <select id="screenSelect">
+    <option value="home">Home</option>
+    <option value="clientes">Clientes</option>
+    <option value="servicos">Serviços</option>
+    <option value="orcamentos">Orçamentos</option>
+    <option value="perfil">Perfil</option>
+    <option value="novo-cliente">+ Novo cliente</option>
+    <option value="novo-servico">+ Novo serviço</option>
+    <option value="novo-orcamento">+ Novo orçamento</option>
+  </select>
+  <div class="divider"></div>
+  <button class="theme-btn" id="themeToggle" aria-label="Alternar tema">
+    <svg id="themeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+  </button>
+</div>
+
+<div class="phone" data-theme="dark" id="phone">
+  <div class="status-bar">
+    <span>9:41</span>
+    <div class="status-icons">
+      <svg width="15" height="11" viewBox="0 0 16 12" fill="none"><rect x="0" y="7" width="3" height="5" rx="0.5" fill="currentColor"/><rect x="4.5" y="4.5" width="3" height="7.5" rx="0.5" fill="currentColor"/><rect x="9" y="2" width="3" height="10" rx="0.5" fill="currentColor"/><rect x="13" y="0" width="3" height="12" rx="0.5" fill="currentColor" opacity="0.4"/></svg>
+      <svg width="20" height="11" viewBox="0 0 24 12" fill="none"><rect x="0.5" y="0.5" width="19" height="11" rx="2.5" stroke="currentColor"/><rect x="2" y="2" width="14" height="8" rx="1.2" fill="currentColor"/><rect x="21" y="4" width="2" height="4" rx="1" fill="currentColor"/></svg>
+    </div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <section class="screen active has-nav" id="screen-home" data-nav="home">
+    <div class="home-header">
+      <div class="greet">
+        <div class="avatar">N</div>
+        <div><h1>Boa noite, Natannael</h1><p>Veja como está o seu negócio hoje</p></div>
+      </div>
+      <button class="icon-btn" aria-label="Configurações">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.3" fill="var(--surface)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.3" fill="var(--surface)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2.3" fill="var(--surface)"/></svg>
+      </button>
+    </div>
+
+    <div class="saldo-card">
+      <div class="saldo-top">
+        <span class="label">Valor aprovado</span>
+        <div class="period-chip">Este mês<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+      </div>
+      <div class="hero-value">R$ 15.000,00</div>
+      <div class="trend-pill">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+        +12% sobre o mês anterior
+      </div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 354 56" preserveAspectRatio="none">
+          <defs><linearGradient id="areaFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--primary)" stop-opacity="0.3"/>
+            <stop offset="100%" stop-color="var(--primary)" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="M0,38 C30,40 45,20 75,23 C105,26 115,44 150,42 C185,40 195,15 230,13 C260,11 275,28 305,24 C325,21 340,25 354,18 L354,56 L0,56 Z" fill="url(#areaFill)"/>
+          <path d="M0,38 C30,40 45,20 75,23 C105,26 115,44 150,42 C185,40 195,15 230,13 C260,11 275,28 305,24 C325,21 340,25 354,18" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="sparkline-caption">Valor aprovado nos últimos 6 meses</div>
+    </div>
+
+    <div class="comp-card">
+      <div class="ct">Composição do período</div>
+      <div class="comp-bar"><span style="width:100%"></span><span style="width:0%"></span></div>
+      <div class="comp-legend">
+        <div><span class="dot" style="background:var(--primary)"></span>Aprovado <span class="v">R$ 15.000,00</span></div>
+      </div>
+      <div class="comp-legend" style="margin-top:6px;">
+        <div><span class="dot" style="background:var(--accent)"></span>Em negociação <span class="v">R$ 0,00</span></div>
+      </div>
+    </div>
+
+    <div class="section-title">Ações rápidas</div>
+    <div class="qa-row">
+      <button class="qa-item" onclick="go('novo-orcamento')">
+        <span class="qa-badge primary"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></span>
+        <span class="qa-label">Novo<br>orçamento</span>
+      </button>
+      <button class="qa-item" onclick="go('novo-cliente')">
+        <span class="qa-badge tint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg></span>
+        <span class="qa-label">Novo<br>cliente</span>
+      </button>
+      <button class="qa-item" onclick="go('novo-servico')">
+        <span class="qa-badge tint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <span class="qa-label">Novo<br>serviço</span>
+      </button>
+    </div>
+
+    <div class="section-title">Orçamentos recentes <a href="#">Ver todos</a></div>
+    <div class="list">
+      <div class="list-item">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#7A6BC7,#4C3A9E)">L</div>
+        <div class="li-body"><div class="li-title">Luiz &middot; #000004</div><div class="li-sub">R$ 8.200,00</div></div>
+        <span class="status-pill" style="background:var(--success-soft); color:var(--success);">Aprovado</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="list-item">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#E7A85C,#B45309)">J</div>
+        <div class="li-body"><div class="li-title">Julia &middot; #000003</div><div class="li-sub">R$ 6.800,00</div></div>
+        <span class="status-pill" style="background:var(--accent-soft); color:var(--accent);">Enviado</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CLIENTES ============ -->
+  <section class="screen has-nav" id="screen-clientes" data-nav="clientes">
+    <div class="page-header">
+      <div class="page-title-row"><h1>Clientes</h1>
+        <button class="new-btn" onclick="go('novo-cliente')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo cliente</button>
+      </div>
+      <span class="count">11 encontrados</span>
+    </div>
+    <div class="search-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Nome, documento, telefone ou e-mail"></div>
+    <div class="filters-scroll"><button class="filter-chip active">Todos</button><button class="filter-chip">Ativos</button><button class="filter-chip">Inativos</button></div>
+    <div class="list">
+      <div class="list-item barra-lateral">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#7A6BC7,#4C3A9E)">J</div>
+        <div class="li-body"><div class="li-title">Julia Fernandes</div><div class="li-sub">(85) 99841-2210</div></div>
+        <span class="status-pill" style="background:var(--success-soft); color:var(--success);">Ativo</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="list-item">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#9C93B3,#5C5970)">L</div>
+        <div class="li-body"><div class="li-title">Luiz Andrade</div><div class="li-sub">Sem contato informado</div></div>
+        <span class="status-pill" style="background:var(--surface-pressed); color:var(--text-muted);">Inativo</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="list-item barra-lateral">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#E7A85C,#B45309)">M</div>
+        <div class="li-body"><div class="li-title">Marcos Vinícius</div><div class="li-sub">marcos.v@email.com</div></div>
+        <span class="status-pill" style="background:var(--success-soft); color:var(--success);">Ativo</span>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SERVIÇOS ============ -->
+  <section class="screen has-nav" id="screen-servicos" data-nav="servicos">
+    <div class="page-header">
+      <div class="page-title-row"><h1>Serviços</h1>
+        <button class="new-btn" onclick="go('novo-servico')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo serviço</button>
+      </div>
+      <span class="count">7 encontrados</span>
+    </div>
+    <div class="search-box"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" placeholder="Nome ou descrição do serviço"></div>
+    <div class="filters-scroll"><button class="filter-chip active">Todos</button><button class="filter-chip">Ativos</button><button class="filter-chip">Inativos</button></div>
+    <div class="list">
+      <div class="list-item barra-lateral">
+        <div class="li-body">
+          <div class="li-title">Instalação elétrica residencial</div>
+          <div class="li-sub">Padrão &middot; aprox. 3h</div>
+        </div>
+        <div class="li-right"><span class="li-price">R$ 350,00</span><span class="status-pill" style="background:var(--success-soft); color:var(--success);">Ativo</span></div>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="list-item">
+        <div class="li-body">
+          <div class="li-title">Manutenção preventiva</div>
+          <div class="li-sub">Visita técnica &middot; aprox. 1h</div>
+        </div>
+        <div class="li-right"><span class="li-price">R$ 120,00</span><span class="status-pill" style="background:var(--surface-pressed); color:var(--text-muted);">Inativo</span></div>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="list-item barra-lateral">
+        <div class="li-body">
+          <div class="li-title">Reparo emergencial</div>
+          <div class="li-sub">Atendimento imediato &middot; aprox. 2h</div>
+        </div>
+        <div class="li-right"><span class="li-price">R$ 500,00</span><span class="status-pill" style="background:var(--success-soft); color:var(--success);">Ativo</span></div>
+        <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ORÇAMENTOS ============ -->
+  <section class="screen has-nav" id="screen-orcamentos" data-nav="orcamentos">
+    <div class="page-header">
+      <div class="page-title-row"><h1>Orçamentos</h1>
+        <button class="new-btn" onclick="go('novo-orcamento')"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Novo orçamento</button>
+      </div>
+      <span class="count">4 encontrados</span>
+    </div>
+    <div class="filters-scroll"><button class="filter-chip active">Todos</button><button class="filter-chip">Rascunhos</button><button class="filter-chip">Enviados</button><button class="filter-chip">Aprovados</button></div>
+    <div class="quote-item">
+      <div class="quote-top"><span class="qi-title">#000004 &middot; Luiz</span><span class="status-pill" style="background:var(--success-soft); color:var(--success);">Aprovado</span></div>
+      <div class="quote-date">26/08/2026 &middot; validade 25/10/2026</div>
+      <div class="quote-bottom"><span class="qi-value">R$ 8.200,00</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="quote-item">
+      <div class="quote-top"><span class="qi-title">#000003 &middot; Julia</span><span class="status-pill" style="background:var(--accent-soft); color:var(--accent);">Enviado</span></div>
+      <div class="quote-date">18/08/2026 &middot; validade 17/10/2026</div>
+      <div class="quote-bottom"><span class="qi-value">R$ 6.800,00</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+    <div class="quote-item">
+      <div class="quote-top"><span class="qi-title">#000002 &middot; Marcos</span><span class="status-pill" style="background:var(--surface-pressed); color:var(--text-muted);">Rascunho</span></div>
+      <div class="quote-date">10/08/2026 &middot; validade —</div>
+      <div class="quote-bottom"><span class="qi-value">R$ 2.150,00</span><svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>
+    </div>
+  </section>
+
+  <!-- ============ PERFIL ============ -->
+  <section class="screen has-nav" id="screen-perfil" data-nav="perfil">
+    <div class="profile-head">
+      <div class="profile-avatar">N</div>
+      <h1>Natannael Ícaro</h1>
+      <p>natannael@email.com</p>
+    </div>
+    <div class="form-section-title">Geral</div>
+    <div class="menu-row">
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+      <span class="menu-label">Dados pessoais</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="menu-row">
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+      <span class="menu-label">Dados profissionais</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="form-section-title" style="margin-top:18px;">Segurança</div>
+    <div class="menu-row">
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+      <span class="menu-label">Alterar senha</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="form-section-title" style="margin-top:18px;">Outros</div>
+    <div class="menu-row">
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2.3" fill="var(--surface)"/><line x1="4" y1="12" x2="20" y2="12"/><circle cx="16" cy="12" r="2.3" fill="var(--surface)"/><line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2.3" fill="var(--surface)"/></svg></span>
+      <span class="menu-label">Configurações</span>
+      <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="menu-row danger" style="margin-top:14px;">
+      <span class="menu-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span>
+      <span class="menu-label">Sair da conta</span>
+    </div>
+  </section>
+
+  <!-- ============ NOVO CLIENTE ============ -->
+  <section class="screen" id="screen-novo-cliente" data-nav="none">
+    <div class="form-topbar"><button class="back-btn" onclick="go('clientes')" aria-label="Voltar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><h1>Novo cliente</h1></div>
+    <div class="form-section">
+      <div class="form-section-title">Informações gerais</div>
+      <div class="field"><span class="field-label">Nome completo</span><input class="field-input" placeholder="Ex.: Ana Beatriz Souza"></div>
+      <div class="field"><span class="field-label">Tipo de documento</span>
+        <div class="segmented"><button class="active">Pessoa física</button><button>Pessoa jurídica</button></div>
+      </div>
+      <div class="field"><span class="field-label">CPF</span><input class="field-input" placeholder="000.000.000-00"></div>
+      <div class="field-row">
+        <div class="field"><span class="field-label">Telefone</span><input class="field-input" placeholder="(00) 00000-0000"></div>
+        <div class="field"><span class="field-label">E-mail</span><input class="field-input" placeholder="nome@email.com"></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Observações</div>
+      <div class="field"><textarea class="field-textarea" placeholder="Informações adicionais sobre o cliente"></textarea><div class="field-counter">0/500</div></div>
+    </div>
+    <button class="primary-btn-full">Salvar cliente</button>
+  </section>
+
+  <!-- ============ NOVO SERVIÇO ============ -->
+  <section class="screen" id="screen-novo-servico" data-nav="none">
+    <div class="form-topbar"><button class="back-btn" onclick="go('servicos')" aria-label="Voltar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><h1>Novo serviço</h1></div>
+    <div class="form-section">
+      <div class="form-section-title">Informações gerais</div>
+      <div class="field"><span class="field-label">Nome do serviço</span><input class="field-input" placeholder="Ex.: Instalação elétrica residencial"></div>
+      <div class="field"><span class="field-label">Descrição</span><textarea class="field-textarea" placeholder="Descreva o que está incluso"></textarea><div class="field-counter">0/300</div></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Preço e duração</div>
+      <div class="field-row">
+        <div class="field"><span class="field-label">Preço</span><div class="money-input"><span class="prefix">R$</span><input class="field-input" placeholder="0,00"></div></div>
+        <div class="field"><span class="field-label">Duração média</span><input class="field-input" placeholder="Ex.: 3h"></div>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Status</div>
+      <div class="switch-row"><span class="left">Serviço ativo</span><span class="switch"></span></div>
+    </div>
+    <button class="primary-btn-full">Salvar serviço</button>
+  </section>
+
+  <!-- ============ NOVO ORÇAMENTO ============ -->
+  <section class="screen" id="screen-novo-orcamento" data-nav="none">
+    <div class="form-topbar"><button class="back-btn" onclick="go('orcamentos')" aria-label="Voltar"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button><h1>Novo orçamento</h1></div>
+    <div class="form-section">
+      <div class="form-section-title">Cliente</div>
+      <div class="client-picked">
+        <div class="li-avatar" style="background:linear-gradient(135deg,#7A6BC7,#4C3A9E); width:36px;height:36px;font-size:13px;">J</div>
+        <div class="li-body"><div class="li-title">Julia Fernandes</div><div class="li-sub">(85) 99841-2210</div></div>
+        <button class="change-link">Trocar</button>
+      </div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Itens do orçamento</div>
+      <div class="item-row">
+        <div class="ir-body"><div class="ir-name">Instalação elétrica residencial</div><div class="ir-meta">1 unidade</div></div>
+        <span class="ir-price">R$ 350,00</span>
+        <svg class="ir-remove" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <div class="item-row">
+        <div class="ir-body"><div class="ir-name">Manutenção preventiva</div><div class="ir-meta">2 unidades</div></div>
+        <span class="ir-price">R$ 240,00</span>
+        <svg class="ir-remove" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </div>
+      <button class="add-item-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar item</button>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">Validade e observações</div>
+      <div class="field"><span class="field-label">Válido até</span><input class="field-input" placeholder="DD/MM/AAAA"></div>
+      <div class="field"><span class="field-label">Observações</span><textarea class="field-textarea" placeholder="Condições de pagamento, prazos etc."></textarea><div class="field-counter">0/500</div></div>
+    </div>
+    <div class="total-card">
+      <div class="total-row"><span class="t-label">Total do orçamento</span><span class="t-value">R$ 590,00</span></div>
+    </div>
+    <button class="primary-btn-full">Salvar orçamento</button>
+  </section>
+
+  <div class="bottom-nav" id="bottomNav">
+    <div class="nav-item" data-target="home"><span class="nav-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg></span><span>Início</span></div>
+    <div class="nav-item" data-target="clientes"><span class="nav-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span><span>Clientes</span></div>
+    <div class="nav-item" data-target="servicos"><span class="nav-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span><span>Serviços</span></div>
+    <div class="nav-item" data-target="orcamentos"><span class="nav-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/></svg></span><span>Orçamentos</span></div>
+    <div class="nav-item" data-target="perfil"><span class="nav-pill"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><span>Perfil</span></div>
+  </div>
+</div>
+
+<script>
+  const phone = document.getElementById('phone');
+  const themeToggle = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const select = document.getElementById('screenSelect');
+  const screens = document.querySelectorAll('.screen');
+  const navItems = document.querySelectorAll('.nav-item');
+  const bottomNav = document.getElementById('bottomNav');
+
+  themeToggle.addEventListener('click', () => {
+    const isLight = phone.getAttribute('data-theme') === 'light';
+    phone.setAttribute('data-theme', isLight ? 'dark' : 'light');
+    themeIcon.innerHTML = isLight
+      ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+      : '<circle cx="12" cy="12" r="4"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+  });
+
+  function go(name) {
+    screens.forEach(s => s.classList.remove('active'));
+    const target = document.getElementById('screen-' + name);
+    target.classList.add('active');
+    select.value = name;
+    const navKey = target.dataset.nav;
+    if (navKey === 'none') {
+      bottomNav.style.display = 'none';
+    } else {
+      bottomNav.style.display = 'flex';
+      navItems.forEach(n => n.classList.toggle('active', n.dataset.target === navKey));
+    }
+  }
+  select.addEventListener('change', () => go(select.value));
+  navItems.forEach(n => n.addEventListener('click', () => go(n.dataset.target)));
+  go('home');
+</script>
+</body>
+</html>

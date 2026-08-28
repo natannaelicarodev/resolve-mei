@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import type { ComponentProps } from 'react';
@@ -13,13 +14,22 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Circle, Path, Svg } from 'react-native-svg';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
-import { Button, IconButton, Skeleton, Text } from '@/components/ui';
+import {
+  Button,
+  Card,
+  Icon,
+  IconButton,
+  Skeleton,
+  Text,
+} from '@/components/ui';
+import type { IconName as CatalogIconName } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { getProfileInitial } from '@/features/profile/avatar';
 import { formatMoney } from '@/features/quotes/domain';
-import { getThemeShadows, radii, shadows, spacing, useTheme } from '@/theme';
+import { getThemeShadows, radii, spacing, useTheme } from '@/theme';
 import type { DashboardPeriod, HomeDashboardData } from './api';
 
 interface HomeDashboardProps {
@@ -295,14 +305,24 @@ function Balance({
   compact: boolean;
 }) {
   const { colors, resolvedTheme } = useTheme();
+  const pipelineCents = data ? data.approvedCents + data.negotiatingCents : 0;
+  const approvedShare = pipelineCents
+    ? Math.round(((data?.approvedCents ?? 0) / pipelineCents) * 100)
+    : 0;
+  const trendIcon: CatalogIconName = !data
+    ? 'statusNeutral'
+    : data.approvedCents > data.previousApprovedCents
+      ? 'trendUp'
+      : data.approvedCents < data.previousApprovedCents
+        ? 'trendDown'
+        : 'statusNeutral';
   return (
-    <View
+    <Card
+      testID="balance-card"
+      variant="highlighted"
       style={[
         styles.balance,
-        resolvedTheme === 'dark'
-          ? getThemeShadows(resolvedTheme).floating
-          : shadows.card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
+        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).floating,
       ]}
     >
       <View style={styles.balanceHeader}>
@@ -312,7 +332,7 @@ function Balance({
         <PeriodPicker onChange={onPeriodChange} value={period} />
       </View>
       <Text color="textSecondary" variant="caption">
-        Total dos orçamentos aprovados no período.
+        Visão dos valores aprovados e ainda em negociação.
       </Text>
       {loading ? (
         <View style={styles.loading} testID="balance-skeleton">
@@ -323,24 +343,137 @@ function Balance({
         <ErrorState compact onRetry={retry} />
       ) : (
         <>
-          <Text
-            adjustsFontSizeToFit
-            accessibilityLabel={`Valor aprovado: ${formatMoney(data.approvedCents)}`}
-            minimumFontScale={0.72}
-            numberOfLines={1}
-            style={styles.balanceValue}
+          <View
+            style={[
+              styles.balanceSummary,
+              compact && styles.balanceSummaryCompact,
+            ]}
           >
-            {formatMoney(data.approvedCents)}
-          </Text>
-          {data.approvedCents === 0 ? (
-            <Text color="textSecondary">
-              Nenhum orçamento aprovado neste período
-            </Text>
-          ) : (
-            <Text color="textSecondary">
-              {comparison(data.approvedCents, data.previousApprovedCents)}
-            </Text>
-          )}
+            <View
+              style={[
+                styles.balanceMain,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Text color="textMuted" variant="caption">
+                Valor aprovado
+              </Text>
+              <View style={styles.balanceValueRow}>
+                <Text
+                  adjustsFontSizeToFit
+                  accessibilityLabel={`Valor aprovado: ${formatMoney(data.approvedCents)}`}
+                  minimumFontScale={0.72}
+                  numberOfLines={1}
+                  style={styles.balanceValue}
+                >
+                  {formatMoney(data.approvedCents)}
+                </Text>
+              </View>
+              {data.approvedCents === 0 ? (
+                <Text color="textSecondary">
+                  Nenhum orçamento aprovado neste período
+                </Text>
+              ) : (
+                <View
+                  accessible
+                  accessibilityLabel={comparison(
+                    data.approvedCents,
+                    data.previousApprovedCents,
+                  )}
+                  style={[
+                    styles.trend,
+                    {
+                      backgroundColor: colors.accentSubtle,
+                      borderColor: colors.accent,
+                    },
+                  ]}
+                  testID="balance-trend"
+                >
+                  <Icon color="accent" name={trendIcon} size="small" />
+                  <Text
+                    color="accent"
+                    numberOfLines={2}
+                    style={styles.trendLabel}
+                    variant="label"
+                  >
+                    {comparison(data.approvedCents, data.previousApprovedCents)}
+                  </Text>
+                </View>
+              )}
+            </View>
+            <View
+              style={[
+                styles.composition,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+              testID="balance-composition"
+            >
+              <Text color="textSecondary" variant="caption">
+                Composição do período
+              </Text>
+              <View
+                accessible
+                accessibilityLabel={`${approvedShare}% aprovado e ${pipelineCents ? 100 - approvedShare : 0}% em negociação`}
+                style={[
+                  styles.compositionTrack,
+                  { backgroundColor: colors.surfacePressed },
+                ]}
+              >
+                {pipelineCents ? (
+                  <>
+                    <View
+                      style={[
+                        styles.compositionApproved,
+                        {
+                          backgroundColor: colors.primary,
+                          width: `${approvedShare}%`,
+                        },
+                      ]}
+                    />
+                    <View
+                      style={[
+                        styles.compositionNegotiating,
+                        {
+                          backgroundColor: colors.accent,
+                          width: `${100 - approvedShare}%`,
+                        },
+                      ]}
+                    />
+                  </>
+                ) : null}
+              </View>
+              <View style={styles.compositionLegend}>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: colors.primary },
+                    ]}
+                  />
+                  <Text color="textSecondary" variant="caption">
+                    Aprovado {approvedShare}%
+                  </Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View
+                    style={[
+                      styles.legendDot,
+                      { backgroundColor: colors.accent },
+                    ]}
+                  />
+                  <Text color="textSecondary" variant="caption">
+                    Negociação {pipelineCents ? 100 - approvedShare : 0}%
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
           <View style={[styles.divider, { backgroundColor: colors.border }]} />
           <View style={[styles.metrics, compact && styles.metricsCompact]}>
             <Metric
@@ -371,7 +504,7 @@ function Balance({
           ) : null}
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
@@ -380,13 +513,11 @@ function QuickAction({
   label,
   primary,
   onPress,
-  fullWidth = false,
 }: {
   icon: IconName;
   label: string;
   primary?: boolean;
   onPress: () => void;
-  fullWidth?: boolean;
 }) {
   const { colors, resolvedTheme } = useTheme();
   return (
@@ -394,48 +525,69 @@ function QuickAction({
       accessibilityLabel={label}
       accessibilityRole="button"
       onPress={onPress}
-      style={[
-        styles.quickAction,
-        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-        fullWidth && styles.quickActionFullWidth,
-        {
-          backgroundColor: primary ? colors.primarySubtle : colors.surfaceMuted,
-          borderColor: primary ? colors.primary : colors.border,
-        },
-      ]}
+      style={styles.quickAction}
     >
-      <MaterialCommunityIcons color={colors.primary} name={icon} size={27} />
-      <Text align="center" variant="label">
+      {primary ? (
+        <LinearGradient
+          colors={[colors.primary, colors.primaryPressed]}
+          end={{ x: 1, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          style={[
+            styles.quickActionBadge,
+            getThemeShadows(resolvedTheme).floating,
+          ]}
+          testID="quick-action-primary-gradient"
+        >
+          <MaterialCommunityIcons
+            color={colors.textOnPrimary}
+            name={icon}
+            size={22}
+          />
+        </LinearGradient>
+      ) : (
+        <View
+          style={[
+            styles.quickActionBadge,
+            { backgroundColor: colors.primarySubtle },
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.primary}
+            name={icon}
+            size={22}
+          />
+        </View>
+      )}
+      <Text align="center" color="textSecondary" variant="label">
         {label}
       </Text>
     </AnimatedPressable>
   );
 }
 
-function QuickActions({ compact }: { compact: boolean }) {
+function QuickActions() {
   return (
     <View style={styles.section}>
       <SectionHeader title="Ações rápidas" />
-      <View style={compact ? styles.quickStack : styles.quickGrid}>
+      {/* Three equal columns at any width: badges are small enough that the
+          compact stack the old card layout needed is no longer necessary. */}
+      <View style={styles.quickGrid}>
         <QuickAction
-          fullWidth={compact}
           icon="file-document-plus-outline"
           label="Novo orçamento"
           onPress={() => router.push('/quotes/new')}
           primary
         />
-        <View style={compact ? styles.quickSecondaryRow : styles.quickGridItem}>
-          <QuickAction
-            icon="account-plus-outline"
-            label="Novo cliente"
-            onPress={() => router.push('/clients/new')}
-          />
-          <QuickAction
-            icon="briefcase-plus-outline"
-            label="Novo serviço"
-            onPress={() => router.push('/services/new')}
-          />
-        </View>
+        <QuickAction
+          icon="account-plus-outline"
+          label="Novo cliente"
+          onPress={() => router.push('/clients/new')}
+        />
+        <QuickAction
+          icon="briefcase-plus-outline"
+          label="Novo serviço"
+          onPress={() => router.push('/services/new')}
+        />
       </View>
     </View>
   );
@@ -449,19 +601,19 @@ interface DashboardStateProps {
 }
 
 function Overview({ data, loading, error, retry }: DashboardStateProps) {
-  const { colors, resolvedTheme } = useTheme();
+  const { colors } = useTheme();
   const [selected, setSelected] = useState<number>();
   if (loading)
     return (
-      <View style={styles.chartCard} testID="overview-skeleton">
+      <Card style={styles.chartCard} testID="overview-skeleton">
         <Skeleton height={210} width="100%" />
-      </View>
+      </Card>
     );
   if (error || !data)
     return (
-      <View style={[styles.chartCard, { backgroundColor: colors.surface }]}>
+      <Card style={styles.chartCard}>
         <ErrorState onRetry={retry} />
-      </View>
+      </Card>
     );
   const maximum = Math.max(
     ...data.monthly.map((item) => item.approvedCents),
@@ -471,15 +623,32 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
   const singleMonth = data.monthly.length === 1;
   const chartHeight = singleMonth ? 112 : data.monthly.length <= 6 ? 156 : 176;
   const barMaximumHeight = chartHeight - 36;
-  const visibleIndex = selected ?? (singleMonth ? 0 : undefined);
+  const chartWidth = Math.max(320, data.monthly.length * 48);
+  const horizontalInset = 18;
+  const points = data.monthly.map((item, index) => ({
+    x: singleMonth
+      ? chartWidth / 2
+      : horizontalInset +
+        (index / (data.monthly.length - 1)) *
+          (chartWidth - horizontalInset * 2),
+    y:
+      12 +
+      (1 - item.approvedCents / maximum) * Math.max(barMaximumHeight - 12, 1),
+  }));
+  const linePath = points
+    .map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`)
+    .join(' ');
+  const visibleIndex = selected ?? data.monthly.length - 1;
+  const visibleItem = data.monthly[visibleIndex];
+  const visiblePoint = points[visibleIndex];
+  const visibleMonth = visibleItem
+    ? MONTHS[new Date(`${visibleItem.month}T12:00:00`).getMonth()]
+    : '';
   return (
-    <View
-      style={[
-        styles.chartCard,
-        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-        singleMonth && styles.chartCardSingle,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
+    <Card
+      testID="overview-card"
+      variant="elevated"
+      style={[styles.chartCard, singleMonth && styles.chartCardSingle]}
     >
       <SectionHeader
         title="Orçamentos aprovados"
@@ -503,27 +672,11 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
         </View>
       ) : (
         <>
-          {visibleIndex !== undefined && data.monthly[visibleIndex] ? (
-            <Text
-              accessibilityLiveRegion="polite"
-              color="textSecondary"
-              variant="caption"
-            >
-              {
-                MONTHS[
-                  new Date(
-                    `${data.monthly[visibleIndex].month}T12:00:00`,
-                  ).getMonth()
-                ]
-              }
-              : {formatMoney(data.monthly[visibleIndex].approvedCents)}
-            </Text>
-          ) : null}
           <ScrollView
             accessibilityLabel="Gráfico mensal de valores aprovados"
             contentContainerStyle={[
               styles.chart,
-              { height: chartHeight },
+              { minWidth: chartWidth },
               data.monthly.length > 6 && {
                 minWidth: data.monthly.length * 48,
               },
@@ -533,81 +686,118 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
             showsHorizontalScrollIndicator={false}
             style={styles.chartViewport}
           >
-            {data.monthly.map((item, index) => {
-              const month =
-                MONTHS[new Date(`${item.month}T12:00:00`).getMonth()];
-              const current = index === data.monthly.length - 1;
-              return (
-                <AnimatedPressable
-                  accessibilityLabel={`${month}, ${formatMoney(item.approvedCents)}`}
-                  accessibilityRole="button"
-                  containerStyle={[
-                    styles.barContainer,
-                    singleMonth && styles.barContainerSingle,
-                  ]}
-                  key={item.month}
-                  onPress={() => setSelected(index)}
-                  style={[styles.barPressable, { height: chartHeight }]}
-                >
-                  <View
-                    style={[
-                      styles.bar,
-                      {
-                        backgroundColor: current
-                          ? colors.primary
-                          : colors.primarySubtle,
-                        height: Math.max(
-                          6,
-                          Math.round(
-                            (item.approvedCents / maximum) * barMaximumHeight,
-                          ),
-                        ),
-                      },
-                    ]}
-                  />
-                  <Text
-                    color={current ? 'textPrimary' : 'textSecondary'}
-                    variant="caption"
+            {visibleItem && visiblePoint ? (
+              <View
+                accessible
+                accessibilityLabel={`${visibleMonth}: ${formatMoney(visibleItem.approvedCents)}`}
+                accessibilityLiveRegion="polite"
+                pointerEvents="none"
+                style={[
+                  styles.chartTooltip,
+                  {
+                    backgroundColor: colors.surfaceElevated,
+                    borderColor: colors.border,
+                    left: Math.max(
+                      0,
+                      Math.min(chartWidth - 124, visiblePoint.x - 62),
+                    ),
+                    top: Math.max(0, visiblePoint.y - 42),
+                  },
+                ]}
+                testID="line-chart-tooltip"
+              >
+                <Text numberOfLines={1} variant="caption">
+                  {visibleMonth}: {formatMoney(visibleItem.approvedCents)}
+                </Text>
+              </View>
+            ) : null}
+            <Svg
+              accessibilityElementsHidden
+              height={chartHeight}
+              importantForAccessibility="no-hide-descendants"
+              testID="approved-line-chart"
+              viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+              width={chartWidth}
+            >
+              <Path
+                d={linePath}
+                fill="none"
+                stroke={colors.accent}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={3}
+              />
+              {points.map((point, index) => (
+                <Circle
+                  cx={point.x}
+                  cy={point.y}
+                  fill={
+                    index === visibleIndex ? colors.primary : colors.surface
+                  }
+                  key={data.monthly[index]?.month}
+                  r={index === visibleIndex ? 6 : 4}
+                  stroke={colors.accent}
+                  strokeWidth={3}
+                />
+              ))}
+            </Svg>
+            <View style={styles.lineLabels}>
+              {data.monthly.map((item, index) => {
+                const month =
+                  MONTHS[new Date(`${item.month}T12:00:00`).getMonth()];
+                return (
+                  <AnimatedPressable
+                    accessibilityLabel={`${month}, ${formatMoney(item.approvedCents)}`}
+                    accessibilityRole="button"
+                    key={item.month}
+                    onPress={() => setSelected(index)}
+                    style={styles.lineLabelButton}
                   >
-                    {month}
-                  </Text>
-                </AnimatedPressable>
-              );
-            })}
+                    <Text
+                      color={
+                        index === visibleIndex ? 'primary' : 'textSecondary'
+                      }
+                      variant="caption"
+                    >
+                      {month}
+                    </Text>
+                  </AnimatedPressable>
+                );
+              })}
+            </View>
           </ScrollView>
         </>
       )}
-    </View>
+    </Card>
   );
 }
 
 function Clients({ data, loading, error, retry }: DashboardStateProps) {
-  const { colors, resolvedTheme } = useTheme();
+  const { colors } = useTheme();
   if (loading)
     return (
-      <View style={styles.clientsCard} testID="clients-skeleton">
+      <Card style={styles.clientsCard} testID="clients-skeleton">
         <Skeleton height={190} width="100%" />
-      </View>
+      </Card>
     );
   if (error || !data)
     return (
-      <View style={[styles.clientsCard, { backgroundColor: colors.surface }]}>
+      <Card style={styles.clientsCard}>
         <ErrorState onRetry={retry} />
-      </View>
+      </Card>
     );
   const percent = data.clients.total
     ? Math.round((data.clients.active / data.clients.total) * 100)
     : 0;
+  const donutRadius = 40;
+  const donutCircumference = 2 * Math.PI * donutRadius;
   return (
-    <AnimatedPressable
+    <Card
       accessibilityLabel={`Abrir clientes. ${data.clients.total} no total, ${percent}% ativos.`}
-      accessibilityRole="button"
       onPress={() => router.push('/clients')}
-      style={[
-        styles.clientsCard,
-        resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-        { backgroundColor: colors.surface, borderColor: colors.border },
-      ]}
+      style={styles.clientsCard}
+      testID="clients-card"
+      variant="interactive"
     >
       <SectionHeader title="Clientes" subtitle="Situação atual" />
       {!data.clients.total ? (
@@ -624,27 +814,49 @@ function Clients({ data, loading, error, retry }: DashboardStateProps) {
       ) : (
         <>
           <View style={styles.clientTotal}>
-            <Text style={styles.percent}>{percent}%</Text>
+            <View
+              accessibilityLabel={`${percent}% dos clientes estão ativos`}
+              style={styles.donut}
+              testID="clients-donut"
+            >
+              <Svg
+                accessibilityElementsHidden
+                height={108}
+                importantForAccessibility="no-hide-descendants"
+                viewBox="0 0 108 108"
+                width={108}
+              >
+                <Circle
+                  cx={54}
+                  cy={54}
+                  fill="none"
+                  r={donutRadius}
+                  stroke={colors.backgroundSubtle}
+                  strokeWidth={12}
+                />
+                <Circle
+                  cx={54}
+                  cy={54}
+                  fill="none"
+                  origin="54, 54"
+                  r={donutRadius}
+                  rotation={-90}
+                  stroke={colors.primary}
+                  strokeDasharray={`${(donutCircumference * percent) / 100} ${donutCircumference}`}
+                  strokeLinecap="round"
+                  strokeWidth={12}
+                />
+              </Svg>
+              <Text style={styles.donutValue} variant="cardTitle">
+                {percent}%
+              </Text>
+            </View>
             <View style={styles.clientCopy}>
-              <Text>{data.clients.total} clientes</Text>
+              <Text variant="cardTitle">{data.clients.total} clientes</Text>
               <Text color="textSecondary" variant="caption">
                 Percentual de clientes ativos
               </Text>
             </View>
-          </View>
-          <View
-            accessibilityLabel={`${percent}% dos clientes estão ativos`}
-            style={[
-              styles.progress,
-              { backgroundColor: colors.backgroundSubtle },
-            ]}
-          >
-            <View
-              style={[
-                styles.progressValue,
-                { backgroundColor: colors.primary, width: `${percent}%` },
-              ]}
-            />
           </View>
           <View style={styles.legend}>
             <Text color="textSecondary">{data.clients.active} ativos</Text>
@@ -652,25 +864,19 @@ function Clients({ data, loading, error, retry }: DashboardStateProps) {
           </View>
         </>
       )}
-    </AnimatedPressable>
+    </Card>
   );
 }
 
 function Services({ data, loading, error, retry }: DashboardStateProps) {
-  const { colors, resolvedTheme } = useTheme();
+  const { colors } = useTheme();
   return (
     <View style={styles.section}>
       <SectionHeader
         title="Serviços mais orçados"
         subtitle="Baseado nos itens adicionados aos orçamentos do período."
       />
-      <View
-        style={[
-          styles.servicesCard,
-          resolvedTheme === 'dark' && getThemeShadows(resolvedTheme).card,
-          { backgroundColor: colors.surface, borderColor: colors.border },
-        ]}
-      >
+      <Card style={styles.servicesCard} testID="services-card">
         {loading ? (
           <View testID="services-skeleton">
             <Skeleton height={168} width="100%" />
@@ -734,7 +940,7 @@ function Services({ data, loading, error, retry }: DashboardStateProps) {
               </AnimatedPressable>
             ))
           : null}
-      </View>
+      </Card>
     </View>
   );
 }
@@ -830,7 +1036,7 @@ export function HomeDashboard(props: HomeDashboardProps) {
             period={props.period ?? 'month'}
             compact={compact}
           />
-          <QuickActions compact={compact} />
+          <QuickActions />
           <View style={styles.section}>
             <SectionHeader title="Visão geral" />
             <View
@@ -885,7 +1091,6 @@ const styles = StyleSheet.create({
   sectionHeader: { gap: spacing.xs },
   balance: {
     borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing[3],
     padding: spacing[5],
   },
@@ -925,7 +1130,68 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   loading: { gap: spacing.sm, paddingVertical: spacing.md },
-  balanceValue: { fontSize: 30, lineHeight: 38 },
+  // lineHeight has to clear the ascender/descender box of the largest glyphs,
+  // otherwise adjustsFontSizeToFit clips the value vertically.
+  // adjustsFontSizeToFit resizes the glyphs but not the line box it lives in,
+  // so the value gets a row of its own with explicit height. Without the
+  // wrapper the figure is clipped and the trend badge below rides over it.
+  balanceValueRow: { justifyContent: 'center', minHeight: 52, width: '100%' },
+  balanceValue: { fontSize: 34, fontWeight: '700', lineHeight: 44 },
+  balanceSummary: {
+    alignItems: 'stretch',
+    flexDirection: 'row',
+    gap: spacing.lg,
+  },
+  balanceSummaryCompact: { flexDirection: 'column' },
+  // The headline figure sits on its own surface so the card reads as
+  // "primary value, then supporting detail" instead of one flat block.
+  balanceMain: {
+    borderRadius: radii.large,
+    borderWidth: StyleSheet.hairlineWidth,
+    flex: 1,
+    gap: spacing.sm,
+    minWidth: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  trend: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    maxWidth: '100%',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  trendLabel: { flexShrink: 1, minWidth: 0 },
+  // Composition is supporting detail, so it sits on its own quieter surface
+  // instead of sharing the hero block.
+  composition: {
+    borderRadius: radii.medium,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.md,
+    flex: 1,
+    gap: spacing.sm,
+    justifyContent: 'center',
+    minWidth: 0,
+  },
+  compositionTrack: {
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    height: 16,
+    overflow: 'hidden',
+  },
+  compositionApproved: { height: '100%' },
+  compositionNegotiating: { height: '100%' },
+  compositionLegend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  legendItem: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  legendDot: { borderRadius: radii.circular, height: 8, width: 8 },
   divider: { height: StyleSheet.hairlineWidth },
   metrics: { flexDirection: 'row', gap: spacing.sm },
   metricsCompact: { flexDirection: 'column' },
@@ -945,51 +1211,55 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   quickGrid: { flexDirection: 'row', gap: spacing[3] },
-  quickStack: { gap: spacing.sm },
-  quickGridItem: { flex: 2, flexDirection: 'row', gap: spacing[3] },
-  quickSecondaryRow: { flexDirection: 'row', gap: spacing.sm },
+  // A quick action is a badge plus a label on the page background, not a card:
+  // the surrounding surface added a layer that carried no meaning.
   quickAction: {
     alignItems: 'center',
-    borderRadius: radii.medium,
-    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
     gap: spacing.sm,
-    justifyContent: 'center',
-    minHeight: 72,
+    justifyContent: 'flex-start',
     minWidth: 0,
-    padding: spacing.sm,
+    paddingVertical: spacing.sm,
   },
-  quickActionFullWidth: { flex: 0, width: '100%' },
+  quickActionBadge: {
+    alignItems: 'center',
+    borderRadius: radii.medium,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
   overviewGrid: { gap: spacing[3] },
   overviewGridWide: { alignItems: 'stretch', flexDirection: 'row' },
   chartCard: {
     borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     flex: 2,
     gap: spacing.md,
     minHeight: 220,
     padding: spacing.md,
   },
   chartCardSingle: { minHeight: 196 },
-  chart: {
-    alignItems: 'flex-end',
-    flexDirection: 'row',
-    gap: spacing.sm,
-    height: 156,
-  },
+  chart: { gap: spacing.xs, position: 'relative' },
   chartViewport: { width: '100%' },
-  barContainer: { flex: 1, minWidth: 0 },
-  barContainerSingle: { flex: 0, width: 72 },
-  barPressable: {
+  chartTooltip: {
     alignItems: 'center',
-    gap: spacing.sm,
-    height: 156,
-    justifyContent: 'flex-end',
+    borderRadius: radii.small,
+    borderWidth: StyleSheet.hairlineWidth,
+    maxWidth: 124,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: 'absolute',
+    zIndex: 2,
   },
-  bar: { borderRadius: radii.small, maxWidth: 42, minWidth: 12, width: '70%' },
+  lineLabels: { flexDirection: 'row', width: '100%' },
+  lineLabelButton: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+    minHeight: 44,
+    minWidth: 44,
+  },
   clientsCard: {
     borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     flex: 1,
     gap: spacing.md,
     minHeight: 210,
@@ -997,13 +1267,11 @@ const styles = StyleSheet.create({
   },
   clientTotal: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   clientCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
-  percent: { fontSize: 30, lineHeight: 38 },
-  progress: { borderRadius: radii.pill, height: 12, overflow: 'hidden' },
-  progressValue: { borderRadius: radii.pill, height: '100%' },
+  donut: { alignItems: 'center', justifyContent: 'center' },
+  donutValue: { position: 'absolute' },
   legend: { flexDirection: 'row', justifyContent: 'space-between' },
   servicesCard: {
     borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     paddingHorizontal: spacing.md,
   },

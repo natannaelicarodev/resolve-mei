@@ -2,9 +2,12 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { radii, spacing, useTheme } from '@/theme';
+import type { ColorToken } from '@/theme';
+import { Icon } from './Icon';
 import { Text } from './Text';
 
-type BadgeVariant = 'neutral' | 'success' | 'warning' | 'danger' | 'info';
+export type BadgeVariant =
+  'neutral' | 'success' | 'warning' | 'danger' | 'info';
 const labels: Record<BadgeVariant, string> = {
   neutral: 'Status',
   success: 'Sucesso',
@@ -12,6 +15,17 @@ const labels: Record<BadgeVariant, string> = {
   danger: 'Erro',
   info: 'Informação',
 };
+
+const indicators = {
+  neutral: { icon: 'statusNeutral', color: 'textSecondary' },
+  success: { icon: 'success', color: 'success' },
+  warning: { icon: 'alert', color: 'warning' },
+  danger: { icon: 'statusDanger', color: 'danger' },
+  info: { icon: 'statusInfo', color: 'info' },
+} as const satisfies Record<
+  BadgeVariant,
+  { icon: React.ComponentProps<typeof Icon>['name']; color: ColorToken }
+>;
 
 export function getBadgeAccessibilityLabel(
   label: string,
@@ -37,6 +51,7 @@ export function Badge({
     danger: colors.dangerSubtle,
     info: colors.infoSubtle,
   }[variant];
+  const indicator = indicators[variant];
   return (
     <View
       accessible
@@ -44,7 +59,15 @@ export function Badge({
       accessibilityRole="text"
       style={[styles.badge, { backgroundColor }]}
     >
-      {icon}
+      {icon ?? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          testID={`badge-${variant}-indicator`}
+        >
+          <Icon color={indicator.color} name={indicator.icon} size="small" />
+        </View>
+      )}
       <Text variant="status">{label}</Text>
     </View>
   );

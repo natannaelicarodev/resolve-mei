@@ -2,6 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import {
   Button,
+  Badge,
   Card,
   IconButton,
   Input,
@@ -135,6 +136,11 @@ describe('design system foundation', () => {
     await fireEvent.press(screen.getByRole('button', { name: 'Abrir item' }));
     await fireEvent.press(screen.getByRole('button', { name: 'Fechar' }));
     expect(cardPress).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByTestId('card-interactive-chevron', {
+        includeHiddenElements: true,
+      }),
+    ).toBeTruthy();
     expect(iconPress).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Fechar' })).toHaveStyle({
       height: 44,
@@ -170,6 +176,40 @@ describe('design system foundation', () => {
       accessibilityLiveRegion: 'polite',
       accessibilityRole: 'alert',
     });
+  });
+
+  it.each(['neutral', 'success', 'warning', 'danger', 'info'] as const)(
+    'gives the %s badge a visible status symbol',
+    async (variant) => {
+      const screen = await render(<Badge label="Estado" variant={variant} />);
+      expect(
+        screen.getByTestId(`badge-${variant}-indicator`, {
+          includeHiddenElements: true,
+        }),
+      ).toBeTruthy();
+    },
+  );
+
+  it('gives each semantic card variant its own structure', async () => {
+    const screen = await render(
+      <>
+        <Card testID="highlighted" variant="highlighted" />
+        <Card testID="success" variant="success" />
+        <Card testID="warning" variant="warning" />
+        <Card testID="danger" variant="danger" />
+      </>,
+    );
+    expect(screen.getByTestId('highlighted')).toHaveStyle({
+      borderStartWidth: spacing.xs,
+    });
+    expect(screen.getByTestId('success')).toHaveStyle({
+      borderTopWidth: spacing.xs,
+    });
+    expect(screen.getByTestId('warning')).toHaveStyle({
+      borderStyle: 'dashed',
+      borderWidth: 1,
+    });
+    expect(screen.getByTestId('danger')).toHaveStyle({ borderWidth: 2 });
   });
 
   it('hides skeleton decoration from accessibility', async () => {

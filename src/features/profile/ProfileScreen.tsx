@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   findNodeHandle,
+  Image,
   ScrollView,
   StyleSheet,
   TextInput,
@@ -21,6 +22,8 @@ import {
 import {
   Button,
   Card,
+  ConfirmationDialog,
+  FormSection,
   InlineFeedback,
   Input,
   Screen,
@@ -29,12 +32,13 @@ import {
   Text,
 } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
+import { triggerHaptic } from '@/lib/haptics';
 import {
   ProtectedBottomNavigation,
   ProtectedPageHeader,
 } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { spacing, useTheme } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { getMyProfile, profileQueryKey, updateMyProfile } from './api';
 import { createAvatarSignedUrl, getProfileInitial } from './avatar';
 import { scheduleProfileRedirect } from './navigation';
@@ -88,7 +92,7 @@ export function ProfileScreen() {
     () => parseProfileNavigation(params.section, params.field),
     [params.field, params.section],
   );
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const userId = user?.id ?? '';
   const { colors } = useTheme();
   const queryClient = useQueryClient();
@@ -98,6 +102,9 @@ export function ProfileScreen() {
   const phoneRef = useRef<TextInput>(null);
   const contextualNavigationHandled = useRef(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
+  const [logoutError, setLogoutError] = useState<string>();
+  const [loggingOut, setLoggingOut] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ImagePickerAsset>();
   const [tab, setTab] = useState<ProfileTab>(
     () => navigation?.tab ?? 'personal',
@@ -209,6 +216,19 @@ export function ProfileScreen() {
     setShowSuccess(false);
     mutation.mutate(data);
   };
+  const logout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError(undefined);
+    try {
+      await signOut();
+      router.replace('/sign-in');
+      void triggerHaptic('selection');
+    } catch (error) {
+      setLogoutError(normalizeError(error).message);
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -217,10 +237,37 @@ export function ProfileScreen() {
     >
       <Screen keyboardAvoiding safeAreaEdges={[]} scrollRef={scrollRef}>
         <ProtectedPageHeader title="Perfil" settings />
-        <FadeInView style={styles.header}>
-          <Text color="textSecondary">
-            Mantenha seus dados atualizados: eles aparecem nos seus documentos.
-          </Text>
+        <FadeInView
+          style={[styles.identity, { backgroundColor: colors.primarySubtle }]}
+          testID="profile-identity"
+        >
+          {image.data ? (
+            <Image
+              accessibilityLabel="Foto do perfil"
+              source={{ uri: image.data }}
+              style={styles.identityAvatar}
+            />
+          ) : (
+            <View
+              accessibilityLabel="Avatar do perfil"
+              style={[
+                styles.identityAvatar,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <Text color="primary" variant="pageTitle">
+                {getProfileInitial(query.data?.full_name)}
+              </Text>
+            </View>
+          )}
+          <View style={styles.identityCopy}>
+            <Text numberOfLines={2} variant="pageTitle">
+              {query.data?.full_name || 'Seu perfil'}
+            </Text>
+            <Text color="textSecondary" numberOfLines={2}>
+              {user?.email}
+            </Text>
+          </View>
         </FadeInView>
 
         <SegmentedControl
@@ -311,6 +358,39 @@ export function ProfileScreen() {
             )}
           </View>
         </StepTransition>
+        <FormSection
+          description="Preferências do aplicativo e acesso neste dispositivo."
+          title="Segurança e outros"
+        >
+          <Button
+            label="Aparência e configurações"
+            onPress={() => router.push('/settings')}
+            variant="secondary"
+          />
+          {logoutError ? (
+            <InlineFeedback message={logoutError} variant="error" />
+          ) : null}
+          <Button
+            disabled={loggingOut}
+            label="Sair da conta"
+            loading={loggingOut}
+            onPress={() => setConfirmingLogout(true)}
+            variant="danger"
+          />
+        </FormSection>
+        <ConfirmationDialog
+          confirmLabel="Sair da conta"
+          description="Você precisará entrar novamente para acessar seus dados."
+          destructive
+          loading={loggingOut}
+          onCancel={() => setConfirmingLogout(false)}
+          onConfirm={() => {
+            setConfirmingLogout(false);
+            void logout();
+          }}
+          title="Sair da conta?"
+          visible={confirmingLogout}
+        />
       </Screen>
       <ProtectedBottomNavigation selected="profile" />
     </SafeAreaView>
@@ -319,6 +399,20 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  header: { gap: spacing.sm },
+  identity: {
+    alignItems: 'center',
+    borderRadius: radii.card,
+    flexDirection: 'row',
+    gap: spacing.md,
+    padding: spacing.lg,
+  },
+  identityAvatar: {
+    alignItems: 'center',
+    borderRadius: radii.circular,
+    height: 72,
+    justifyContent: 'center',
+    width: 72,
+  },
+  identityCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   section: { gap: spacing.lg },
 });

@@ -12,6 +12,7 @@ import {
   Button,
   Card,
   ConfirmationDialog,
+  FormSection,
   Icon,
   IconButton,
   iconNames,
@@ -70,7 +71,17 @@ export function DesignSystemCatalog() {
         <Text color="textSecondary">Catálogo técnico com dados fictícios.</Text>
       </FadeInView>
 
-      <Section title="Cores">
+      <Section title="Tipografia">
+        <Text variant="display">Trabalho simples</Text>
+        <Text variant="pageTitle">Título de página</Text>
+        <Text variant="sectionTitle">Título de seção</Text>
+        <Text variant="cardTitle">Título de card</Text>
+        <Text>Corpo confortável em português.</Text>
+        <Text variant="bodySecondary">Corpo secundário para contexto.</Text>
+        <Text variant="financial">R$ 1.240,00</Text>
+      </Section>
+
+      <Section title="Cor">
         <View style={styles.wrap}>
           {swatches.map(([label, value]) => (
             <View key={label} style={styles.swatchItem}>
@@ -100,17 +111,33 @@ export function DesignSystemCatalog() {
         />
       </Section>
 
-      <Section title="Tipografia">
-        <Text variant="display">Trabalho simples</Text>
-        <Text variant="pageTitle">Título de página</Text>
-        <Text variant="sectionTitle">Título de seção</Text>
-        <Text variant="cardTitle">Título de card</Text>
-        <Text>Corpo confortável em português.</Text>
-        <Text variant="bodySecondary">Corpo secundário para contexto.</Text>
-        <Text variant="financial">R$ 1.240,00</Text>
+      <Section title="Ícone">
+        <Text color="textSecondary" variant="bodySecondary">
+          Lucide, traço 1,75 e três tamanhos. Cada nome descreve o papel no
+          produto, não o desenho.
+        </Text>
+        <View style={styles.iconGrid}>
+          {iconNames.map((name) => (
+            <View key={name} style={styles.iconCell}>
+              <Icon name={name} />
+              <Text align="center" color="textMuted" variant="caption">
+                {name}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.iconRow}>
+          <Icon name="quote" size="small" />
+          <Icon name="quote" size="medium" />
+          <Icon name="quote" size="large" />
+          <Icon color="primary" name="trendUp" size="large" />
+          <Icon color="accent" name="money" size="large" />
+          <Icon color="success" name="success" size="large" />
+          <Icon color="danger" name="alert" size="large" />
+        </View>
       </Section>
 
-      <Section title="Espaçamento e raios">
+      <Section title="Grid">
         <View style={styles.spacingRow}>
           {[4, 8, 12, 16, 24, 32].map((size) => (
             <View
@@ -146,6 +173,8 @@ export function DesignSystemCatalog() {
         </View>
       </Section>
 
+      <Text variant="pageTitle">Componentes</Text>
+
       <Section title="Botões">
         <Button label="Ação principal" haptic="selection" />
         <Button label="Ação secundária" variant="secondary" />
@@ -168,32 +197,6 @@ export function DesignSystemCatalog() {
         <Button label="Carregando" loading />
         <Button label="Concluído" state="success" />
         <Button disabled label="Indisponível" />
-      </Section>
-
-      <Section title="Ícones">
-        <Text color="textSecondary" variant="bodySecondary">
-          Lucide, traço 1,75 e três tamanhos. Cada nome descreve o papel no
-          produto, não o desenho.
-        </Text>
-        <View style={styles.iconGrid}>
-          {iconNames.map((name) => (
-            <View key={name} style={styles.iconCell}>
-              <Icon name={name} />
-              <Text align="center" color="textMuted" variant="caption">
-                {name}
-              </Text>
-            </View>
-          ))}
-        </View>
-        <View style={styles.iconRow}>
-          <Icon name="quote" size="small" />
-          <Icon name="quote" size="medium" />
-          <Icon name="quote" size="large" />
-          <Icon color="primary" name="trendUp" size="large" />
-          <Icon color="accent" name="money" size="large" />
-          <Icon color="success" name="success" size="large" />
-          <Icon color="danger" name="alert" size="large" />
-        </View>
       </Section>
 
       <Section title="Campos">
@@ -225,6 +228,13 @@ export function DesignSystemCatalog() {
           showCounter
           value="Descrição curta"
         />
+        <FormSection
+          description="Agrupa campos relacionados sem alterar o contrato do formulário."
+          icon={<Icon name="client" />}
+          title="Seção de formulário"
+        >
+          <Input label="Campo agrupado" value="Exemplo" />
+        </FormSection>
       </Section>
 
       <Section title="Cards">

@@ -52,9 +52,11 @@ it('keeps the compact period selector inside balance and protects mobile spacing
   expect(home).toContain('numberOfLines={2}');
   expect(home).toContain('adjustsFontSizeToFit');
   expect(home).toContain('metricsCompact');
-  expect(home).toContain('quickSecondaryRow');
-  expect(home).toContain('fullWidth={compact}');
-  expect(home).toContain('compact ? styles.quickSecondaryRow');
+  // Quick actions are badges on the page background now, so they fit three to
+  // a row at any width and no longer need the compact stack the card layout
+  // required. HomeDashboardRedesign covers that all three stay reachable.
+  expect(home).toContain('styles.quickGrid');
+  expect(home).toContain('quickActionBadge');
   expect(home).toContain('paddingBottom: 112');
   expect(home).toContain('const narrow = width <= 359');
   expect(home).toContain('const compact = width < 600');

@@ -6,8 +6,9 @@ import { StyleSheet, View } from 'react-native';
 import {
   Badge,
   Button,
-  Card,
   ConfirmationDialog,
+  FormSection,
+  Icon,
   InlineFeedback,
   Screen,
   Text,
@@ -114,8 +115,7 @@ export function ServiceDetailsScreen({
         />
       </View>
       {service.description || duration ? (
-        <Card>
-          <Text variant="cardTitle">Informações</Text>
+        <FormSection icon={<Icon name="service" />} title="Informações">
           {service.description ? <Text>{service.description}</Text> : null}
           {duration ? (
             <View style={styles.detail}>
@@ -125,7 +125,7 @@ export function ServiceDetailsScreen({
               <Text>{duration}</Text>
             </View>
           ) : null}
-        </Card>
+        </FormSection>
       ) : null}
       {status.isError ? (
         <InlineFeedback

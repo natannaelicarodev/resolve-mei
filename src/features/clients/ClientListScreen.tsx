@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
@@ -15,10 +14,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { radii, sizes, spacing, useTheme } from '@/theme';
 import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
@@ -29,16 +25,22 @@ import { useAuth } from '@/providers/AuthProvider';
 function ClientRow({ client }: { client: Client }) {
   const { colors } = useTheme();
   return (
-    <AnimatedPressable
+    <Card
       accessibilityLabel={`Abrir cliente ${client.name}`}
-      accessibilityRole="button"
       onPress={() =>
         router.push({
           pathname: '/clients/[id]',
           params: { id: client.id },
         })
       }
-      style={[styles.row, { borderBottomColor: colors.border }]}
+      style={[
+        styles.row,
+        client.status === 'active' && {
+          borderStartColor: colors.success,
+          borderStartWidth: 3,
+        },
+      ]}
+      variant="interactive"
     >
       <View style={[styles.avatar, { backgroundColor: colors.primarySubtle }]}>
         <Text color="primary" variant="label">
@@ -60,12 +62,7 @@ function ClientRow({ client }: { client: Client }) {
       {client.status === 'inactive' ? (
         <Badge label="Inativo" variant="neutral" />
       ) : null}
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+    </Card>
   );
 }
 
@@ -84,7 +81,6 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
 
   const header = (
     <View style={styles.header}>
-      <ProtectedPageHeader title="Clientes" />
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text variant="sectionTitle">Seus clientes</Text>
@@ -193,6 +189,7 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
           data={clients}
           keyExtractor={(client) => client.id}
           ListEmptyComponent={empty}
+          ItemSeparatorComponent={ListGap}
           ListHeaderComponent={header}
           renderItem={({ item }) => <ClientRow client={item} />}
           style={styles.list}
@@ -203,7 +200,12 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
   );
 }
 
+function ListGap() {
+  return <View style={styles.listGap} />;
+}
+
 const styles = StyleSheet.create({
+  listGap: { height: spacing.sm },
   page: { flex: 1 },
   list: { flex: 1 },
   content: {
@@ -228,11 +230,9 @@ const styles = StyleSheet.create({
   loading: { gap: spacing.sm },
   row: {
     alignItems: 'center',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 72,
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   avatar: {
     alignItems: 'center',

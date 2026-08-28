@@ -4,7 +4,6 @@ import type { Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
@@ -15,10 +14,7 @@ import {
   Skeleton,
   Text,
 } from '@/components/ui';
-import {
-  ProtectedBottomNavigation,
-  ProtectedPageHeader,
-} from '@/features/navigation/ProtectedNavigation';
+import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { sizes, spacing, useTheme } from '@/theme';
 import type { Quote, QuoteStatusFilter } from './api';
@@ -41,28 +37,21 @@ const STATUS_FILTERS: readonly {
   { label: 'Aprovados', value: 'approved' },
 ];
 
-function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
-  const { colors } = useTheme();
+function QuoteRow({ item }: { item: Quote }) {
   const display = getDisplayQuoteStatus(item.status, item.valid_until);
   const issuedOn = formatDateForDisplay(item.issued_on);
   const validUntil = formatDateForDisplay(item.valid_until);
   return (
-    <AnimatedPressable
+    <Card
       accessibilityLabel={`${formatQuoteNumber(item.quote_number)}, ${item.client_name_snapshot}, ${quoteStatusLabels[display]}, emissão ${issuedOn}, validade ${validUntil}, ${formatMoney(item.total_cents)}`}
-      accessibilityRole="button"
       onPress={() =>
         router.push({
           pathname: '/quotes/[id]',
           params: { id: item.id },
         } as unknown as Href)
       }
-      style={[
-        styles.row,
-        divided && {
-          borderTopColor: colors.border,
-          borderTopWidth: StyleSheet.hairlineWidth,
-        },
-      ]}
+      style={styles.row}
+      variant="interactive"
     >
       <View style={styles.rowCopy}>
         <View style={styles.rowTop}>
@@ -94,12 +83,7 @@ function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
           {formatMoney(item.total_cents)}
         </Text>
       </View>
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+    </Card>
   );
 }
 
@@ -123,7 +107,6 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
   const totalCount = query.data?.pages[0]?.totalCount ?? 0;
   const header = (
     <View style={styles.header}>
-      <ProtectedPageHeader title="Orçamentos" />
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text numberOfLines={1} variant="sectionTitle">
@@ -195,8 +178,9 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
       ) : (
         <FlatList
           contentContainerStyle={styles.list}
-          data={quotes.length ? [quotes] : []}
-          keyExtractor={() => 'quote-list'}
+          data={quotes}
+          keyExtractor={(quote) => quote.id}
+          ItemSeparatorComponent={ListGap}
           ListHeaderComponent={header}
           onRefresh={() => void query.refetch()}
           refreshing={query.isRefetching && !query.isFetchingNextPage}
@@ -232,13 +216,7 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
               />
             </Card>
           }
-          renderItem={({ item: group }) => (
-            <Card style={styles.groupedList}>
-              {group.map((quote, index) => (
-                <QuoteRow divided={index > 0} item={quote} key={quote.id} />
-              ))}
-            </Card>
-          )}
+          renderItem={({ item }) => <QuoteRow item={item} />}
         />
       )}
       <ProtectedBottomNavigation selected="quotes" />
@@ -246,7 +224,12 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
   );
 }
 
+function ListGap() {
+  return <View style={styles.listGap} />;
+}
+
 const styles = StyleSheet.create({
+  listGap: { height: spacing.sm },
   page: { flex: 1 },
   content: {
     alignSelf: 'center',
@@ -267,13 +250,11 @@ const styles = StyleSheet.create({
   header: { gap: spacing.lg, marginBottom: spacing.lg },
   titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   titleCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
-  groupedList: { gap: 0, overflow: 'hidden', padding: 0 },
   row: {
     alignItems: 'center',
-    flexDirection: 'row',
     gap: spacing.sm,
     minHeight: 104,
-    padding: spacing.md,
+    padding: spacing.sm,
   },
   rowCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   rowTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
