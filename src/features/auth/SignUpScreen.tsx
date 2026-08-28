@@ -1,19 +1,30 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { Controller, useForm, useWatch } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
 
-import { Button, Checkbox, InlineFeedback, Input, Text } from '@/components/ui';
+import { AnimatedPressable, FadeInView } from '@/components/motion';
+import { InlineFeedback, Screen, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { useTheme } from '@/theme';
+import { darkColors, radii, spacing } from '@/theme';
 import { signUp } from './api';
-import { AuthShell } from './AuthShell';
+import {
+  AuthBackdrop,
+  AuthField,
+  AuthFieldGroup,
+  AuthHeading,
+  AuthPrimaryButton,
+  PasswordEye,
+} from './AuthVisual';
+import { passwordRequirementChecks } from './PasswordRequirements';
 import { signUpSchema } from './schemas';
 import type { SignUpData } from './schemas';
-import { PasswordRequirements } from './PasswordRequirements';
 
 export function SignUpScreen() {
-  const { colors } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const {
     control,
     handleSubmit,
@@ -42,97 +53,244 @@ export function SignUpScreen() {
       setError('root', { message: normalizeError(error).message });
     }
   };
+
   return (
-    <AuthShell
-      title="Crie sua conta"
-      subtitle="Comece seu perfil profissional em poucos minutos."
-    >
-      <Controller
-        control={control}
-        name="fullName"
-        render={({ field }) => (
-          <Input
-            autoCapitalize="words"
-            error={errors.fullName?.message}
-            label="Nome completo"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            value={field.value}
+    <Screen contentContainerStyle={styles.screen} keyboardAvoiding>
+      <AuthBackdrop />
+      <View style={styles.content}>
+        <AuthHeading title="Crie sua conta">
+          <Text style={styles.lightText} variant="caption">
+            Já possui uma conta?
+          </Text>
+          <Link href="/sign-in" style={styles.link}>
+            Entrar
+          </Link>
+        </AuthHeading>
+        <FadeInView delay={100} style={styles.form}>
+          <AuthFieldGroup>
+            <Controller
+              control={control}
+              name="fullName"
+              render={({ field }) => (
+                <AuthField
+                  autoCapitalize="words"
+                  icon="account-outline"
+                  label="Nome completo"
+                  onBlur={field.onBlur}
+                  onChangeText={field.onChange}
+                  returnKeyType="next"
+                  value={field.value}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="email"
+              render={({ field }) => (
+                <AuthField
+                  autoCapitalize="none"
+                  autoComplete="email"
+                  icon="email-outline"
+                  keyboardType="email-address"
+                  label="E-mail"
+                  onBlur={field.onBlur}
+                  onChangeText={field.onChange}
+                  returnKeyType="next"
+                  value={field.value}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="password"
+              render={({ field }) => (
+                <AuthField
+                  accessibilityHint="Mínimo de 8 caracteres, com maiúscula, minúscula e número"
+                  icon="lock-outline"
+                  label="Senha"
+                  onBlur={field.onBlur}
+                  onChangeText={field.onChange}
+                  rightAccessory={
+                    <PasswordEye
+                      onPress={() => setShowPassword((current) => !current)}
+                      visible={showPassword}
+                    />
+                  }
+                  secureTextEntry={!showPassword}
+                  value={field.value}
+                />
+              )}
+            />
+            <Controller
+              control={control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <AuthField
+                  icon="lock-check-outline"
+                  label="Confirmar senha"
+                  last
+                  onBlur={field.onBlur}
+                  onChangeText={field.onChange}
+                  returnKeyType="done"
+                  rightAccessory={
+                    <PasswordEye
+                      onPress={() => setShowConfirmation((current) => !current)}
+                      visible={showConfirmation}
+                    />
+                  }
+                  secureTextEntry={!showConfirmation}
+                  value={field.value}
+                />
+              )}
+            />
+          </AuthFieldGroup>
+          <View
+            accessibilityLabel="Requisitos da senha"
+            style={styles.requirements}
+          >
+            {passwordRequirementChecks.map((requirement) => {
+              const met = requirement.test(password);
+              return (
+                <View
+                  accessible
+                  accessibilityLabel={`${requirement.label}: ${met ? 'atendido' : 'pendente'}`}
+                  key={requirement.label}
+                  style={styles.requirement}
+                >
+                  <MaterialCommunityIcons
+                    color={met ? darkColors.success : darkColors.textMuted}
+                    name={met ? 'check-circle-outline' : 'circle-outline'}
+                    size={14}
+                  />
+                  <Text
+                    color={met ? 'success' : 'textMuted'}
+                    style={styles.requirementText}
+                    variant="caption"
+                  >
+                    {requirement.label}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+          {errors.fullName?.message ? (
+            <Text color="danger" variant="caption">
+              {errors.fullName.message}
+            </Text>
+          ) : null}
+          {errors.email?.message ? (
+            <Text color="danger" variant="caption">
+              {errors.email.message}
+            </Text>
+          ) : null}
+          {errors.password?.message ? (
+            <Text color="danger" variant="caption">
+              {errors.password.message}
+            </Text>
+          ) : null}
+          {errors.confirmPassword?.message ? (
+            <Text color="danger" variant="caption">
+              {errors.confirmPassword.message}
+            </Text>
+          ) : null}
+          <Controller
+            control={control}
+            name="acceptedTerms"
+            render={({ field }) => (
+              <View>
+                <AnimatedPressable
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: field.value }}
+                  onPress={() => field.onChange(!field.value)}
+                  style={styles.termsRow}
+                >
+                  <View
+                    style={[
+                      styles.checkbox,
+                      field.value && styles.checkboxChecked,
+                    ]}
+                  >
+                    {field.value ? (
+                      <MaterialCommunityIcons
+                        color={darkColors.textOnPrimary}
+                        name="check"
+                        size={16}
+                      />
+                    ) : null}
+                  </View>
+                  <Text style={styles.lightText} variant="caption">
+                    Li e aceito os termos de uso
+                  </Text>
+                </AnimatedPressable>
+                {errors.acceptedTerms?.message ? (
+                  <Text color="danger" variant="caption">
+                    {errors.acceptedTerms.message}
+                  </Text>
+                ) : null}
+              </View>
+            )}
           />
-        )}
-      />
-      <Controller
-        control={control}
-        name="email"
-        render={({ field }) => (
-          <Input
-            autoCapitalize="none"
-            error={errors.email?.message}
-            keyboardType="email-address"
-            label="E-mail"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            value={field.value}
+          {errors.root?.message ? (
+            <InlineFeedback message={errors.root.message} variant="error" />
+          ) : null}
+          <AuthPrimaryButton
+            label="Criar conta"
+            loading={isSubmitting}
+            onPress={() => void handleSubmit(submit)()}
           />
-        )}
-      />
-      <Controller
-        control={control}
-        name="password"
-        render={({ field }) => (
-          <Input
-            accessibilityHint="Mínimo de 8 caracteres, com maiúscula, minúscula e número"
-            error={errors.password?.message}
-            label="Senha"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            secureTextEntry
-            value={field.value}
-          />
-        )}
-      />
-      <PasswordRequirements password={password} />
-      <Controller
-        control={control}
-        name="confirmPassword"
-        render={({ field }) => (
-          <Input
-            error={errors.confirmPassword?.message}
-            label="Confirmar senha"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            secureTextEntry
-            value={field.value}
-          />
-        )}
-      />
-      <Controller
-        control={control}
-        name="acceptedTerms"
-        render={({ field }) => (
-          <Checkbox
-            checked={field.value}
-            error={errors.acceptedTerms?.message}
-            label="Li e aceito os termos de uso"
-            onChange={field.onChange}
-          />
-        )}
-      />
-      {errors.root?.message ? (
-        <InlineFeedback message={errors.root.message} variant="error" />
-      ) : null}
-      <Button
-        label="Criar conta"
-        loading={isSubmitting}
-        onPress={() => void handleSubmit(submit)()}
-      />
-      <Text>
-        Já possui conta?{' '}
-        <Link href="/sign-in" style={[styles.link, { color: colors.primary }]}>
-          Entrar
-        </Link>
-      </Text>
-    </AuthShell>
+        </FadeInView>
+      </View>
+    </Screen>
   );
 }
-const styles = StyleSheet.create({ link: {} });
+
+const styles = StyleSheet.create({
+  screen: {
+    backgroundColor: darkColors.background,
+    justifyContent: 'center',
+    overflow: 'hidden',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  content: { gap: spacing.lg, width: '100%' },
+  form: { gap: spacing.sm },
+  link: {
+    color: darkColors.primary,
+    fontSize: 12,
+    fontWeight: '700',
+    lineHeight: 18,
+    paddingVertical: spacing.xs,
+  },
+  requirements: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  requirement: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
+    width: '48%',
+  },
+  requirementText: {
+    color: darkColors.textMuted,
+    fontSize: 10,
+    lineHeight: 14,
+  },
+  termsRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 44,
+  },
+  checkbox: {
+    alignItems: 'center',
+    borderColor: darkColors.borderStrong,
+    borderRadius: radii.small,
+    borderWidth: 1,
+    height: 22,
+    justifyContent: 'center',
+    width: 22,
+  },
+  checkboxChecked: {
+    backgroundColor: darkColors.primary,
+    borderColor: darkColors.primary,
+  },
+  lightText: { color: darkColors.textPrimary },
+});
