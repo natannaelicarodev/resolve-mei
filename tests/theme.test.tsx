@@ -33,7 +33,7 @@ it('starts in dark theme when there is no saved preference', async () => {
 });
 
 it('hydrates and persists the local theme preference', async () => {
-  await AsyncStorage.setItem('@resolve-mei/theme-preference', 'light');
+  await AsyncStorage.setItem('@resolve-mei/theme-preference-v2', 'light');
   const screen = await render(
     <ThemeProvider>
       <ThemeProbe />
@@ -45,7 +45,7 @@ it('hydrates and persists the local theme preference', async () => {
     fireEvent.press(screen.getByRole('button', { name: 'Usar escuro' }));
   });
   expect(screen.getByText(/^dark:dark:/)).toBeTruthy();
-  expect(await AsyncStorage.getItem('@resolve-mei/theme-preference')).toBe(
+  expect(await AsyncStorage.getItem('@resolve-mei/theme-preference-v2')).toBe(
     'dark',
   );
 });

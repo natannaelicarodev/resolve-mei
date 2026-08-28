@@ -16,7 +16,10 @@ import type { ThemeColors } from './colors';
 export type ThemePreference = 'system' | 'light' | 'dark';
 type ResolvedTheme = 'light' | 'dark';
 
-const STORAGE_KEY = '@resolve-mei/theme-preference';
+// v2 intentionally resets the previous light/system default once. From this
+// version onward, new installs and migrated installs start dark; subsequent
+// choices are persisted normally under the new key.
+const STORAGE_KEY = '@resolve-mei/theme-preference-v2';
 
 interface ThemeContextValue {
   colors: ThemeColors;

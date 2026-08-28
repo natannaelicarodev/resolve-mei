@@ -32,6 +32,6 @@ it('does not persist private query or signed URL data', () => {
   expect(providers).not.toContain('PersistQueryClientProvider');
   expect(providers).not.toContain('persistQueryClient');
   expect(theme).toContain(
-    "const STORAGE_KEY = '@resolve-mei/theme-preference'",
+    "const STORAGE_KEY = '@resolve-mei/theme-preference-v2'",
   );
 });
