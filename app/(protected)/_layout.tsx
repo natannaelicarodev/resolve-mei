@@ -46,7 +46,6 @@ export default function ProtectedLayout() {
       }}
     >
       <Stack.Screen name="home" options={{ headerShown: false }} />
-      <Stack.Screen name="welcome" options={{ headerShown: false }} />
       <Stack.Screen name="clients" options={{ headerShown: false }} />
       <Stack.Screen name="services" options={{ headerShown: false }} />
       <Stack.Screen name="quotes" options={{ headerShown: false }} />
