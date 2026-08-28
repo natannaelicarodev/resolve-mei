@@ -1,12 +1,13 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -170,8 +171,14 @@ function QuoteFilters({
 export function QuoteListScreen({ businessId }: { businessId: string }) {
   const { user } = useAuth();
   const { colors, resolvedTheme } = useTheme();
+  const [input, setInput] = useState('');
+  const [search, setSearch] = useState('');
   const [status, setStatus] = useState<QuoteStatusFilter>('all');
-  const query = useQuotes(user?.id ?? '', businessId, '', status);
+  const query = useQuotes(user?.id ?? '', businessId, search, status);
+  useEffect(() => {
+    const timer = setTimeout(() => setSearch(input.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [input]);
   const quotes = useMemo(() => {
     const unique = new Map<string, Quote>();
     for (const page of query.data?.pages ?? [])
@@ -216,6 +223,27 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
           </Text>
         </AnimatedPressable>
       </View>
+      <View
+        style={[
+          styles.search,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="magnify"
+          size={19}
+        />
+        <TextInput
+          accessibilityLabel="Buscar orçamentos"
+          onChangeText={setInput}
+          placeholder="Número ou nome do cliente"
+          placeholderTextColor={colors.textMuted}
+          returnKeyType="search"
+          style={[styles.searchInput, { color: colors.textPrimary }]}
+          value={input}
+        />
+      </View>
       <QuoteFilters onChange={setStatus} value={status} />
     </View>
   );
@@ -228,13 +256,13 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
         size={40}
       />
       <Text align="center" variant="cardTitle">
-        {status !== 'all'
+        {search || status !== 'all'
           ? 'Nenhum orçamento encontrado'
           : 'Você ainda não criou nenhum orçamento.'}
       </Text>
       <Text align="center" color="textSecondary">
-        {status !== 'all'
-          ? 'Tente alterar os filtros.'
+        {search || status !== 'all'
+          ? 'Tente alterar a busca ou os filtros.'
           : 'Seus orçamentos aparecerão aqui conforme você criá-los.'}
       </Text>
       <Button
@@ -337,6 +365,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   addLabel: { fontSize: 11 },
+  search: {
+    alignItems: 'center',
+    borderRadius: 9,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  searchInput: { flex: 1, fontSize: 12, minHeight: 44, paddingVertical: 0 },
   filters: { gap: 8, paddingRight: 18 },
   filter: {
     alignItems: 'center',
