@@ -195,7 +195,7 @@ export function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.lg, paddingTop: 245 },
+  screen: { gap: spacing.lg, paddingTop: 325 },
   header: { gap: spacing.sm },
   stepLabel: { color: lightColors.primary },
   title: { color: lightColors.textPrimary },

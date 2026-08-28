@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     overflow: 'hidden',
     paddingHorizontal: spacing.lg,
-    paddingTop: 245,
+    paddingTop: 325,
   },
   content: { gap: spacing.xl, width: '100%' },
   form: { gap: spacing.md },

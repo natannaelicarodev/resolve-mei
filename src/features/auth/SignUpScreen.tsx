@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
-    paddingTop: 225,
+    paddingTop: 325,
   },
   content: { gap: spacing.lg, width: '100%' },
   form: { gap: spacing.sm },

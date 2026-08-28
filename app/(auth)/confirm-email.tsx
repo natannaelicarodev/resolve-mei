@@ -48,7 +48,7 @@ export default function ConfirmEmailRoute() {
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.xl, paddingTop: 255 },
+  screen: { gap: spacing.xl, paddingTop: 325 },
   subtitle: { color: lightColors.textSecondary },
   content: { gap: spacing.lg },
   email: { color: lightColors.textPrimary, fontSize: 17 },

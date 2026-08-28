@@ -2,7 +2,14 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useState } from 'react';
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
-import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Image,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import type { ScrollViewProps, TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { ClipPath, Defs, G, Path } from 'react-native-svg';
@@ -226,12 +233,16 @@ function OrganicHeader({ large }: { large: boolean }) {
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(progress, {
-          duration: 4500,
+          duration: 7000,
+          easing: Easing.inOut(Easing.sin),
+          isInteraction: false,
           toValue: 1,
           useNativeDriver: true,
         }),
         Animated.timing(progress, {
-          duration: 4500,
+          duration: 7000,
+          easing: Easing.inOut(Easing.sin),
+          isInteraction: false,
           toValue: 0,
           useNativeDriver: true,
         }),
@@ -248,31 +259,44 @@ function OrganicHeader({ large }: { large: boolean }) {
     inputRange: [0, 1],
     outputRange: [-5, 7],
   });
-  const height = large ? 570 : 330;
-  const basePath = large
-    ? 'M0 0H393V495C315 530 286 556 225 536C168 517 132 462 76 457C45 454 20 461 0 467Z'
-    : 'M0 0H393V258C338 282 302 315 242 296C187 279 151 226 98 222C59 219 28 228 0 237Z';
+  const contourScale = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1.04, 1.075],
+  });
+  const height = large ? 570 : 350;
+  const basePath =
+    'M0 0H393V493C355 510 329 538 279 547C222 557 190 527 146 491C103 456 64 449 0 462Z';
   return (
     <View pointerEvents="none" style={[styles.organicHeader, { height }]}>
-      <Svg height={height} viewBox={`0 0 393 ${height}`} width="100%">
+      <Svg
+        height={height}
+        preserveAspectRatio="none"
+        viewBox="0 0 393 550"
+        width="100%"
+      >
         <Path d={basePath} fill={lightColors.primary} />
       </Svg>
       <Animated.View
         style={[
           styles.contours,
-          { transform: [{ translateX }, { translateY }, { scale: 1.08 }] },
+          {
+            transform: [
+              { translateX },
+              { translateY },
+              { scale: contourScale },
+            ],
+          },
         ]}
       >
-        <Svg height={height + 40} viewBox="0 0 393 600" width="100%">
+        <Svg
+          height={height + 40}
+          preserveAspectRatio="none"
+          viewBox="0 0 393 550"
+          width="100%"
+        >
           <Defs>
             <ClipPath id={large ? 'organic-large' : 'organic-standard'}>
-              <Path
-                d={
-                  large
-                    ? 'M-20-20H413V475C315 510 286 536 225 516C168 497 132 442 76 437C45 434 20 441-20 447Z'
-                    : 'M-20-20H413V238C338 262 302 295 242 276C187 259 151 206 98 202C59 199 28 208-20 217Z'
-                }
-              />
+              <Path d="M-20-20H413V471C355 488 329 516 279 525C222 535 190 505 146 469C103 434 64 427-20 440Z" />
             </ClipPath>
           </Defs>
           <G clipPath={`url(#${large ? 'organic-large' : 'organic-standard'})`}>
@@ -319,6 +343,24 @@ function OrganicHeader({ large }: { large: boolean }) {
               strokeWidth="2"
             />
             <Path
+              d="M326-22C377-18 418 22 416 75C414 127 373 159 330 139C287 119 283 69 300 25C307 7 316-9 326-22Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M341 7C375 5 401 32 400 69C399 104 372 124 344 111C316 98 314 65 326 35C330 23 336 13 341 7Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M352 32C372 31 387 47 386 68C385 89 370 101 353 93C336 85 335 66 342 48C345 41 349 35 352 32Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.22)"
+              strokeWidth="2"
+            />
+            <Path
               d="M-32 229C48 168 103 172 166 218C225 261 274 237 329 197C377 163 424 184 438 243C455 315 379 348 314 324C244 299 205 311 145 341C75 375 7 341-32 287Z"
               fill="none"
               stroke="rgba(255,255,255,0.22)"
@@ -350,6 +392,24 @@ function OrganicHeader({ large }: { large: boolean }) {
             />
             <Path
               d="M101 429C139 389 199 387 237 425C272 461 254 507 210 515C165 524 118 499 101 429Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M302 351C348 318 409 337 426 389C443 440 405 482 358 465C312 449 276 391 302 351Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M329 370C358 350 395 362 405 394C415 425 392 450 363 440C334 430 313 394 329 370Z"
+              fill="none"
+              stroke="rgba(255,255,255,0.2)"
+              strokeWidth="2"
+            />
+            <Path
+              d="M347 385C363 374 383 381 388 398C394 415 381 428 366 423C350 417 339 398 347 385Z"
               fill="none"
               stroke="rgba(255,255,255,0.2)"
               strokeWidth="2"

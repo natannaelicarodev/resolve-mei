@@ -88,7 +88,7 @@ export function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { gap: spacing.xl, paddingTop: 255 },
+  screen: { gap: spacing.xl, paddingTop: 325 },
   subtitle: { color: lightColors.textSecondary },
   form: { gap: spacing.lg },
   link: { color: lightColors.primary, fontWeight: '700' },
