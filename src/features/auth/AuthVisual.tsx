@@ -241,14 +241,14 @@ function OrganicHeader({ large }: { large: boolean }) {
     inputRange: [0, 1],
     outputRange: [-5, 7],
   });
-  const height = large ? 570 : 310;
+  const height = large ? 570 : 330;
   const basePath = large
     ? 'M0 0H393V495C315 530 286 556 225 536C168 517 132 462 76 457C45 454 20 461 0 467Z'
-    : 'M0 0H393V238C330 266 292 285 239 266C188 248 155 206 99 205C59 205 28 215 0 221Z';
+    : 'M0 0H393V258C338 282 302 315 242 296C187 279 151 226 98 222C59 219 28 228 0 237Z';
   return (
     <View pointerEvents="none" style={[styles.organicHeader, { height }]}>
       <Svg height={height} viewBox={`0 0 393 ${height}`} width="100%">
-        <Path d={basePath} fill={darkColors.primary} />
+        <Path d={basePath} fill={lightColors.primary} />
       </Svg>
       <Animated.View
         style={[
@@ -415,7 +415,7 @@ export function AuthPrimaryButton({
       style={styles.primaryButton}
     >
       <LinearGradient
-        colors={[darkColors.primaryPressed, darkColors.primary]}
+        colors={[lightColors.primaryPressed, lightColors.primary]}
         end={{ x: 0, y: 1 }}
         start={{ x: 0, y: 0 }}
         style={styles.primaryGradient}
@@ -632,5 +632,5 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingHorizontal: spacing.md,
   },
-  primaryLabel: { color: darkColors.textOnPrimary },
+  primaryLabel: { color: lightColors.textOnPrimary },
 });

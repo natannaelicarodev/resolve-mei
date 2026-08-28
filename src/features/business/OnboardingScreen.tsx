@@ -6,11 +6,12 @@ import type { FieldPath } from 'react-hook-form';
 import { Keyboard, StyleSheet, View } from 'react-native';
 
 import { StepTransition } from '@/components/motion';
-import { Button, Card, InlineFeedback, Screen, Text } from '@/components/ui';
+import { Button, Card, InlineFeedback, Text } from '@/components/ui';
+import { AuthPrimaryButton, AuthScreen } from '@/features/auth/AuthVisual';
 import { triggerHaptic } from '@/lib/haptics';
 import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
-import { radii, spacing, useTheme } from '@/theme';
+import { lightColors, radii, spacing } from '@/theme';
 import { completeOnboarding } from './api';
 import { BusinessFormFields } from './BusinessFormFields';
 import type { BusinessFormSection } from './BusinessFormFields';
@@ -58,7 +59,6 @@ const steps: readonly [OnboardingStep, ...OnboardingStep[]] = [
 ] as const;
 
 export function OnboardingScreen() {
-  const { colors } = useTheme();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [step, setStep] = useState(0);
@@ -119,29 +119,29 @@ export function OnboardingScreen() {
   const values = useWatch({ control });
 
   return (
-    <Screen keyboardAvoiding safeAreaEdges={['bottom']}>
+    <AuthScreen contentContainerStyle={styles.screen}>
       <View style={styles.header}>
         <Text
-          color="primary"
+          style={styles.stepLabel}
           variant="label"
         >{`Etapa ${step + 1} de ${steps.length}`}</Text>
         <View
           accessibilityLabel={`${Math.round(((step + 1) / steps.length) * 100)}% concluído`}
           accessibilityRole="progressbar"
-          style={[styles.progressTrack, { backgroundColor: colors.border }]}
+          style={styles.progressTrack}
         >
           <View
             style={[
               styles.progress,
-              { backgroundColor: colors.primary },
+              { backgroundColor: lightColors.primary },
               { width: `${((step + 1) / steps.length) * 100}%` },
             ]}
           />
         </View>
-        <Text variant="pageTitle">
+        <Text style={styles.title} variant="pageTitle">
           {step === 0 ? 'Vamos preparar seu perfil' : current.title}
         </Text>
-        <Text color="textSecondary">{current.description}</Text>
+        <Text style={styles.description}>{current.description}</Text>
       </View>
 
       <StepTransition direction={direction} step={step}>
@@ -180,23 +180,27 @@ export function OnboardingScreen() {
           />
         ) : null}
         {step < steps.length - 1 ? (
-          <Button label="Continuar" onPress={() => void goNext()} />
+          <AuthPrimaryButton label="Continuar" onPress={() => void goNext()} />
         ) : (
-          <Button
-            haptic={false}
+          <AuthPrimaryButton
             label="Concluir perfil"
             loading={mutation.isPending}
             onPress={() => void handleSubmit((data) => mutation.mutate(data))()}
           />
         )}
       </View>
-    </Screen>
+    </AuthScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { gap: spacing.lg, paddingTop: 245 },
   header: { gap: spacing.sm },
+  stepLabel: { color: lightColors.primary },
+  title: { color: lightColors.textPrimary },
+  description: { color: lightColors.textSecondary },
   progressTrack: {
+    backgroundColor: lightColors.primarySubtle,
     borderRadius: radii.pill,
     height: 6,
     overflow: 'hidden',

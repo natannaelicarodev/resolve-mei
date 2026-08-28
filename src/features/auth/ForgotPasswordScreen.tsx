@@ -1,19 +1,24 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'expo-router';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 
 import { SuccessTransition } from '@/components/motion';
-import { Button, InlineFeedback, Input } from '@/components/ui';
+import { InlineFeedback, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { useTheme } from '@/theme';
+import { lightColors, spacing } from '@/theme';
 import { requestPasswordReset } from './api';
-import { AuthShell } from './AuthShell';
+import {
+  AuthField,
+  AuthFieldGroup,
+  AuthHeading,
+  AuthPrimaryButton,
+  AuthScreen,
+} from './AuthVisual';
 import { forgotPasswordSchema } from './schemas';
 import type { ForgotPasswordData } from './schemas';
 
 export function ForgotPasswordScreen() {
-  const { colors } = useTheme();
   const {
     control,
     handleSubmit,
@@ -31,40 +36,56 @@ export function ForgotPasswordScreen() {
     }
   };
   return (
-    <AuthShell
-      title="Recupere seu acesso"
-      subtitle="Informe seu e-mail e enviaremos as instruções."
-    >
-      <Controller
-        control={control}
-        name="email"
-        render={({ field }) => (
-          <Input
-            autoCapitalize="none"
-            error={errors.email?.message}
-            keyboardType="email-address"
-            label="E-mail"
-            onBlur={field.onBlur}
-            onChangeText={field.onChange}
-            value={field.value}
+    <AuthScreen contentContainerStyle={styles.screen}>
+      <AuthHeading title="Recupere seu acesso">
+        <Text style={styles.subtitle}>
+          Informe seu e-mail e enviaremos as instruções.
+        </Text>
+      </AuthHeading>
+      <View style={styles.form}>
+        <AuthFieldGroup>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field }) => (
+              <AuthField
+                autoCapitalize="none"
+                icon="email-outline"
+                keyboardType="email-address"
+                label="E-mail"
+                last
+                onBlur={field.onBlur}
+                onChangeText={field.onChange}
+                value={field.value}
+              />
+            )}
           />
-        )}
-      />
-      {errors.root?.message ? (
-        <InlineFeedback message={errors.root.message} variant="error" />
-      ) : null}
-      {isSubmitSuccessful ? (
-        <SuccessTransition message="Se o e-mail estiver cadastrado, enviaremos as instruções." />
-      ) : null}
-      <Button
-        label="Enviar instruções"
-        loading={isSubmitting}
-        onPress={() => void handleSubmit(submit)()}
-      />
-      <Link href="/sign-in" style={[styles.link, { color: colors.primary }]}>
-        Voltar para entrar
-      </Link>
-    </AuthShell>
+        </AuthFieldGroup>
+        {errors.email?.message ? (
+          <InlineFeedback message={errors.email.message} variant="error" />
+        ) : null}
+        {errors.root?.message ? (
+          <InlineFeedback message={errors.root.message} variant="error" />
+        ) : null}
+        {isSubmitSuccessful ? (
+          <SuccessTransition message="Se o e-mail estiver cadastrado, enviaremos as instruções." />
+        ) : null}
+        <AuthPrimaryButton
+          label="Enviar instruções"
+          loading={isSubmitting}
+          onPress={() => void handleSubmit(submit)()}
+        />
+        <Link href="/sign-in" style={styles.link}>
+          Voltar para entrar
+        </Link>
+      </View>
+    </AuthScreen>
   );
 }
-const styles = StyleSheet.create({ link: {} });
+
+const styles = StyleSheet.create({
+  screen: { gap: spacing.xl, paddingTop: 255 },
+  subtitle: { color: lightColors.textSecondary },
+  form: { gap: spacing.lg },
+  link: { color: lightColors.primary, fontWeight: '700' },
+});
