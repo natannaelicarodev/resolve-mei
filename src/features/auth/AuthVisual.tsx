@@ -1,11 +1,16 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useEffect, useState } from 'react';
 import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
-import { Image, StyleSheet, TextInput, View } from 'react-native';
+import { Animated, Image, StyleSheet, TextInput, View } from 'react-native';
 import type { ScrollViewProps, TextInputProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable, FadeInView } from '@/components/motion';
+import {
+  AnimatedPressable,
+  FadeInView,
+  useReducedMotion,
+} from '@/components/motion';
 import { Screen, Text } from '@/components/ui';
 import { darkColors, lightColors, radii, spacing, typography } from '@/theme';
 
@@ -22,7 +27,118 @@ const stars = [
   ['79%', '40%'],
   ['93%', '27%'],
   ['42%', '52%'],
+  ['7%', '61%'],
+  ['22%', '72%'],
+  ['38%', '66%'],
+  ['55%', '78%'],
+  ['71%', '59%'],
+  ['89%', '70%'],
+  ['14%', '88%'],
+  ['47%', '91%'],
+  ['82%', '86%'],
 ] as const;
+
+function BusinessCharacters() {
+  const reducedMotion = useReducedMotion();
+  const [progress] = useState(() => new Animated.Value(0));
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    const animation = Animated.loop(
+      Animated.sequence([
+        Animated.timing(progress, {
+          duration: 2400,
+          toValue: 1,
+          useNativeDriver: true,
+        }),
+        Animated.timing(progress, {
+          duration: 2400,
+          toValue: 0,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [progress, reducedMotion]);
+
+  const ownerY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -8],
+  });
+  const clientY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-6, 2],
+  });
+  const quoteY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-2, -10],
+  });
+
+  return (
+    <View style={styles.businessScene}>
+      <View style={styles.sceneLine} />
+      <Animated.View
+        style={[
+          styles.personCard,
+          styles.ownerCard,
+          { transform: [{ translateY: ownerY }] },
+        ]}
+      >
+        <View style={[styles.personAvatar, styles.ownerAvatar]}>
+          <MaterialCommunityIcons
+            color={darkColors.textOnPrimary}
+            name="account-tie-outline"
+            size={26}
+          />
+        </View>
+        <View>
+          <Text style={styles.sceneLabel} variant="caption">
+            Você
+          </Text>
+          <Text style={styles.sceneCaption} variant="caption">
+            MEI
+          </Text>
+        </View>
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.personCard,
+          styles.clientCard,
+          { transform: [{ translateY: clientY }] },
+        ]}
+      >
+        <View style={[styles.personAvatar, styles.clientAvatar]}>
+          <MaterialCommunityIcons
+            color={darkColors.success}
+            name="account-outline"
+            size={25}
+          />
+        </View>
+        <View>
+          <Text style={styles.sceneLabel} variant="caption">
+            Cliente
+          </Text>
+          <Text style={styles.sceneCaption} variant="caption">
+            Atendimento
+          </Text>
+        </View>
+      </Animated.View>
+      <Animated.View
+        style={[styles.quoteBubble, { transform: [{ translateY: quoteY }] }]}
+      >
+        <MaterialCommunityIcons
+          color={darkColors.accent}
+          name="file-document-check-outline"
+          size={22}
+        />
+        <Text style={styles.quoteText} variant="caption">
+          Orçamento
+        </Text>
+      </Animated.View>
+    </View>
+  );
+}
 
 export function AuthBackdrop() {
   return (
@@ -49,7 +165,7 @@ export function AuthBackdrop() {
           style={[styles.gridVertical, { left: `${left}%` }]}
         />
       ))}
-      {[9, 20, 31, 42, 53, 64].map((top) => (
+      {[9, 20, 31, 42, 53, 64, 75, 86, 97].map((top) => (
         <View
           key={`h-${top}`}
           style={[styles.gridHorizontal, { top: `${top}%` }]}
@@ -66,6 +182,7 @@ export function AuthBackdrop() {
       ))}
       <View style={styles.orbLarge} />
       <View style={styles.orbSmall} />
+      <BusinessCharacters />
     </View>
   );
 }
@@ -218,14 +335,14 @@ const styles = StyleSheet.create({
   },
   fill: { bottom: 0, left: 0, position: 'absolute', right: 0, top: 0 },
   gridVertical: {
-    backgroundColor: 'rgba(169,156,245,0.07)',
+    backgroundColor: 'rgba(169,156,245,0.14)',
     bottom: 0,
     position: 'absolute',
     top: 0,
     width: 1,
   },
   gridHorizontal: {
-    backgroundColor: 'rgba(169,156,245,0.07)',
+    backgroundColor: 'rgba(169,156,245,0.14)',
     height: 1,
     left: 0,
     position: 'absolute',
@@ -239,7 +356,7 @@ const styles = StyleSheet.create({
     width: 3,
   },
   orbLarge: {
-    backgroundColor: 'rgba(169,156,245,0.07)',
+    backgroundColor: 'rgba(169,156,245,0.13)',
     borderRadius: 120,
     height: 240,
     position: 'absolute',
@@ -248,13 +365,75 @@ const styles = StyleSheet.create({
     width: 240,
   },
   orbSmall: {
-    backgroundColor: 'rgba(95,206,155,0.06)',
+    backgroundColor: 'rgba(95,206,155,0.10)',
     borderRadius: 90,
     bottom: 20,
     height: 180,
     left: -90,
     position: 'absolute',
     width: 180,
+  },
+  businessScene: {
+    bottom: 36,
+    height: 126,
+    left: 20,
+    opacity: 0.9,
+    position: 'absolute',
+    right: 20,
+  },
+  sceneLine: {
+    backgroundColor: 'rgba(169,156,245,0.26)',
+    height: 1,
+    left: 54,
+    position: 'absolute',
+    right: 54,
+    top: 62,
+  },
+  personCard: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(30,24,41,0.92)',
+    borderColor: darkColors.border,
+    borderRadius: radii.medium,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    position: 'absolute',
+  },
+  ownerCard: { left: 0, top: 14 },
+  clientCard: { bottom: 2, right: 0 },
+  personAvatar: {
+    alignItems: 'center',
+    borderRadius: 20,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  ownerAvatar: { backgroundColor: darkColors.primary },
+  clientAvatar: { backgroundColor: darkColors.successSubtle },
+  sceneLabel: {
+    color: darkColors.textPrimary,
+    fontSize: 10,
+    fontWeight: '700',
+    lineHeight: 14,
+  },
+  sceneCaption: { color: darkColors.textMuted, fontSize: 8, lineHeight: 11 },
+  quoteBubble: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    backgroundColor: darkColors.accentSubtle,
+    borderRadius: radii.medium,
+    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    position: 'absolute',
+    top: 33,
+  },
+  quoteText: {
+    color: darkColors.accent,
+    fontSize: 8,
+    fontWeight: '700',
+    lineHeight: 11,
   },
   heading: { alignItems: 'center', gap: spacing.md },
   markGlow: {
