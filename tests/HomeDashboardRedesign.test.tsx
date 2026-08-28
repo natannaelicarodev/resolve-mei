@@ -128,6 +128,10 @@ it('applies the redesigned card hierarchy and primary quick action', async () =>
   expect(
     screen.getByTestId('approved-line-chart', { includeHiddenElements: true }),
   ).toBeTruthy();
+  expect(
+    screen.getByLabelText('Legenda do grÃ¡fico: valores aprovados por mÃªs'),
+  ).toBeTruthy();
+  expect(screen.getByText('Valores aprovados por mÃªs')).toBeTruthy();
   expect(screen.getByTestId('line-chart-tooltip')).toHaveStyle({
     position: 'absolute',
   });

@@ -14,7 +14,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Circle, Path, Svg } from 'react-native-svg';
+import {
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+  Svg,
+} from 'react-native-svg';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
 import {
@@ -638,6 +645,9 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
   const linePath = points
     .map((point, index) => `${index ? 'L' : 'M'} ${point.x} ${point.y}`)
     .join(' ');
+  const areaPath = points.length
+    ? `${linePath} L ${points.at(-1)?.x ?? 0} ${chartHeight} L ${points[0]?.x ?? 0} ${chartHeight} Z`
+    : '';
   const visibleIndex = selected ?? data.monthly.length - 1;
   const visibleItem = data.monthly[visibleIndex];
   const visiblePoint = points[visibleIndex];
@@ -672,6 +682,22 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
         </View>
       ) : (
         <>
+          <View
+            accessibilityLabel="Legenda do grÃ¡fico: valores aprovados por mÃªs"
+            style={styles.chartLegend}
+          >
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no"
+              style={[
+                styles.chartLegendSwatch,
+                { backgroundColor: colors.accent },
+              ]}
+            />
+            <Text color="textSecondary" variant="caption">
+              Valores aprovados por mÃªs
+            </Text>
+          </View>
           <ScrollView
             accessibilityLabel="Gráfico mensal de valores aprovados"
             contentContainerStyle={[
@@ -719,6 +745,23 @@ function Overview({ data, loading, error, retry }: DashboardStateProps) {
               viewBox={`0 0 ${chartWidth} ${chartHeight}`}
               width={chartWidth}
             >
+              <Defs>
+                <SvgLinearGradient
+                  id="approvedAreaGradient"
+                  x1="0"
+                  x2="0"
+                  y1="0"
+                  y2="1"
+                >
+                  <Stop
+                    offset="0"
+                    stopColor={colors.accent}
+                    stopOpacity={0.3}
+                  />
+                  <Stop offset="1" stopColor={colors.accent} stopOpacity={0} />
+                </SvgLinearGradient>
+              </Defs>
+              <Path d={areaPath} fill="url(#approvedAreaGradient)" />
               <Path
                 d={linePath}
                 fill="none"
@@ -1250,6 +1293,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     zIndex: 2,
   },
+  chartLegend: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  chartLegendSwatch: { borderRadius: 999, height: 8, width: 8 },
   lineLabels: { flexDirection: 'row', width: '100%' },
   lineLabelButton: {
     alignItems: 'center',
