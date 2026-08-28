@@ -1,74 +1,158 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import {
-  Badge,
-  Button,
-  Card,
-  InlineFeedback,
-  Input,
-  SegmentedControl,
-  Skeleton,
-  Text,
-} from '@/components/ui';
+import { AnimatedPressable } from '@/components/motion';
+import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
-import { radii, sizes, spacing, useTheme } from '@/theme';
+import { useAuth } from '@/providers/AuthProvider';
+import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
 import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
 import { clientInitials, formatClientDocument, formatPhone } from './format';
 import { useClients } from './hooks';
-import { useAuth } from '@/providers/AuthProvider';
 
-function ClientRow({ client }: { client: Client }) {
+const FILTERS = [
+  { label: 'Todos', value: 'all' },
+  { label: 'Ativos', value: 'active' },
+  { label: 'Inativos', value: 'inactive' },
+] as const;
+
+function clientContact(client: Client) {
+  if (client.phone) return formatPhone(client.phone);
+  if (client.document)
+    return formatClientDocument(client.document, client.type);
+  return client.email ?? 'Sem contato informado';
+}
+
+function ClientRow({ client, index }: { client: Client; index: number }) {
   const { colors } = useTheme();
+  const active = client.status === 'active';
+  const avatars = [
+    { backgroundColor: colors.primary, color: colors.textOnPrimary },
+    { backgroundColor: colors.borderStrong, color: colors.textPrimary },
+    { backgroundColor: colors.accent, color: colors.textOnPrimary },
+  ];
+  const avatar = avatars[index % avatars.length]!;
+
   return (
-    <Card
+    <AnimatedPressable
       accessibilityLabel={`Abrir cliente ${client.name}`}
+      accessibilityRole="button"
       onPress={() =>
-        router.push({
-          pathname: '/clients/[id]',
-          params: { id: client.id },
-        })
+        router.push({ pathname: '/clients/[id]', params: { id: client.id } })
       }
       style={[
-        styles.row,
-        client.status === 'active' && {
-          borderStartColor: colors.success,
-          borderStartWidth: 3,
-        },
+        styles.clientRow,
+        { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
-      variant="interactive"
+      testID="client-list-row"
     >
-      <View style={[styles.avatar, { backgroundColor: colors.primarySubtle }]}>
-        <Text color="primary" variant="label">
-          {clientInitials(client.name)}
+      {active ? (
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no"
+          style={[styles.activeEdge, { backgroundColor: colors.success }]}
+        />
+      ) : null}
+      <View
+        style={[styles.avatar, { backgroundColor: avatar.backgroundColor }]}
+      >
+        <Text style={{ color: avatar.color }} variant="label">
+          {clientInitials(client.name).slice(0, 1)}
         </Text>
       </View>
       <View style={styles.rowCopy}>
-        <Text numberOfLines={1} variant="label">
+        <Text numberOfLines={1} style={styles.clientName} variant="label">
           {client.name}
         </Text>
-        <Text color="textSecondary" numberOfLines={1} variant="caption">
-          {client.phone
-            ? formatPhone(client.phone)
-            : client.document
-              ? formatClientDocument(client.document, client.type)
-              : (client.email ?? 'Sem contato informado')}
+        <Text
+          color="textMuted"
+          numberOfLines={1}
+          style={styles.contact}
+          variant="caption"
+        >
+          {clientContact(client)}
         </Text>
       </View>
-      {client.status === 'inactive' ? (
-        <Badge label="Inativo" variant="neutral" />
-      ) : null}
-    </Card>
+      <View
+        accessible
+        accessibilityLabel={`Status: ${active ? 'Ativo' : 'Inativo'}`}
+        style={[
+          styles.status,
+          {
+            backgroundColor: active
+              ? colors.successSubtle
+              : colors.surfacePressed,
+          },
+        ]}
+      >
+        <Text
+          color={active ? 'success' : 'textMuted'}
+          style={styles.statusText}
+          variant="status"
+        >
+          {active ? 'Ativo' : 'Inativo'}
+        </Text>
+      </View>
+      <MaterialCommunityIcons
+        color={colors.textMuted}
+        name="chevron-right"
+        size={20}
+      />
+    </AnimatedPressable>
+  );
+}
+
+function ClientFilters({
+  value,
+  onChange,
+}: {
+  value: ClientStatusFilter;
+  onChange: (status: ClientStatusFilter) => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <View
+      accessibilityLabel="Filtrar clientes"
+      accessibilityRole="radiogroup"
+      style={styles.filters}
+    >
+      {FILTERS.map((filter) => {
+        const selected = value === filter.value;
+        return (
+          <AnimatedPressable
+            accessibilityRole="radio"
+            accessibilityState={{ checked: selected }}
+            key={filter.value}
+            onPress={() => onChange(filter.value)}
+            style={[
+              styles.filter,
+              {
+                backgroundColor: selected ? colors.primary : colors.surface,
+                borderColor: selected ? colors.primary : colors.border,
+              },
+            ]}
+          >
+            <Text
+              color={selected ? 'textOnPrimary' : 'textSecondary'}
+              style={styles.filterText}
+              variant="status"
+            >
+              {filter.label}
+            </Text>
+          </AnimatedPressable>
+        );
+      })}
+    </View>
   );
 }
 
 export function ClientListScreen({ businessId }: { businessId: string }) {
   const { user } = useAuth();
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ClientStatusFilter>('all');
@@ -83,51 +167,69 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
     <View style={styles.header}>
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
-          <Text variant="sectionTitle">Seus clientes</Text>
-          <Text color="textSecondary">
+          <Text style={styles.title} variant="sectionTitle">
+            Clientes
+          </Text>
+          <Text color="textMuted" style={styles.count} variant="caption">
             {query.isSuccess
               ? `${clients.length}${clients.length === CLIENT_PAGE_SIZE ? '+' : ''} encontrados`
               : 'Consulte e organize seus contatos'}
           </Text>
         </View>
-        <Button
+        <AnimatedPressable
           accessibilityHint="Abre o formulário para adicionar um cliente."
-          haptic="selection"
-          icon={
-            <MaterialCommunityIcons
-              color={colors.textOnPrimary}
-              name="account-plus-outline"
-              size={20}
-            />
-          }
-          label="Novo cliente"
-          size="small"
+          accessibilityLabel="Novo cliente"
+          accessibilityRole="button"
           onPress={() => router.push('/clients/new')}
+          style={[
+            styles.addButton,
+            { backgroundColor: colors.primary },
+            getThemeShadows(resolvedTheme).floating,
+          ]}
+        >
+          <MaterialCommunityIcons
+            color={colors.textOnPrimary}
+            name="plus"
+            size={18}
+          />
+          <Text color="textOnPrimary" style={styles.addLabel} variant="status">
+            Novo cliente
+          </Text>
+        </AnimatedPressable>
+      </View>
+      <View
+        style={[
+          styles.search,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="magnify"
+          size={19}
+        />
+        <TextInput
+          accessibilityLabel="Buscar clientes"
+          autoCapitalize="none"
+          onChangeText={setInput}
+          placeholder="Nome, documento, telefone ou e-mail"
+          placeholderTextColor={colors.textMuted}
+          returnKeyType="search"
+          style={[styles.searchInput, { color: colors.textPrimary }]}
+          value={input}
         />
       </View>
-      <Input
-        label="Buscar clientes"
-        placeholder="Nome, documento, telefone ou e-mail"
-        reserveMessageSpace={false}
-        value={input}
-        onChangeText={setInput}
-      />
-      <SegmentedControl
-        label="Filtrar clientes"
-        options={[
-          { label: 'Todos', value: 'all' },
-          { label: 'Ativos', value: 'active' },
-          { label: 'Inativos', value: 'inactive' },
-        ]}
-        value={status}
-        onChange={setStatus}
-      />
+      <ClientFilters onChange={setStatus} value={status} />
     </View>
   );
 
   const empty = (
     <Card style={styles.empty}>
-      <MaterialCommunityIcons name="account-search-outline" size={40} />
+      <MaterialCommunityIcons
+        color={colors.textMuted}
+        name="account-search-outline"
+        size={40}
+      />
       <Text align="center" variant="cardTitle">
         {search ? 'Nenhum resultado encontrado' : 'Nenhum cliente cadastrado'}
       </Text>
@@ -138,9 +240,9 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
       </Text>
       {search ? (
         <Button
-          variant="ghost"
           label="Limpar busca"
           onPress={() => setInput('')}
+          variant="ghost"
         />
       ) : (
         <Button
@@ -165,9 +267,9 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
             accessibilityLiveRegion="polite"
             style={styles.loading}
           >
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-            <Skeleton height={72} />
+            <Skeleton height={64} />
+            <Skeleton height={64} />
+            <Skeleton height={64} />
           </View>
         </View>
       ) : query.isError ? (
@@ -188,10 +290,14 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
           contentContainerStyle={styles.listContent}
           data={clients}
           keyExtractor={(client) => client.id}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={empty}
           ItemSeparatorComponent={ListGap}
           ListHeaderComponent={header}
-          renderItem={({ item }) => <ClientRow client={item} />}
+          renderItem={({ item, index }) => (
+            <ClientRow client={item} index={index} />
+          )}
+          showsVerticalScrollIndicator={false}
           style={styles.list}
         />
       )}
@@ -205,42 +311,90 @@ function ListGap() {
 }
 
 const styles = StyleSheet.create({
-  listGap: { height: spacing.sm },
   page: { flex: 1 },
   list: { flex: 1 },
   content: {
     alignSelf: 'center',
     flex: 1,
-    gap: spacing.lg,
+    gap: spacing.md,
     maxWidth: sizes.contentMaxWidth,
-    padding: spacing.md,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     width: '100%',
   },
   listContent: {
     alignSelf: 'center',
     flexGrow: 1,
     maxWidth: sizes.contentMaxWidth,
-    padding: spacing.md,
     paddingBottom: spacing.xl,
+    paddingHorizontal: 18,
+    paddingTop: 16,
     width: '100%',
   },
-  header: { gap: spacing.lg, marginBottom: spacing.lg },
-  titleRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
-  titleCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
-  loading: { gap: spacing.sm },
-  row: {
+  header: { gap: 12, marginBottom: 14 },
+  titleRow: { alignItems: 'center', flexDirection: 'row', gap: 12 },
+  titleCopy: { flex: 1, gap: 2, minWidth: 0 },
+  title: { fontSize: 22, lineHeight: 28 },
+  count: { fontSize: 12, lineHeight: 18 },
+  addButton: {
     alignItems: 'center',
-    gap: spacing.sm,
-    minHeight: 72,
-    padding: spacing.sm,
+    borderRadius: 13,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 14,
   },
+  addLabel: { fontSize: 11 },
+  search: {
+    alignItems: 'center',
+    borderRadius: 9,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 12,
+  },
+  searchInput: { flex: 1, fontSize: 12, minHeight: 44, paddingVertical: 0 },
+  filters: { flexDirection: 'row', gap: 8 },
+  filter: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    justifyContent: 'center',
+    minHeight: 36,
+    paddingHorizontal: 15,
+  },
+  filterText: { fontSize: 11 },
+  listGap: { height: 8 },
+  loading: { gap: 8 },
+  clientRow: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 10,
+    minHeight: 64,
+    overflow: 'hidden',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  activeEdge: { bottom: 0, left: 0, position: 'absolute', top: 0, width: 3 },
   avatar: {
     alignItems: 'center',
     borderRadius: radii.circular,
-    height: 42,
+    height: 38,
     justifyContent: 'center',
-    width: 42,
+    width: 38,
   },
-  rowCopy: { flex: 1, minWidth: 0, gap: 2 },
-  empty: { alignItems: 'center' },
+  rowCopy: { flex: 1, gap: 1, minWidth: 0 },
+  clientName: { fontSize: 12, lineHeight: 17 },
+  contact: { fontSize: 10, lineHeight: 14 },
+  status: {
+    borderRadius: radii.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+  },
+  statusText: { fontSize: 9, lineHeight: 12 },
+  empty: { alignItems: 'center', marginTop: 8 },
 });
