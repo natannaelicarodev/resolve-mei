@@ -249,7 +249,7 @@ const styles = StyleSheet.create({
   section: { gap: spacing.md },
   sectionTitle: { fontSize: 10, lineHeight: 14 },
   fieldGroup: { gap: spacing.xs },
-  contactRow: { flexDirection: 'row', gap: spacing.sm },
-  contactField: { flex: 1, minWidth: 0 },
+  contactRow: { gap: spacing.md },
+  contactField: { width: '100%' },
   notes: { minHeight: 96, paddingTop: spacing.md, textAlignVertical: 'top' },
 });
