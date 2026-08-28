@@ -7,6 +7,10 @@ jest.mock('@/components/motion', () => {
   const { Pressable } = jest.requireActual('react-native');
   return { AnimatedPressable: Pressable };
 });
+jest.mock('@expo/vector-icons/MaterialCommunityIcons', () => {
+  const { View } = jest.requireActual('react-native');
+  return { __esModule: true, default: View };
+});
 jest.mock('@/lib/haptics', () => ({
   triggerHaptic: jest.fn().mockResolvedValue(undefined),
 }));
@@ -48,6 +52,15 @@ it('follows the mockup hierarchy without the former overview blocks', async () =
   expect(screen.getByText('Valor aprovado nos últimos 6 meses')).toBeTruthy();
   expect(screen.getByText('Ações rápidas')).toBeTruthy();
   expect(screen.getByText('Orçamentos recentes')).toBeTruthy();
+  expect(screen.getByTestId('quick-action-icon-/quotes/new').props.name).toBe(
+    'file-document-plus-outline',
+  );
+  expect(screen.getByTestId('quick-action-icon-/clients/new').props.name).toBe(
+    'account-plus-outline',
+  );
+  expect(screen.getByTestId('quick-action-icon-/services/new').props.name).toBe(
+    'briefcase-plus-outline',
+  );
   expect(screen.queryByText('Visão geral')).toBeNull();
   expect(screen.queryByText('Serviços mais orçados')).toBeNull();
   await screen.unmount();

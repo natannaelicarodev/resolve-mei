@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
@@ -431,19 +432,19 @@ function QuickActions() {
     {
       label: 'Novo\norçamento',
       route: '/quotes/new',
-      icon: 'add',
+      icon: 'file-document-plus-outline',
       primary: true,
     },
     {
       label: 'Novo\ncliente',
       route: '/clients/new',
-      icon: 'clientAdd',
+      icon: 'account-plus-outline',
       primary: false,
     },
     {
       label: 'Novo\nserviço',
       route: '/services/new',
-      icon: 'service',
+      icon: 'briefcase-plus-outline',
       primary: false,
     },
   ] as const;
@@ -467,7 +468,12 @@ function QuickActions() {
                   getThemeShadows(resolvedTheme).floating,
                 ]}
               >
-                <Icon color="textOnPrimary" name={action.icon} size="medium" />
+                <MaterialCommunityIcons
+                  color={colors.textOnPrimary}
+                  name={action.icon}
+                  size={22}
+                  testID={`quick-action-icon-${action.route}`}
+                />
               </LinearGradient>
             ) : (
               <View
@@ -476,7 +482,12 @@ function QuickActions() {
                   { backgroundColor: colors.primarySubtle },
                 ]}
               >
-                <Icon color="primary" name={action.icon} size="medium" />
+                <MaterialCommunityIcons
+                  color={colors.primary}
+                  name={action.icon}
+                  size={22}
+                  testID={`quick-action-icon-${action.route}`}
+                />
               </View>
             )}
             <Text
