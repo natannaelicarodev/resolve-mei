@@ -35,7 +35,7 @@ it('uses stable cursor pagination and removes duplicate rows defensively', () =>
   expect(api).toContain('.limit(QUOTE_PAGE_SIZE + 1)');
   expect(api).not.toContain('.range(');
   expect(screen).toContain('new Map<string, Quote>()');
-  expect(screen).toContain('setTimeout(() => setSearch(input.trim()), 300)');
+  expect(screen).toContain("useQuotes(user?.id ?? '', businessId, '', status)");
 });
 
 it('remounts forms and ignores mutations after identity changes', () => {

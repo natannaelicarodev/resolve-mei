@@ -68,7 +68,7 @@ it('renders accessible single-line filters and a compact quote card', async () =
   );
 
   expect(screen.getAllByText('Orçamentos').length).toBeGreaterThan(0);
-  expect(screen.getByText('Seus orçamentos')).toBeTruthy();
+  expect(screen.getAllByText('Orçamentos').length).toBeGreaterThan(1);
   expect(screen.getByText('1 encontrado')).toBeTruthy();
   expect(screen.queryByText('quotes')).toBeNull();
   for (const label of ['Todos', 'Rascunhos', 'Enviados', 'Aprovados']) {
@@ -87,14 +87,14 @@ it('renders accessible single-line filters and a compact quote card', async () =
     name: /000042, Cliente com um nome profissional muito longo.*Aprovado.*26\/08\/2026.*26\/09\/2026.*1\.250\.000,00/,
   });
   expect(quoteCard).toBeTruthy();
-  fireEvent.press(quoteCard);
+  await fireEvent.press(quoteCard);
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/quotes/[id]',
     params: { id: 'quote-1' },
   });
-  fireEvent.press(screen.getByRole('radio', { name: 'Rascunhos' }));
+  await fireEvent.press(screen.getByRole('radio', { name: 'Rascunhos' }));
   expect(screen.getByRole('button', { name: 'Novo orçamento' })).toBeTruthy();
-  fireEvent.press(screen.getByRole('button', { name: 'Novo orçamento' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Novo orçamento' }));
   expect(router.push).toHaveBeenCalledWith('/quotes/new');
   await screen.unmount();
 });
