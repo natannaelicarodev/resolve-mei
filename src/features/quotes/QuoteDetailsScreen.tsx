@@ -7,14 +7,13 @@ import {
   Badge,
   Button,
   ConfirmationDialog,
-  FormSection,
   Icon,
   InlineFeedback,
   Screen,
   Text,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { duplicateQuote, transitionQuote } from './api';
 import {
   allowedQuoteTransitions,
@@ -44,6 +43,7 @@ export function QuoteDetailsScreen({
   businessId: string;
   quoteId: string;
 }) {
+  const { colors } = useTheme();
   const query = useQuote(userId, businessId, quoteId);
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
@@ -144,9 +144,17 @@ export function QuoteDetailsScreen({
       safeAreaEdges={['top', 'bottom']}
     >
       {header}
-      <View style={styles.heading}>
+      <View
+        style={[
+          styles.hero,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+      >
         <View style={styles.copy}>
-          <Text variant="sectionTitle">
+          <Text color="textSecondary" variant="caption">
+            ORÇAMENTO
+          </Text>
+          <Text variant="cardTitle">
             Orçamento #{formatQuoteNumber(quote.quote_number)}
           </Text>
           <Text color="textSecondary">{quote.client_name_snapshot}</Text>
@@ -161,25 +169,75 @@ export function QuoteDetailsScreen({
                 : 'neutral'
           }
         />
+        <Text style={styles.heroTotal} variant="sectionTitle">
+          {formatMoney(quote.total_cents)}
+        </Text>
       </View>
-      <FormSection compact icon={<Icon name="client" />} title="Cliente">
-        <Text>{quote.client_name_snapshot}</Text>
-        {quote.client_phone_snapshot ? (
-          <Text color="textSecondary">{quote.client_phone_snapshot}</Text>
-        ) : null}
-        {quote.client_email_snapshot ? (
-          <Text color="textSecondary">{quote.client_email_snapshot}</Text>
-        ) : null}
-        <Text color="textSecondary">
-          Emissão: {formatDateForDisplay(quote.issued_on)}
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          CLIENTE E VALIDADE
         </Text>
-        <Text color="textSecondary">
-          Validade: {formatDateForDisplay(quote.valid_until)}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <View style={styles.clientRow}>
+            <View
+              style={[
+                styles.iconTile,
+                { backgroundColor: colors.primarySubtle },
+              ]}
+            >
+              <Icon color="primary" name="client" size="small" />
+            </View>
+            <View style={styles.copy}>
+              <Text variant="label">{quote.client_name_snapshot}</Text>
+              {quote.client_phone_snapshot ? (
+                <Text color="textSecondary" variant="caption">
+                  {quote.client_phone_snapshot}
+                </Text>
+              ) : null}
+              {quote.client_email_snapshot ? (
+                <Text color="textSecondary" variant="caption">
+                  {quote.client_email_snapshot}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+          <View style={[styles.dateRow, { borderTopColor: colors.border }]}>
+            <View>
+              <Text color="textMuted" variant="caption">
+                Emissão
+              </Text>
+              <Text variant="label">
+                {formatDateForDisplay(quote.issued_on)}
+              </Text>
+            </View>
+            <View>
+              <Text color="textMuted" variant="caption">
+                Validade
+              </Text>
+              <Text variant="label">
+                {formatDateForDisplay(quote.valid_until)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          ITENS DO ORÇAMENTO
         </Text>
-      </FormSection>
-      <FormSection compact icon={<Icon name="service" />} title="Itens">
         {quote.items.map((item) => (
-          <View key={item.id} style={styles.item}>
+          <View
+            key={item.id}
+            style={[
+              styles.item,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
             <View style={styles.copy}>
               <Text variant="label">{item.name_snapshot}</Text>
               {item.description_snapshot ? (
@@ -194,57 +252,98 @@ export function QuoteDetailsScreen({
             <Text>{formatMoney(item.item_total_cents)}</Text>
           </View>
         ))}
-      </FormSection>
-      <FormSection
-        compact
-        icon={<Icon name="money" />}
-        title="Resumo financeiro"
-      >
-        <Text>Subtotal: {formatMoney(quote.subtotal_cents)}</Text>
-        <Text>Desconto: {formatMoney(quote.discount_cents)}</Text>
-        <Text variant="sectionTitle">
-          Total: {formatMoney(quote.total_cents)}
+      </View>
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          RESUMO FINANCEIRO
         </Text>
-        {quote.notes ? <Text color="textSecondary">{quote.notes}</Text> : null}
-      </FormSection>
+        <View
+          style={[
+            styles.totalCard,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.summaryRow}>
+            <Text color="textSecondary">Subtotal</Text>
+            <Text>{formatMoney(quote.subtotal_cents)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text color="textSecondary">Desconto</Text>
+            <Text>{formatMoney(quote.discount_cents)}</Text>
+          </View>
+          <View
+            style={[styles.summaryTotal, { borderTopColor: colors.border }]}
+          >
+            <Text variant="label">Total do orçamento</Text>
+            <Text color="primary" variant="sectionTitle">
+              {formatMoney(quote.total_cents)}
+            </Text>
+          </View>
+        </View>
+      </View>
+      {quote.notes ? (
+        <View style={styles.section}>
+          <Text color="primary" style={styles.sectionTitle} variant="caption">
+            OBSERVAÇÕES
+          </Text>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.border },
+            ]}
+          >
+            <Text color="textSecondary">{quote.notes}</Text>
+          </View>
+        </View>
+      ) : null}
       {statusMutation.isError || duplicateMutation.isError ? (
         <InlineFeedback
           message="Não foi possível concluir a operação."
           variant="error"
         />
       ) : null}
-      {canEditQuote(quote.status) ? (
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          AÇÕES
+        </Text>
+        {canEditQuote(quote.status) ? (
+          <Button
+            label="Editar orçamento"
+            onPress={() =>
+              router.push({
+                pathname: '/quotes/[id]/edit',
+                params: { id: quote.id },
+              })
+            }
+          />
+        ) : null}
+        {(displayStatus === 'expired'
+          ? []
+          : allowedQuoteTransitions[quote.status]
+        ).map((next) => (
+          <Button
+            key={next}
+            disabled={statusMutation.isPending}
+            label={actionLabels[next] ?? quoteStatusLabels[next]}
+            onPress={() => setPendingStatus(next)}
+            variant={
+              next === 'canceled' || next === 'rejected'
+                ? 'danger'
+                : 'secondary'
+            }
+          />
+        ))}
         <Button
-          label="Editar orçamento"
-          onPress={() =>
-            router.push({
-              pathname: '/quotes/[id]/edit',
-              params: { id: quote.id },
-            })
-          }
+          disabled={duplicateMutation.isPending}
+          loading={duplicateMutation.isPending}
+          label="Duplicar orçamento"
+          onPress={() => setConfirmingDuplicate(true)}
+          variant="secondary"
         />
-      ) : null}
-      {(displayStatus === 'expired'
-        ? []
-        : allowedQuoteTransitions[quote.status]
-      ).map((next) => (
-        <Button
-          key={next}
-          disabled={statusMutation.isPending}
-          label={actionLabels[next] ?? quoteStatusLabels[next]}
-          onPress={() => setPendingStatus(next)}
-          variant={
-            next === 'canceled' || next === 'rejected' ? 'danger' : 'secondary'
-          }
-        />
-      ))}
-      <Button
-        disabled={duplicateMutation.isPending}
-        loading={duplicateMutation.isPending}
-        label="Duplicar orçamento"
-        onPress={() => setConfirmingDuplicate(true)}
-        variant="secondary"
-      />
+      </View>
       <ConfirmationDialog
         cancelLabel="Voltar"
         confirmLabel={
@@ -294,12 +393,61 @@ export function QuoteDetailsScreen({
 
 const styles = StyleSheet.create({
   screenContent: { paddingHorizontal: spacing.lg },
-  heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  hero: {
+    alignItems: 'center',
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  heroTotal: { width: '100%' },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  section: { gap: spacing.sm },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    lineHeight: 14,
+  },
+  card: { borderRadius: radii.medium, borderWidth: 1, padding: spacing.md },
+  clientRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  iconTile: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  dateRow: {
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
   item: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  totalCard: {
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  summaryTotal: {
+    alignItems: 'center',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+    paddingTop: spacing.md,
   },
 });
