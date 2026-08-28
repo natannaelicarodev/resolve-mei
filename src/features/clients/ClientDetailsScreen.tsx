@@ -1,8 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { AnimatedPressable } from '@/components/motion';
 import {
   Button,
   ConfirmationDialog,
@@ -13,7 +16,7 @@ import {
   Badge,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { radii, spacing, useTheme } from '@/theme';
+import { getThemeShadows, radii, spacing, useTheme } from '@/theme';
 import { setClientStatus } from './api';
 import { openClientContact } from './contact';
 import { formatClientDocument, formatPhone } from './format';
@@ -42,6 +45,62 @@ function Detail({
         <Text variant="label">{value}</Text>
       </View>
     </View>
+  );
+}
+
+function ContactAction({
+  icon,
+  label,
+  primary = false,
+  onPress,
+}: {
+  icon: 'phone-outline' | 'whatsapp' | 'email-outline';
+  label: string;
+  primary?: boolean;
+  onPress: () => void;
+}) {
+  const { colors, resolvedTheme } = useTheme();
+  const glyph = (
+    <MaterialCommunityIcons
+      color={primary ? colors.textOnPrimary : colors.primary}
+      name={icon}
+      size={22}
+    />
+  );
+
+  return (
+    <AnimatedPressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={styles.contactAction}
+    >
+      {primary ? (
+        <LinearGradient
+          colors={[colors.primary, colors.primaryPressed]}
+          end={{ x: 1, y: 1 }}
+          start={{ x: 0, y: 0 }}
+          style={[
+            styles.contactActionBadge,
+            getThemeShadows(resolvedTheme).floating,
+          ]}
+        >
+          {glyph}
+        </LinearGradient>
+      ) : (
+        <View
+          style={[
+            styles.contactActionBadge,
+            { backgroundColor: colors.primarySubtle },
+          ]}
+        >
+          {glyph}
+        </View>
+      )}
+      <Text align="center" color="textSecondary" variant="label">
+        {label}
+      </Text>
+    </AnimatedPressable>
   );
 }
 
@@ -157,25 +216,23 @@ export function ClientDetailsScreen({
         <View style={styles.actions}>
           {client.phone ? (
             <>
-              <Button
+              <ContactAction
+                icon="phone-outline"
                 label="Ligar"
-                size="small"
-                variant="secondary"
                 onPress={() => void contact('phone', client.phone!)}
+                primary
               />
-              <Button
+              <ContactAction
+                icon="whatsapp"
                 label="WhatsApp"
-                size="small"
-                variant="secondary"
                 onPress={() => void contact('whatsapp', client.phone!)}
               />
             </>
           ) : null}
           {client.email ? (
-            <Button
+            <ContactAction
+              icon="email-outline"
               label="E-mail"
-              size="small"
-              variant="secondary"
               onPress={() => void contact('email', client.email!)}
             />
           ) : null}
@@ -291,7 +348,22 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     lineHeight: 14,
   },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  actions: { flexDirection: 'row', gap: spacing[3] },
+  contactAction: {
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+    justifyContent: 'flex-start',
+    minWidth: 0,
+    paddingVertical: spacing.sm,
+  },
+  contactActionBadge: {
+    alignItems: 'center',
+    borderRadius: radii.medium,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
   card: {
     borderRadius: radii.medium,
     borderWidth: 1,
