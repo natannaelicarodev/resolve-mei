@@ -26,9 +26,9 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  colors: lightColors,
-  preference: 'system',
-  resolvedTheme: 'light',
+  colors: darkColors,
+  preference: 'dark',
+  resolvedTheme: 'dark',
   setPreference: async () => undefined,
 });
 
@@ -38,7 +38,7 @@ function isThemePreference(value: string | null): value is ThemePreference {
 
 export function ThemeProvider({ children }: PropsWithChildren) {
   const systemTheme = useColorScheme();
-  const [preference, setPreferenceState] = useState<ThemePreference>('system');
+  const [preference, setPreferenceState] = useState<ThemePreference>('dark');
 
   useEffect(() => {
     let active = true;

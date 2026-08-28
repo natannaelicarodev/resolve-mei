@@ -23,13 +23,13 @@ beforeEach(async () => {
   await AsyncStorage.clear();
 });
 
-it('follows the device theme while preference is system', async () => {
+it('starts in dark theme when there is no saved preference', async () => {
   const screen = await render(
     <ThemeProvider>
       <ThemeProbe />
     </ThemeProvider>,
   );
-  expect(screen.getByText(/^system:(light|dark):/)).toBeTruthy();
+  expect(screen.getByText(/^dark:dark:/)).toBeTruthy();
 });
 
 it('hydrates and persists the local theme preference', async () => {
