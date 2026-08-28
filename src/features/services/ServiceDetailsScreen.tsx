@@ -96,7 +96,10 @@ export function ServiceDetailsScreen({
   const nextStatus = service.status === 'active' ? 'inactive' : 'active';
   const deactivating = nextStatus === 'inactive';
   return (
-    <Screen safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      safeAreaEdges={['top', 'bottom']}
+    >
       {header}
       <View style={styles.heading}>
         <View style={styles.headingCopy}>
@@ -115,7 +118,7 @@ export function ServiceDetailsScreen({
         />
       </View>
       {service.description || duration ? (
-        <FormSection icon={<Icon name="service" />} title="Informações">
+        <FormSection compact icon={<Icon name="service" />} title="Informações">
           {service.description ? <Text>{service.description}</Text> : null}
           {duration ? (
             <View style={styles.detail}>
@@ -169,6 +172,7 @@ export function ServiceDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingHorizontal: spacing.lg },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   detail: { gap: 2 },

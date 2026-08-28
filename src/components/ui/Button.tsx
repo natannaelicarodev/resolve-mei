@@ -41,11 +41,13 @@ export function Button({
   const { colors } = useTheme();
   const isDisabled = disabled || loading;
   const foreground =
-    variant === 'primary' || variant === 'danger' || state === 'success'
+    variant === 'primary' || state === 'success'
       ? colors.textOnPrimary
-      : variant === 'ghost'
-        ? colors.textPrimary
-        : colors.primary;
+      : variant === 'danger'
+        ? colors.danger
+        : variant === 'ghost'
+          ? colors.textPrimary
+          : colors.primary;
   const defaultIcon =
     variant === 'danger' ? (
       <View testID="button-danger-icon">
@@ -72,7 +74,11 @@ export function Button({
           borderWidth: 1,
         },
         variant === 'ghost' && styles.ghost,
-        variant === 'danger' && { backgroundColor: colors.danger },
+        variant === 'danger' && {
+          backgroundColor: colors.dangerSubtle,
+          borderColor: colors.danger,
+          borderWidth: StyleSheet.hairlineWidth,
+        },
         state === 'success' && { backgroundColor: colors.success },
         pressState.pressed && !isDisabled && styles.pressed,
         isDisabled && {

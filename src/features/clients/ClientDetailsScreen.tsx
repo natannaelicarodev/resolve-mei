@@ -104,7 +104,10 @@ export function ClientDetailsScreen({
   const nextStatus = client.status === 'active' ? 'inactive' : 'active';
   const deactivating = nextStatus === 'inactive';
   return (
-    <Screen safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      safeAreaEdges={['top', 'bottom']}
+    >
       <ProtectedPageHeader
         alwaysUseBackFallback
         back
@@ -156,11 +159,7 @@ export function ClientDetailsScreen({
           message="Não foi possível abrir o aplicativo de contato neste dispositivo."
         />
       ) : null}
-      <FormSection
-        description="Dados de identificação e contato cadastrados."
-        icon={<Icon name="client" />}
-        title="Informações"
-      >
+      <FormSection compact icon={<Icon name="client" />} title="Informações">
         <Detail
           label={client.type === 'person' ? 'CPF' : 'CNPJ'}
           value={
@@ -220,6 +219,7 @@ export function ClientDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingHorizontal: spacing.lg },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

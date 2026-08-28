@@ -139,7 +139,10 @@ export function QuoteDetailsScreen({
   const destructiveTransition =
     pendingStatus === 'canceled' || pendingStatus === 'rejected';
   return (
-    <Screen safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      safeAreaEdges={['top', 'bottom']}
+    >
       {header}
       <View style={styles.heading}>
         <View style={styles.copy}>
@@ -159,7 +162,7 @@ export function QuoteDetailsScreen({
           }
         />
       </View>
-      <FormSection icon={<Icon name="client" />} title="Cliente">
+      <FormSection compact icon={<Icon name="client" />} title="Cliente">
         <Text>{quote.client_name_snapshot}</Text>
         {quote.client_phone_snapshot ? (
           <Text color="textSecondary">{quote.client_phone_snapshot}</Text>
@@ -174,7 +177,7 @@ export function QuoteDetailsScreen({
           Validade: {formatDateForDisplay(quote.valid_until)}
         </Text>
       </FormSection>
-      <FormSection icon={<Icon name="service" />} title="Itens">
+      <FormSection compact icon={<Icon name="service" />} title="Itens">
         {quote.items.map((item) => (
           <View key={item.id} style={styles.item}>
             <View style={styles.copy}>
@@ -192,7 +195,11 @@ export function QuoteDetailsScreen({
           </View>
         ))}
       </FormSection>
-      <FormSection icon={<Icon name="money" />} title="Resumo financeiro">
+      <FormSection
+        compact
+        icon={<Icon name="money" />}
+        title="Resumo financeiro"
+      >
         <Text>Subtotal: {formatMoney(quote.subtotal_cents)}</Text>
         <Text>Desconto: {formatMoney(quote.discount_cents)}</Text>
         <Text variant="sectionTitle">
@@ -286,6 +293,7 @@ export function QuoteDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  screenContent: { paddingHorizontal: spacing.lg },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   item: {
