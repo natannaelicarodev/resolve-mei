@@ -77,13 +77,15 @@ it('renders unique accumulated pages and opens details', async () => {
   });
   const screen = await renderList();
   expect(screen.getAllByText('Consultoria')).toHaveLength(1);
-  expect(screen.getByText('21 resultados')).toBeTruthy();
-  fireEvent.press(screen.getByLabelText(/Consultoria/));
+  expect(screen.getByText('21 encontrados')).toBeTruthy();
+  expect(screen.getByText('Ativo')).toBeTruthy();
+  expect(screen.getByText('Planejamento · aprox. 1h 30min')).toBeTruthy();
+  await fireEvent.press(screen.getByLabelText(/Consultoria/));
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/services/[id]',
     params: { id: 'service-1' },
   });
-  fireEvent.press(screen.getByRole('button', { name: 'Novo serviço' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'Novo serviço' }));
   expect(router.push).toHaveBeenCalledWith('/services/new');
   await screen.unmount();
 });
