@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { ProfileScreen } from '@/features/profile/ProfileScreen';
 
@@ -18,10 +18,15 @@ export async function renderProfile({
       <ProfileScreen />
     </QueryClientProvider>,
   );
-  if (waitForPersonal)
+  if (waitForPersonal) {
+    const personalButton = screen.queryByRole('button', {
+      name: 'Dados pessoais',
+    });
+    if (personalButton) await fireEvent.press(personalButton);
     await waitFor(() =>
       expect(screen.getByDisplayValue('Ana Silva')).toBeTruthy(),
     );
+  }
   const dispose = async () => {
     await screen.unmount();
     queryClient.clear();

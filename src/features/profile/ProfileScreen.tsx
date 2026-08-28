@@ -1,8 +1,10 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ComponentProps } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
   findNodeHandle,
@@ -15,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
+  AnimatedPressable,
   FadeInView,
   StepTransition,
   SuccessTransition,
@@ -74,6 +77,62 @@ const tabs = [
   { label: 'Dados profissionais', value: 'professional' },
 ] as const;
 
+function ProfileMenuRow({
+  danger = false,
+  icon,
+  label,
+  onPress,
+}: {
+  danger?: boolean;
+  icon: ComponentProps<typeof MaterialCommunityIcons>['name'];
+  label: string;
+  onPress: () => void;
+}) {
+  const { colors } = useTheme();
+  return (
+    <AnimatedPressable
+      accessibilityLabel={label}
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[
+        styles.menuRow,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
+    >
+      <View
+        style={[
+          styles.menuIcon,
+          {
+            backgroundColor: danger
+              ? colors.dangerSubtle
+              : colors.primarySubtle,
+          },
+        ]}
+      >
+        <MaterialCommunityIcons
+          color={danger ? colors.danger : colors.primary}
+          name={icon}
+          size={19}
+        />
+      </View>
+      <Text
+        color={danger ? 'danger' : 'textPrimary'}
+        style={styles.menuLabel}
+        variant="label"
+      >
+        {label}
+      </Text>
+      {!danger ? (
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="chevron-right"
+          size={20}
+        />
+      ) : null}
+    </AnimatedPressable>
+  );
+}
+
 function ProfileSkeleton() {
   return (
     <Card>
@@ -106,6 +165,7 @@ export function ProfileScreen() {
   const [logoutError, setLogoutError] = useState<string>();
   const [loggingOut, setLoggingOut] = useState(false);
   const [selectedImage, setSelectedImage] = useState<ImagePickerAsset>();
+  const [editing, setEditing] = useState(() => Boolean(navigation));
   const [tab, setTab] = useState<ProfileTab>(
     () => navigation?.tab ?? 'personal',
   );
@@ -229,6 +289,134 @@ export function ProfileScreen() {
       setLoggingOut(false);
     }
   };
+
+  if (!editing)
+    return (
+      <SafeAreaView
+        edges={['top', 'bottom']}
+        style={[styles.safeArea, { backgroundColor: colors.background }]}
+      >
+        <Screen safeAreaEdges={[]}>
+          <View style={styles.profileHero} testID="profile-menu-identity">
+            {image.data ? (
+              <Image
+                accessibilityLabel="Foto do perfil"
+                source={{ uri: image.data }}
+                style={styles.profileAvatar}
+              />
+            ) : (
+              <View
+                accessibilityLabel="Avatar do perfil"
+                style={[
+                  styles.profileAvatar,
+                  { backgroundColor: colors.primary },
+                ]}
+              >
+                <Text color="textOnPrimary" style={styles.profileInitial}>
+                  {getProfileInitial(query.data?.full_name)}
+                </Text>
+              </View>
+            )}
+            <Text
+              align="center"
+              numberOfLines={2}
+              style={styles.profileName}
+              variant="cardTitle"
+            >
+              {query.data?.full_name || 'Seu perfil'}
+            </Text>
+            <Text
+              align="center"
+              color="textMuted"
+              numberOfLines={1}
+              style={styles.profileEmail}
+              variant="caption"
+            >
+              {user?.email}
+            </Text>
+          </View>
+
+          <View style={styles.menuSection}>
+            <Text
+              color="primary"
+              style={styles.menuSectionTitle}
+              variant="caption"
+            >
+              GERAL
+            </Text>
+            <ProfileMenuRow
+              icon="account-outline"
+              label="Dados pessoais"
+              onPress={() => {
+                setTab('personal');
+                setEditing(true);
+              }}
+            />
+            <ProfileMenuRow
+              icon="briefcase-outline"
+              label="Dados profissionais"
+              onPress={() => {
+                setTab('professional');
+                setEditing(true);
+              }}
+            />
+          </View>
+
+          <View style={styles.menuSection}>
+            <Text
+              color="primary"
+              style={styles.menuSectionTitle}
+              variant="caption"
+            >
+              SEGURANÇA
+            </Text>
+            <ProfileMenuRow
+              icon="lock-outline"
+              label="Alterar senha"
+              onPress={() => router.push('/forgot-password')}
+            />
+          </View>
+
+          <View style={styles.menuSection}>
+            <Text
+              color="primary"
+              style={styles.menuSectionTitle}
+              variant="caption"
+            >
+              OUTROS
+            </Text>
+            <ProfileMenuRow
+              icon="tune-variant"
+              label="Configurações"
+              onPress={() => router.push('/settings')}
+            />
+            {logoutError ? (
+              <InlineFeedback message={logoutError} variant="error" />
+            ) : null}
+            <ProfileMenuRow
+              danger
+              icon="logout-variant"
+              label="Sair da conta"
+              onPress={() => setConfirmingLogout(true)}
+            />
+          </View>
+        </Screen>
+        <ConfirmationDialog
+          confirmLabel="Sair da conta"
+          description="Você precisará entrar novamente para acessar seus dados."
+          destructive
+          loading={loggingOut}
+          onCancel={() => setConfirmingLogout(false)}
+          onConfirm={() => {
+            setConfirmingLogout(false);
+            void logout();
+          }}
+          title="Sair da conta?"
+          visible={confirmingLogout}
+        />
+        <ProtectedBottomNavigation selected="profile" />
+      </SafeAreaView>
+    );
 
   return (
     <SafeAreaView
@@ -399,6 +587,42 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
+  profileHero: {
+    alignItems: 'center',
+    paddingBottom: 10,
+    paddingTop: 14,
+  },
+  profileAvatar: {
+    alignItems: 'center',
+    borderRadius: radii.circular,
+    height: 64,
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: 64,
+  },
+  profileInitial: { fontSize: 24, fontWeight: '700', lineHeight: 30 },
+  profileName: { fontSize: 16, lineHeight: 22 },
+  profileEmail: { fontSize: 11, lineHeight: 16, marginTop: 1 },
+  menuSection: { gap: 8, paddingTop: 6 },
+  menuSectionTitle: { fontSize: 10, lineHeight: 14 },
+  menuRow: {
+    alignItems: 'center',
+    borderRadius: 14,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 54,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  menuIcon: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  menuLabel: { flex: 1, fontSize: 12, lineHeight: 17 },
   identity: {
     alignItems: 'center',
     borderRadius: radii.card,

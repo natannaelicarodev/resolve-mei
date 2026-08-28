@@ -40,6 +40,27 @@ beforeEach(() => {
   jest.mocked(getMyProfile).mockResolvedValue(profile);
 });
 
+it('renders the profile menu from the mockup and opens its destinations', async () => {
+  const { dispose, screen } = await renderProfile({ waitForPersonal: false });
+
+  expect(await screen.findByText('Ana Silva')).toBeTruthy();
+  expect(screen.getByTestId('profile-menu-identity')).toBeTruthy();
+  expect(screen.getByText('GERAL')).toBeTruthy();
+  expect(screen.getByText('SEGURANÇA')).toBeTruthy();
+  expect(screen.getByText('OUTROS')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Dados pessoais' })).toBeTruthy();
+  expect(
+    screen.getByRole('button', { name: 'Dados profissionais' }),
+  ).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Alterar senha' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Configurações' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Sair da conta' })).toBeTruthy();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'Configurações' }));
+  expect(router.push).toHaveBeenCalledWith('/settings');
+  await dispose();
+});
+
 it('shows accessible success and updates profile and business caches', async () => {
   jest.mocked(updateMyProfile).mockResolvedValue(updated);
   const { dispose, invalidateQueries, queryClient, screen } =
