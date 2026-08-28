@@ -6,6 +6,8 @@ export { Badge } from './Badge';
 export { Checkbox } from './Checkbox';
 export { ConfirmationDialog } from './ConfirmationDialog';
 export type { ConfirmationDialogProps } from './ConfirmationDialog';
+export { Icon, iconNames } from './Icon';
+export type { IconName, IconProps, IconSize } from './Icon';
 export { IconButton } from './IconButton';
 export { InlineFeedback } from './InlineFeedback';
 export type { FeedbackVariant } from './InlineFeedback';

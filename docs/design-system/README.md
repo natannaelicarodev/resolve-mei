@@ -93,7 +93,16 @@ O splash permanece visível durante o carregamento. Se a fonte falhar, o aplicat
 - `InlineFeedback`: success, error, warning e info com live region.
 - `Skeleton`: dimensões estáveis e pulsação leve, sem shimmer pesado.
 - `SegmentedControl`: escolhas curtas e mutuamente exclusivas com estado selecionado textual e haptic semântico.
+- `Icon`: catálogo Lucide com peso e tamanho únicos; nomes descrevem papel no produto, não desenho.
 - `ConfirmationDialog`: confirmação de ação sobre `Modal` centralizado, com backdrop, dismiss seguro, foco anunciado, Reduced Motion e bloqueio de toque duplicado.
+
+## Ícones
+
+Os ícones vêm de `lucide-react-native` (1.34.0, licença ISC), que depende de `react-native-svg` (15.15.4, instalado por `expo install` para casar com o SDK 57). Nenhum glifo foi redesenhado à mão a partir de folha de referência: usamos o equivalente semântico mais próximo da biblioteca, cuja origem e licença são verificáveis.
+
+O componente `Icon` é a única porta de entrada. Ele fixa **um peso de traço** (1,75) e **três tamanhos** ligados aos tokens `sizes.iconSmall/Medium/Large`, e resolve a cor por token do tema. Telas nomeiam o ícone pelo papel — `client`, `quote`, `money`, `trendUp` — então trocar o desenho por trás nunca toca uma tela. Testes travam essas garantias: todo nome do catálogo renderiza, existe exatamente um peso de traço, cada tamanho casa com seu token, e a cor sai do tema.
+
+`MaterialCommunityIcons` permanece onde já estava estabelecido (navegação inferior, cabeçalhos, estados vazios). A troca completa não traria ganho estrutural e misturar as duas famílias no mesmo contexto visual é que seria inconsistente. Lucide entra onde a expressividade do ícone atual é insuficiente — o primeiro caso é o ícone de alerta do `Button variant="danger"`.
 
 ## Confirmações
 

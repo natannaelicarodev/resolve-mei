@@ -12,7 +12,9 @@ import {
   Button,
   Card,
   ConfirmationDialog,
+  Icon,
   IconButton,
+  iconNames,
   InlineFeedback,
   Input,
   Screen,
@@ -168,6 +170,32 @@ export function DesignSystemCatalog() {
         <Button disabled label="Indisponível" />
       </Section>
 
+      <Section title="Ícones">
+        <Text color="textSecondary" variant="bodySecondary">
+          Lucide, traço 1,75 e três tamanhos. Cada nome descreve o papel no
+          produto, não o desenho.
+        </Text>
+        <View style={styles.iconGrid}>
+          {iconNames.map((name) => (
+            <View key={name} style={styles.iconCell}>
+              <Icon name={name} />
+              <Text align="center" color="textMuted" variant="caption">
+                {name}
+              </Text>
+            </View>
+          ))}
+        </View>
+        <View style={styles.iconRow}>
+          <Icon name="quote" size="small" />
+          <Icon name="quote" size="medium" />
+          <Icon name="quote" size="large" />
+          <Icon color="primary" name="trendUp" size="large" />
+          <Icon color="accent" name="money" size="large" />
+          <Icon color="success" name="success" size="large" />
+          <Icon color="danger" name="alert" size="large" />
+        </View>
+      </Section>
+
       <Section title="Campos">
         <SegmentedControl
           label="Tipo de documento"
@@ -315,6 +343,9 @@ export function DesignSystemCatalog() {
 }
 
 const styles = StyleSheet.create({
+  iconGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  iconCell: { alignItems: 'center', gap: spacing.xs, width: 72 },
+  iconRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   section: { gap: spacing.md },
   wrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   swatchItem: { gap: spacing.xs, width: 72 },

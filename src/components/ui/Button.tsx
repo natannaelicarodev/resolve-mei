@@ -1,4 +1,3 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { PressableProps } from 'react-native';
@@ -7,6 +6,8 @@ import { AnimatedPressable } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
 import type { HapticIntent } from '@/lib/haptics';
 import { radii, sizes, spacing, typography, useTheme } from '@/theme';
+import { Icon } from './Icon';
+import type { IconSize } from './Icon';
 import { Text } from './Text';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -47,12 +48,9 @@ export function Button({
         : colors.primary;
   const defaultIcon =
     variant === 'danger' ? (
-      <MaterialCommunityIcons
-        color={foreground}
-        name="alert-circle-outline"
-        size={dangerIconSize[size]}
-        testID="button-danger-icon"
-      />
+      <View testID="button-danger-icon">
+        <Icon name="alert" rawColor={foreground} size={dangerIconSize[size]} />
+      </View>
     ) : null;
   return (
     <AnimatedPressable
@@ -100,10 +98,10 @@ export function Button({
   );
 }
 
-const dangerIconSize: Record<ButtonSize, number> = {
-  small: 16,
-  medium: 18,
-  large: 20,
+const dangerIconSize: Record<ButtonSize, IconSize> = {
+  small: 'small',
+  medium: 'small',
+  large: 'medium',
 };
 
 const styles = StyleSheet.create({
