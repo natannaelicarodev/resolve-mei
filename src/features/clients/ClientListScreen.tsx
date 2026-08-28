@@ -1,14 +1,25 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, StyleSheet, TextInput, View } from 'react-native';
+import { Animated, FlatList, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
+import {
+  AnimatedPressable,
+  FadeInView,
+  useReducedMotion,
+} from '@/components/motion';
 import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
+import {
+  getThemeShadows,
+  motion,
+  radii,
+  sizes,
+  spacing,
+  useTheme,
+} from '@/theme';
 import type { Client, ClientStatusFilter } from './api';
 import { CLIENT_PAGE_SIZE } from './api';
 import { clientInitials, formatClientDocument, formatPhone } from './format';
@@ -27,82 +38,107 @@ function clientContact(client: Client) {
   return client.email ?? 'Sem contato informado';
 }
 
+function StatusLed({ active }: { active: boolean }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Status: ${active ? 'Ativo' : 'Inativo'}`}
+      style={styles.statusRow}
+    >
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+        style={[
+          styles.led,
+          {
+            backgroundColor: active ? colors.success : colors.textMuted,
+            ...(active ? { boxShadow: `0 0 6px ${colors.success}` } : null),
+          },
+        ]}
+      />
+      <Text
+        color={active ? 'success' : 'textMuted'}
+        style={styles.statusText}
+        variant="status"
+      >
+        {active ? 'Ativo' : 'Inativo'}
+      </Text>
+    </View>
+  );
+}
+
 function ClientRow({ client, index }: { client: Client; index: number }) {
   const { colors } = useTheme();
   const active = client.status === 'active';
-  const avatars = [
-    { backgroundColor: colors.primary, color: colors.textOnPrimary },
-    { backgroundColor: colors.borderStrong, color: colors.textPrimary },
-    { backgroundColor: colors.accent, color: colors.textOnPrimary },
-  ];
-  const avatar = avatars[index % avatars.length]!;
 
   return (
-    <AnimatedPressable
-      accessibilityLabel={`Abrir cliente ${client.name}`}
-      accessibilityRole="button"
-      onPress={() =>
-        router.push({ pathname: '/clients/[id]', params: { id: client.id } })
-      }
+    <FadeInView delay={Math.min(index, 8) * motion.stagger}>
+      <AnimatedPressable
+        accessibilityLabel={`Abrir cliente ${client.name}`}
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({ pathname: '/clients/[id]', params: { id: client.id } })
+        }
+        style={[
+          styles.clientRow,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        testID="client-list-row"
+      >
+        <View
+          style={[
+            styles.avatar,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text color="textSecondary" variant="label">
+            {clientInitials(client.name).slice(0, 1)}
+          </Text>
+        </View>
+        <View style={styles.rowCopy}>
+          <Text numberOfLines={1} style={styles.clientName} variant="label">
+            {client.name}
+          </Text>
+          <Text
+            color="textMuted"
+            numberOfLines={1}
+            style={styles.contact}
+            variant="caption"
+          >
+            {clientContact(client)}
+          </Text>
+        </View>
+        <StatusLed active={active} />
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="chevron-right"
+          size={20}
+        />
+      </AnimatedPressable>
+    </FadeInView>
+  );
+}
+
+function ClientRowSkeleton() {
+  const { colors } = useTheme();
+  return (
+    <View
       style={[
         styles.clientRow,
         { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
-      testID="client-list-row"
     >
-      {active ? (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-          style={[styles.activeEdge, { backgroundColor: colors.success }]}
-        />
-      ) : null}
-      <View
-        style={[styles.avatar, { backgroundColor: avatar.backgroundColor }]}
-      >
-        <Text style={{ color: avatar.color }} variant="label">
-          {clientInitials(client.name).slice(0, 1)}
-        </Text>
-      </View>
+      <Skeleton height={38} radius={radii.small} width={38} />
       <View style={styles.rowCopy}>
-        <Text numberOfLines={1} style={styles.clientName} variant="label">
-          {client.name}
-        </Text>
-        <Text
-          color="textMuted"
-          numberOfLines={1}
-          style={styles.contact}
-          variant="caption"
-        >
-          {clientContact(client)}
-        </Text>
+        <Skeleton height={12} width="55%" />
+        <Skeleton height={10} width="35%" />
       </View>
-      <View
-        accessible
-        accessibilityLabel={`Status: ${active ? 'Ativo' : 'Inativo'}`}
-        style={[
-          styles.status,
-          {
-            backgroundColor: active
-              ? colors.successSubtle
-              : colors.surfacePressed,
-          },
-        ]}
-      >
-        <Text
-          color={active ? 'success' : 'textMuted'}
-          style={styles.statusText}
-          variant="status"
-        >
-          {active ? 'Ativo' : 'Inativo'}
-        </Text>
-      </View>
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+      <Skeleton height={16} radius={radii.pill} width={54} />
+    </View>
   );
 }
 
@@ -114,27 +150,58 @@ function ClientFilters({
   onChange: (status: ClientStatusFilter) => void;
 }) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const activeIndex = FILTERS.findIndex((filter) => filter.value === value);
+  const [position] = useState(() => new Animated.Value(activeIndex));
+  useEffect(() => {
+    if (reducedMotion) {
+      position.setValue(activeIndex);
+      return;
+    }
+    const animation = Animated.spring(position, {
+      toValue: activeIndex,
+      useNativeDriver: false,
+      ...motion.spring,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [activeIndex, position, reducedMotion]);
   return (
     <View
       accessibilityLabel="Filtrar clientes"
       accessibilityRole="radiogroup"
-      style={styles.filters}
+      style={[
+        styles.filters,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
     >
+      <Animated.View
+        importantForAccessibility="no"
+        pointerEvents="none"
+        style={[
+          styles.filterThumb,
+          {
+            backgroundColor: colors.primary,
+            left: position.interpolate({
+              inputRange: FILTERS.map((_, filterIndex) => filterIndex),
+              outputRange: FILTERS.map(
+                (_, filterIndex) => `${(filterIndex * 100) / FILTERS.length}%`,
+              ),
+            }),
+            width: `${100 / FILTERS.length}%`,
+          },
+        ]}
+      />
       {FILTERS.map((filter) => {
         const selected = value === filter.value;
         return (
           <AnimatedPressable
             accessibilityRole="radio"
             accessibilityState={{ checked: selected }}
+            containerStyle={styles.filterSlot}
             key={filter.value}
             onPress={() => onChange(filter.value)}
-            style={[
-              styles.filter,
-              {
-                backgroundColor: selected ? colors.primary : colors.surface,
-                borderColor: selected ? colors.primary : colors.border,
-              },
-            ]}
+            style={styles.filter}
           >
             <Text
               color={selected ? 'textOnPrimary' : 'textSecondary'}
@@ -164,7 +231,7 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
   const clients = query.data ?? [];
 
   const header = (
-    <View style={styles.header}>
+    <FadeInView style={styles.header}>
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text style={styles.title} variant="sectionTitle">
@@ -220,7 +287,7 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
         />
       </View>
       <ClientFilters onChange={setStatus} value={status} />
-    </View>
+    </FadeInView>
   );
 
   const empty = (
@@ -267,9 +334,14 @@ export function ClientListScreen({ businessId }: { businessId: string }) {
             accessibilityLiveRegion="polite"
             style={styles.loading}
           >
-            <Skeleton height={64} />
-            <Skeleton height={64} />
-            <Skeleton height={64} />
+            {[0, 1, 2].map((skeletonIndex) => (
+              <FadeInView
+                delay={skeletonIndex * motion.stagger}
+                key={skeletonIndex}
+              >
+                <ClientRowSkeleton />
+              </FadeInView>
+            ))}
           </View>
         </View>
       ) : query.isError ? (
@@ -356,14 +428,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   searchInput: { flex: 1, fontSize: 12, minHeight: 44, paddingVertical: 0 },
-  filters: { flexDirection: 'row', gap: 8 },
+  filters: {
+    borderRadius: radii.medium,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    padding: 3,
+    position: 'relative',
+  },
+  filterThumb: {
+    borderRadius: radii.small,
+    bottom: 3,
+    position: 'absolute',
+    top: 3,
+  },
+  filterSlot: { flex: 1 },
   filter: {
     alignItems: 'center',
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
     minHeight: 36,
-    paddingHorizontal: 15,
   },
   filterText: { fontSize: 11 },
   listGap: { height: 8 },
@@ -379,10 +461,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  activeEdge: { bottom: 0, left: 0, position: 'absolute', top: 0, width: 3 },
   avatar: {
     alignItems: 'center',
-    borderRadius: radii.circular,
+    borderRadius: radii.small,
+    borderWidth: StyleSheet.hairlineWidth,
     height: 38,
     justifyContent: 'center',
     width: 38,
@@ -390,11 +472,8 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, gap: 1, minWidth: 0 },
   clientName: { fontSize: 12, lineHeight: 17 },
   contact: { fontSize: 10, lineHeight: 14 },
-  status: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
+  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 5 },
+  led: { borderRadius: 2, height: 7, width: 7 },
   statusText: { fontSize: 9, lineHeight: 12 },
   empty: { alignItems: 'center', marginTop: 8 },
 });

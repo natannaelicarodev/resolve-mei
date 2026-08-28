@@ -7,13 +7,14 @@ import { getMyProfile, profileQueryKey } from '@/features/profile/api';
 import { useHomeDashboard } from '@/features/home/hooks';
 import type { DashboardPeriod } from '@/features/home/api';
 import { useQuotes } from '@/features/quotes/hooks';
+import { useServices } from '@/features/services/hooks';
 import { useAuth } from '@/providers/AuthProvider';
 
 export default function HomeRoute() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const { data } = useMyBusiness(userId);
-  const [period, setPeriod] = useState<DashboardPeriod>('month');
+  const [period, setPeriod] = useState<DashboardPeriod>('6months');
   const profile = useQuery({
     queryKey: profileQueryKey(userId),
     queryFn: ({ signal }) => getMyProfile(userId, signal),
@@ -34,6 +35,7 @@ export default function HomeRoute() {
   const avatarUrl = avatar.data;
   const dashboard = useHomeDashboard(userId, data?.id ?? '', period);
   const recentQuotes = useQuotes(userId, data?.id ?? '', '', 'all');
+  const services = useServices(userId, data?.id ?? '', '', 'all');
   const fullName = profile.data?.full_name?.trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : undefined;
 
@@ -47,8 +49,9 @@ export default function HomeRoute() {
       period={period}
       firstName={firstName}
       avatarUrl={avatarUrl}
-      recentQuotes={recentQuotes.data?.pages[0]?.items.slice(0, 2)}
+      recentQuotes={recentQuotes.data?.pages[0]?.items.slice(0, 12)}
       recentQuotesLoading={recentQuotes.isLoading}
+      serviceCount={services.data?.pages[0]?.totalCount}
     />
   );
 }

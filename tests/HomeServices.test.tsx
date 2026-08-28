@@ -16,6 +16,8 @@ export const dashboardFixture: HomeDashboardData = {
   periodEnd: '2026-09-01',
   approvedCents: 150000,
   previousApprovedCents: 100000,
+  previousApprovedCount: 1,
+  previousQuoteCount: 1,
   negotiatingCents: 50000,
   approvedCount: 2,
   openCount: 1,

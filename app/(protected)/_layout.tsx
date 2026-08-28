@@ -49,10 +49,7 @@ export default function ProtectedLayout() {
       <Stack.Screen name="clients" options={{ headerShown: false }} />
       <Stack.Screen name="services" options={{ headerShown: false }} />
       <Stack.Screen name="quotes" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding"
-        options={{ title: 'Perfil profissional', headerBackVisible: false }}
-      />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>

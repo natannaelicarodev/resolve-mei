@@ -3,7 +3,7 @@ import { StyleSheet, processColor } from 'react-native';
 
 import { HomeDashboard } from '@/features/home/HomeDashboard';
 import type { HomeDashboardData } from '@/features/home/api';
-import { lightColors, spacing } from '@/theme';
+import { darkColors, spacing } from '@/theme';
 
 jest.mock('@/components/motion', () => {
   const { Pressable, View } = jest.requireActual('react-native');
@@ -24,6 +24,8 @@ const data: HomeDashboardData = {
   periodEnd: '2026-09-01',
   approvedCents: 245000,
   previousApprovedCents: 200000,
+  previousApprovedCount: 1,
+  previousQuoteCount: 1,
   negotiatingCents: 128000,
   approvedCount: 6,
   openCount: 3,
@@ -122,8 +124,8 @@ it('applies the redesigned card hierarchy and primary quick action', async () =>
   expect(
     screen.getByTestId('quick-action-primary-gradient').props.colors,
   ).toEqual([
-    processColor(lightColors.primary),
-    processColor(lightColors.primaryPressed),
+    processColor(darkColors.primary),
+    processColor(darkColors.primaryPressed),
   ]);
   expect(
     screen.getByTestId('approved-line-chart', { includeHiddenElements: true }),
@@ -178,6 +180,8 @@ it('explains empty quotes, clients and services without fictitious metrics', asy
     ...data,
     approvedCents: 0,
     previousApprovedCents: 0,
+    previousApprovedCount: 0,
+    previousQuoteCount: 0,
     negotiatingCents: 0,
     approvedCount: 0,
     openCount: 0,

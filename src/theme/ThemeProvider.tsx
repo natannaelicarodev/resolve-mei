@@ -99,3 +99,22 @@ export function DarkThemeScope({ children }: PropsWithChildren) {
     <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
   );
 }
+
+// Dev-only counterpart used by the design-preview route to render a subtree
+// in light mode regardless of the app's real (dark) default preference.
+export function LightThemeScope({ children }: PropsWithChildren) {
+  const parent = useTheme();
+  const value = useMemo<ThemeContextValue>(
+    () => ({
+      colors: lightColors,
+      preference: 'light',
+      resolvedTheme: 'light',
+      setPreference: parent.setPreference,
+    }),
+    [parent.setPreference],
+  );
+
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
+}

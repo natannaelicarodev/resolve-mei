@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react-native';
 
 import { Icon, iconNames } from '@/components/ui';
-import { ThemeProvider, lightColors, sizes } from '@/theme';
+import { ThemeProvider, darkColors, sizes } from '@/theme';
 
 function renderIcon(element: React.ReactElement) {
   return render(<ThemeProvider>{element}</ThemeProvider>);
@@ -51,14 +51,14 @@ describe('Icon', () => {
   it('resolves the colour from a theme token rather than a raw value', async () => {
     const screen = await renderIcon(<Icon color="primary" name="quote" />);
 
-    expect(svgProps(screen.toJSON()).stroke).toBe(lightColors.primary);
+    expect(svgProps(screen.toJSON()).stroke).toBe(darkColors.primary);
     await screen.unmount();
   });
 
   it('defaults to the primary text colour', async () => {
     const screen = await renderIcon(<Icon name="quote" />);
 
-    expect(svgProps(screen.toJSON()).stroke).toBe(lightColors.textPrimary);
+    expect(svgProps(screen.toJSON()).stroke).toBe(darkColors.textPrimary);
     await screen.unmount();
   });
 

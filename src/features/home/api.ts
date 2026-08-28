@@ -12,6 +12,8 @@ export interface HomeDashboardData {
   periodEnd: string;
   approvedCents: number;
   previousApprovedCents: number;
+  previousApprovedCount: number;
+  previousQuoteCount: number;
   negotiatingCents: number;
   approvedCount: number;
   openCount: number;
@@ -37,6 +39,40 @@ function objectValue(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value))
     throw new Error('INVALID_DASHBOARD_RESPONSE');
   return value as Record<string, unknown>;
+}
+
+async function getPreviousCounts(
+  businessId: string,
+  periodStart: string,
+  periodEnd: string,
+) {
+  const start = new Date(`${periodStart}T03:00:00Z`);
+  const end = new Date(`${periodEnd}T03:00:00Z`);
+  const monthCount = Math.max(
+    1,
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 +
+      end.getUTCMonth() -
+      start.getUTCMonth(),
+  );
+  const previousStart = new Date(start);
+  previousStart.setUTCMonth(previousStart.getUTCMonth() - monthCount);
+  const baseQuery = () =>
+    supabase
+      .from('quotes')
+      .select('id', { count: 'exact', head: true })
+      .eq('business_id', businessId)
+      .gte('updated_at', previousStart.toISOString())
+      .lt('updated_at', start.toISOString());
+  const [all, approved] = await Promise.all([
+    baseQuery(),
+    baseQuery().eq('status', 'approved'),
+  ]);
+  if (all.error) throw all.error;
+  if (approved.error) throw approved.error;
+  return {
+    previousApprovedCount: approved.count ?? 0,
+    previousQuoteCount: all.count ?? 0,
+  };
 }
 
 export async function getHomeDashboard(
@@ -86,6 +122,20 @@ export async function getHomeDashboard(
   const clients = objectValue(root.clients);
   const monthly = Array.isArray(root.monthly) ? root.monthly : [];
   const services = Array.isArray(root.services) ? root.services : [];
+  const previousCounts =
+    root.previous_approved_count !== undefined &&
+    root.previous_quote_count !== undefined
+      ? {
+          previousApprovedCount: numberValue(root.previous_approved_count),
+          previousQuoteCount: numberValue(root.previous_quote_count),
+        }
+      : typeof supabase.from === 'function'
+        ? await getPreviousCounts(
+            businessId,
+            String(root.period_start),
+            String(root.period_end),
+          )
+        : { previousApprovedCount: 0, previousQuoteCount: 0 };
   return {
     businessId,
     period,
@@ -93,6 +143,7 @@ export async function getHomeDashboard(
     periodEnd: String(root.period_end),
     approvedCents: numberValue(root.approved_cents),
     previousApprovedCents: numberValue(root.previous_approved_cents),
+    ...previousCounts,
     negotiatingCents: numberValue(root.negotiating_cents),
     approvedCount: numberValue(root.approved_count),
     openCount: numberValue(root.open_count),

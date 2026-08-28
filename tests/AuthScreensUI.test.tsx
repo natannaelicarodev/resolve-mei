@@ -20,7 +20,6 @@ beforeEach(() => jest.clearAllMocks());
 it('keeps login data after an error and toggles password visibility', async () => {
   jest.mocked(signIn).mockRejectedValue(new Error('technical detail'));
   const screen = await render(<SignInScreen />);
-  expect(screen.getByLabelText('Logotipo do ResolveMEI')).toBeTruthy();
   await fireEvent.changeText(
     screen.getByLabelText('E-mail'),
     'ana@example.com',
@@ -50,21 +49,16 @@ it('updates password requirements progressively during sign-up', async () => {
   await screen.unmount();
 });
 
-it('shows a neutral recovery success without confirming account existence', async () => {
+it('shows the recovery sent state for the informed email', async () => {
   jest.mocked(requestPasswordReset).mockResolvedValue(undefined);
   const screen = await render(<ForgotPasswordScreen />);
   await fireEvent.changeText(
     screen.getByLabelText('E-mail'),
     'ana@example.com',
   );
-  await fireEvent.press(
-    screen.getByRole('button', { name: 'Enviar instruções' }),
-  );
-  expect(
-    await screen.findByText(
-      'Se o e-mail estiver cadastrado, enviaremos as instruções.',
-    ),
-  ).toBeTruthy();
+  await fireEvent.press(screen.getByRole('button', { name: 'Enviar link' }));
+  expect(await screen.findByText('Verifique seu e-mail')).toBeTruthy();
+  expect(await screen.findByText('ana@example.com')).toBeTruthy();
   expect(requestPasswordReset).toHaveBeenCalledWith('ana@example.com');
   await screen.unmount();
 });

@@ -3,7 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useAuth } from '@/providers/AuthProvider';
-import { DarkThemeScope, darkColors } from '@/theme';
+import { DarkThemeScope } from '@/theme';
 
 export default function AuthLayout() {
   const { isLoading, user, isPasswordRecovery } = useAuth();
@@ -14,7 +14,7 @@ export default function AuthLayout() {
       <StatusBar style="light" />
       <Stack
         screenOptions={{
-          contentStyle: { backgroundColor: darkColors.background },
+          contentStyle: { backgroundColor: '#14161A' },
           headerShown: false,
         }}
       />

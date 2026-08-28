@@ -15,7 +15,7 @@ import { AppState, Platform } from 'react-native';
 import { signOut as performSignOut } from '@/features/auth/api';
 import { supabase } from '@/lib/supabase';
 
-interface AuthContextValue {
+export interface AuthContextValue {
   session: Session | null;
   user: User | null;
   isLoading: boolean;
@@ -25,7 +25,9 @@ interface AuthContextValue {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+// Exported so dev-only tooling (e.g. the design-preview route) can shadow it
+// with a fixture value for a subtree, without touching the real auth flow.
+export const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const queryClient = useQueryClient();

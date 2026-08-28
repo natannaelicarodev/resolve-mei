@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
@@ -43,7 +44,7 @@ const palettes = {
 
 type WelcomePalette = (typeof palettes)[keyof typeof palettes];
 
-function AmbientBackground({ dark }: { dark: boolean }) {
+export function WelcomeAmbientBackground({ dark }: { dark: boolean }) {
   const reducedMotion = useReducedMotion();
   const [progress] = useState(() => new Animated.Value(0));
   const palette = dark ? palettes.dark : palettes.light;
@@ -84,6 +85,15 @@ function AmbientBackground({ dark }: { dark: boolean }) {
       pointerEvents="none"
       style={StyleSheet.absoluteFill}
     >
+      <LinearGradient
+        colors={
+          dark
+            ? ['#102729', '#171C20', palette.background]
+            : ['#DCECEB', '#E9EEF0', palette.background]
+        }
+        locations={[0, 0.44, 0.82]}
+        style={StyleSheet.absoluteFill}
+      />
       <Svg height="100%" viewBox="0 0 390 760" width="100%">
         <Defs>
           <Pattern
@@ -101,8 +111,13 @@ function AmbientBackground({ dark }: { dark: boolean }) {
             />
           </Pattern>
         </Defs>
-        <Rect fill="url(#dots)" height="430" opacity={0.72} width="390" />
+        <Rect fill="url(#dots)" height="390" opacity={0.58} width="390" />
       </Svg>
+      <LinearGradient
+        colors={['transparent', palette.background]}
+        locations={[0, 1]}
+        style={styles.dotFade}
+      />
       <Animated.View style={[styles.glow, { opacity, transform: [{ scale }] }]}>
         <Svg height="100%" viewBox="0 0 300 300" width="100%">
           <Defs>
@@ -167,25 +182,36 @@ function BusinessSignals({ palette }: { palette: WelcomePalette }) {
     inputRange: [0, 1],
     outputRange: [-3, 5],
   });
+  const breathe = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.98, 1.02],
+  });
 
   const signals = [
     {
+      accent: '#60A5FA',
       icon: 'account-group-outline' as const,
       label: 'Clientes',
       position: styles.signalClients,
-      transform: [{ translateY: rise }],
+      transform: [{ translateY: rise }, { scale: breathe }],
     },
     {
+      accent: '#A78BFA',
       icon: 'briefcase-outline' as const,
       label: 'Serviços',
       position: styles.signalServices,
-      transform: [{ translateY: fall }],
+      transform: [{ translateY: fall }, { scale: breathe }],
     },
     {
+      accent: palette.accent,
       icon: 'file-check-outline' as const,
       label: 'Orçamentos',
       position: styles.signalQuotes,
-      transform: [{ translateX: drift }, { translateY: rise }],
+      transform: [
+        { translateX: drift },
+        { translateY: rise },
+        { scale: breathe },
+      ],
     },
   ];
 
@@ -212,11 +238,11 @@ function BusinessSignals({ palette }: { palette: WelcomePalette }) {
           <View
             style={[
               styles.signalIcon,
-              { backgroundColor: `${palette.accent}20` },
+              { backgroundColor: `${signal.accent}18` },
             ]}
           >
             <MaterialCommunityIcons
-              color={palette.accent}
+              color={signal.accent}
               name={signal.icon}
               size={16}
             />
@@ -225,7 +251,7 @@ function BusinessSignals({ palette }: { palette: WelcomePalette }) {
             {signal.label}
           </Text>
           <View
-            style={[styles.signalLed, { backgroundColor: palette.accent }]}
+            style={[styles.signalLed, { backgroundColor: signal.accent }]}
           />
         </Animated.View>
       ))}
@@ -241,28 +267,40 @@ export function WelcomeScreen() {
     <SafeAreaView
       style={[styles.root, { backgroundColor: palette.background }]}
     >
-      <AmbientBackground dark={dark} />
+      <WelcomeAmbientBackground dark={dark} />
       <FadeInView style={styles.layout}>
         <View style={styles.hero}>
           <BusinessSignals palette={palette} />
-          <View
-            style={[
-              styles.brandMark,
-              { backgroundColor: palette.surface, borderColor: palette.accent },
-            ]}
-          >
-            <MaterialCommunityIcons
-              color={palette.accent}
-              name="file-document-outline"
-              size={30}
-            />
+          <View style={styles.brandLockup}>
+            <View
+              style={[
+                styles.brandHalo,
+                { backgroundColor: `${palette.accent}10` },
+              ]}
+            >
+              <View
+                style={[
+                  styles.brandMark,
+                  {
+                    backgroundColor: palette.surface,
+                    borderColor: palette.accent,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  color={palette.accent}
+                  name="file-document-outline"
+                  size={29}
+                />
+              </View>
+            </View>
+            <Text style={[styles.brandName, { color: palette.textPrimary }]}>
+              ResolveMEI
+            </Text>
+            <Text style={[styles.brandTag, { color: palette.textMuted }]}>
+              Painel do seu negócio
+            </Text>
           </View>
-          <Text style={[styles.brandName, { color: palette.textPrimary }]}>
-            ResolveMEI
-          </Text>
-          <Text style={[styles.brandTag, { color: palette.textMuted }]}>
-            Painel do seu negócio
-          </Text>
         </View>
         <View style={styles.body}>
           <View style={styles.copy}>
@@ -319,23 +357,23 @@ const styles = StyleSheet.create({
   },
   hero: {
     alignItems: 'center',
-    height: 300,
+    height: 318,
     justifyContent: 'center',
-    paddingTop: spacing.md,
+    paddingTop: 8,
   },
   signal: {
     alignItems: 'center',
-    borderRadius: 7,
+    borderRadius: 10,
     borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    gap: 7,
-    minHeight: 42,
-    paddingHorizontal: 8,
+    gap: 8,
+    minHeight: 44,
+    paddingHorizontal: 9,
     position: 'absolute',
   },
-  signalClients: { left: 0, top: 52 },
-  signalServices: { right: 0, top: 82 },
-  signalQuotes: { bottom: 22, left: 12 },
+  signalClients: { left: 0, top: 48 },
+  signalServices: { right: 0, top: 64 },
+  signalQuotes: { bottom: 18, left: '50%', marginLeft: -59 },
   signalIcon: {
     alignItems: 'center',
     borderRadius: 5,
@@ -351,24 +389,42 @@ const styles = StyleSheet.create({
     width: 5,
   },
   glow: {
-    height: 300,
+    height: 390,
     left: '50%',
-    marginLeft: -150,
+    marginLeft: -195,
     position: 'absolute',
-    top: -24,
-    width: 300,
+    top: -76,
+    width: 390,
+  },
+  dotFade: {
+    height: 210,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 215,
+  },
+  brandLockup: {
+    alignItems: 'center',
+    marginTop: -4,
+  },
+  brandHalo: {
+    alignItems: 'center',
+    borderRadius: 22,
+    height: 82,
+    justifyContent: 'center',
+    marginBottom: 10,
+    width: 82,
   },
   brandMark: {
     alignItems: 'center',
-    borderRadius: 9,
-    borderWidth: 2,
-    height: 58,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    height: 62,
     justifyContent: 'center',
-    marginBottom: 14,
-    width: 58,
+    width: 62,
   },
-  brandName: { fontSize: 22, fontWeight: '800', lineHeight: 29 },
-  brandTag: { fontSize: 12, fontWeight: '500', lineHeight: 18, marginTop: 3 },
+  brandName: { fontSize: 23, fontWeight: '800', lineHeight: 29 },
+  brandTag: { fontSize: 12, fontWeight: '500', lineHeight: 18, marginTop: 2 },
   body: { gap: spacing.lg },
   copy: { gap: spacing.sm },
   title: { fontSize: 25, fontWeight: '800', lineHeight: 34 },

@@ -1,16 +1,17 @@
 import type { TextStyle } from 'react-native';
 
 export const fontFamilies = {
-  regular: 'Manrope_400Regular',
-  medium: 'Manrope_500Medium',
-  semibold: 'Manrope_600SemiBold',
-  bold: 'Manrope_700Bold',
+  regular: 'Poppins_400Regular',
+  medium: 'Poppins_500Medium',
+  semibold: 'Poppins_600SemiBold',
+  bold: 'Poppins_700Bold',
+  extraBold: 'Poppins_800ExtraBold',
   fallback: undefined,
 } as const;
 
 export const typography = {
   display: {
-    fontFamily: fontFamilies.bold,
+    fontFamily: fontFamilies.extraBold,
     fontSize: 36,
     lineHeight: 44,
     letterSpacing: 0,

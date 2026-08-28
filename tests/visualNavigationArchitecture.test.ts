@@ -129,13 +129,15 @@ it('never uses absolute black as the dark background', () => {
   expect(luminance(darkColors.background)).toBeGreaterThan(0);
 });
 
-it('keeps green semantic and out of the brand role', () => {
-  // The brand identity is indigo; green is reserved for success/active states.
+it('keeps success green out of the brand teal role', () => {
+  // The brand identity is teal/cyan; green stays reserved for success/active
+  // states, kept a clear hue distance from the brand so status colour never
+  // reads as "more brand".
   for (const palette of [lightColors, darkColors]) {
-    expect(hue(palette.primary)).toBeGreaterThan(230);
-    expect(hue(palette.primary)).toBeLessThan(290);
+    expect(hue(palette.primary)).toBeGreaterThan(165);
+    expect(hue(palette.primary)).toBeLessThan(210);
     expect(hue(palette.success)).toBeGreaterThan(90);
-    expect(hue(palette.success)).toBeLessThan(180);
+    expect(hue(palette.success)).toBeLessThan(160);
   }
 });
 

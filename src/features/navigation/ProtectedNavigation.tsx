@@ -38,17 +38,21 @@ function NavigationItem({
 }) {
   const { colors } = useTheme();
   const color = selected
-    ? colors.primary
+    ? '#2DD4BF'
     : disabled
       ? colors.disabledText
       : colors.textSecondary;
   const content: ReactNode = (
     <>
-      <MaterialCommunityIcons color={color} name={icon} size={22} />
+      <View style={[styles.navMark, selected && styles.navMarkSelected]}>
+        <MaterialCommunityIcons color={color} name={icon} size={18} />
+      </View>
       <Text
-        color={
-          selected ? 'primary' : disabled ? 'disabledText' : 'textSecondary'
-        }
+        color={disabled ? 'disabledText' : 'textSecondary'}
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        numberOfLines={1}
+        style={[styles.navigationLabel, selected && styles.selectedLabel]}
         variant="caption"
       >
         {label}
@@ -89,14 +93,13 @@ export function ProtectedBottomNavigation({
 }: {
   selected: ProtectedDestination;
 }) {
-  const { colors } = useTheme();
   return (
     <View
       accessibilityLabel="Navegação principal"
       accessibilityRole="tablist"
       style={[
         styles.bottomNavigation,
-        { backgroundColor: colors.surface, borderTopColor: colors.border },
+        { backgroundColor: '#191B20', borderTopColor: '#2C3037' },
       ]}
     >
       <NavigationItem
@@ -219,19 +222,34 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    minHeight: 72,
-    paddingHorizontal: spacing.sm,
-    paddingBottom: spacing.xs,
-    paddingTop: spacing.sm,
+    minHeight: 68,
+    paddingHorizontal: spacing.xs,
+    paddingBottom: 6,
+    paddingTop: 7,
   },
   navigationSlot: { flex: 1, minWidth: 0 },
   navigationItem: {
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     width: '100%',
   },
+  navMark: {
+    alignItems: 'center',
+    borderRadius: 6,
+    height: 25,
+    justifyContent: 'center',
+    width: 38,
+  },
+  navMarkSelected: { backgroundColor: 'rgba(45, 212, 191, 0.14)' },
+  navigationLabel: {
+    fontFamily: 'Poppins_600SemiBold',
+    fontSize: 9,
+    lineHeight: 12,
+    maxWidth: '100%',
+  },
+  selectedLabel: { color: '#2DD4BF' },
   pageHeader: {
     alignItems: 'center',
     flexDirection: 'row',

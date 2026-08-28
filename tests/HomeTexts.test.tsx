@@ -45,6 +45,8 @@ const dashboardFixture: HomeDashboardData = {
   periodEnd: '2026-09-01',
   approvedCents: 150000,
   previousApprovedCents: 100000,
+  previousApprovedCount: 1,
+  previousQuoteCount: 1,
   negotiatingCents: 50000,
   approvedCount: 2,
   openCount: 1,
@@ -88,10 +90,10 @@ async function renderWithClient(element: ReactElement) {
 it('shows the personalized CRM dashboard with real sections', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
   expect(await screen.findByText(/Ana$/)).toBeTruthy();
-  expect(screen.getByText('Veja como está o seu negócio hoje.')).toBeTruthy();
+  expect(screen.getByText('Painel do seu negócio')).toBeTruthy();
   expect(screen.getByText('Balanço estimado')).toBeTruthy();
   expect(screen.getByText('Ações rápidas')).toBeTruthy();
-  expect(screen.getByText('Visão geral')).toBeTruthy();
+  expect(screen.getByText('Faturamento')).toBeTruthy();
   expect(screen.queryByText('Ver perfil')).toBeNull();
   await screen.unmount();
   queryClient.clear();

@@ -12,7 +12,7 @@ import {
 } from '@/components/ui';
 import { getBadgeAccessibilityLabel } from '@/components/ui/Badge';
 import { getFeedbackAccessibilityProps } from '@/components/ui/InlineFeedback';
-import { colors, radii, sizes, spacing, typography } from '@/theme';
+import { colors, darkColors, radii, sizes, spacing, typography } from '@/theme';
 
 describe('design system foundation', () => {
   it('exposes the required semantic tokens', () => {
@@ -97,7 +97,7 @@ describe('design system foundation', () => {
     await fireEvent(focused, 'focus', { nativeEvent: {} });
     await waitFor(() =>
       expect(screen.getByLabelText('Foco')).toHaveStyle({
-        borderColor: colors.focusRing,
+        borderColor: darkColors.focusRing,
       }),
     );
     expect(screen.getByText('Campo inválido')).toHaveProp(
