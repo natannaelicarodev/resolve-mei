@@ -2,8 +2,9 @@ import { Redirect } from 'expo-router';
 import { ScrollView } from 'react-native';
 
 import { isDesignSystemAvailable } from '@/features/design-system/access';
-import { HomeDashboard } from '@/features/home/HomeDashboard';
+import { HomeMockupScreen } from '@/features/home/HomeMockupScreen';
 import type { HomeDashboardData } from '@/features/home/api';
+import type { Quote } from '@/features/quotes/api';
 
 // Development-only visual harness for reviewing redesigned screens against
 // fixed data, without a real session. Guarded by the same __DEV__ check as the
@@ -43,16 +44,57 @@ const dashboard: HomeDashboardData = {
   ],
 };
 
+const recentQuotes: Quote[] = [
+  {
+    id: 'quote-a',
+    business_id: 'preview',
+    client_id: 'client-a',
+    quote_number: 4,
+    status: 'approved',
+    issued_on: '2026-08-26',
+    valid_until: '2026-10-25',
+    subtotal_cents: 820000,
+    discount_cents: 0,
+    total_cents: 820000,
+    notes: null,
+    client_name_snapshot: 'Luiz',
+    client_document_snapshot: null,
+    client_phone_snapshot: null,
+    client_email_snapshot: null,
+    created_at: '2026-08-26T12:00:00Z',
+    updated_at: '2026-08-26T12:00:00Z',
+  },
+  {
+    id: 'quote-b',
+    business_id: 'preview',
+    client_id: 'client-b',
+    quote_number: 3,
+    status: 'sent',
+    issued_on: '2026-08-18',
+    valid_until: '2026-10-17',
+    subtotal_cents: 680000,
+    discount_cents: 0,
+    total_cents: 680000,
+    notes: null,
+    client_name_snapshot: 'Julia',
+    client_document_snapshot: null,
+    client_phone_snapshot: null,
+    client_email_snapshot: null,
+    created_at: '2026-08-18T12:00:00Z',
+    updated_at: '2026-08-18T12:00:00Z',
+  },
+];
+
 export default function DesignPreviewRoute() {
   if (!isDesignSystemAvailable(__DEV__)) return <Redirect href="/" />;
   return (
     <ScrollView>
-      <HomeDashboard
+      <HomeMockupScreen
         dashboard={dashboard}
         firstName="Natannael"
-        hasContact
+        onPeriodChange={() => undefined}
         period="6months"
-        profileConfigured
+        recentQuotes={recentQuotes}
       />
     </ScrollView>
   );
