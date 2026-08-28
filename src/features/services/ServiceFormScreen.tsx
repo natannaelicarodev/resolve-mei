@@ -3,20 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 
 import { SuccessTransition } from '@/components/motion';
-import {
-  Button,
-  FormSection,
-  InlineFeedback,
-  Input,
-  Screen,
-  SegmentedControl,
-  Text,
-} from '@/components/ui';
+import { Button, InlineFeedback, Input, Screen, Text } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import type { Service } from './api';
 import { createService, updateService } from './api';
 import { formatPriceCents, formatPriceInput } from './format';
@@ -44,6 +36,7 @@ export function ServiceFormScreen({
   service?: Service;
 }) {
   const { user } = useAuth();
+  const { colors } = useTheme();
   const userId = user?.id ?? '';
   const queryClient = useQueryClient();
   const navigationTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -94,7 +87,11 @@ export function ServiceFormScreen({
     : '/services';
 
   return (
-    <Screen keyboardAvoiding safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      keyboardAvoiding
+      safeAreaEdges={['top', 'bottom']}
+    >
       <ProtectedPageHeader
         alwaysUseBackFallback
         back
@@ -102,18 +99,10 @@ export function ServiceFormScreen({
         dismissToBackFallback
         title={service ? 'Editar serviço' : 'Novo serviço'}
       />
-      <View style={styles.intro}>
-        <Text variant="sectionTitle">
-          {service ? 'Atualize o serviço' : 'Cadastre um serviço'}
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          INFORMAÇÕES GERAIS
         </Text>
-        <Text color="textSecondary">
-          Informe o que você oferece e o valor cobrado.
-        </Text>
-      </View>
-      <FormSection
-        description="Como o serviço será identificado nos orçamentos."
-        title="Informações gerais"
-      >
         <Controller
           control={form.control}
           name="name"
@@ -126,6 +115,8 @@ export function ServiceFormScreen({
               maxLength={160}
               onBlur={field.onBlur}
               onChangeText={field.onChange}
+              placeholder="Ex.: Instalação elétrica residencial"
+              reserveMessageSpace={Boolean(fieldState.error)}
               returnKeyType="next"
               value={field.value}
             />
@@ -138,76 +129,106 @@ export function ServiceFormScreen({
             <Input
               editable={!mutation.isPending && !showSuccess}
               error={fieldState.error?.message}
-              label="Descrição (opcional)"
-              maxLength={2000}
+              label="Descrição"
+              maxLength={300}
               multiline
               onBlur={field.onBlur}
               onChangeText={field.onChange}
+              placeholder="Descreva o que está incluso"
+              reserveMessageSpace
               showCounter
               style={styles.description}
               value={field.value}
             />
           )}
         />
-      </FormSection>
-      <FormSection
-        description="Valor cobrado e tempo estimado de execução."
-        title="Preço e duração"
-      >
-        <Controller
-          control={form.control}
-          name="price"
-          render={({ field, fieldState }) => (
-            <Input
-              editable={!mutation.isPending && !showSuccess}
-              error={fieldState.error?.message}
-              helperText="Digite somente os números. Exemplo: 15000 vira R$ 150,00."
-              keyboardType="number-pad"
-              label="Preço"
-              onBlur={field.onBlur}
-              onChangeText={(value) => field.onChange(formatPriceInput(value))}
-              value={field.value}
+      </View>
+
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          PREÇO E DURAÇÃO
+        </Text>
+        <View style={styles.valueRow}>
+          <View style={styles.valueField}>
+            <Controller
+              control={form.control}
+              name="price"
+              render={({ field, fieldState }) => (
+                <Input
+                  editable={!mutation.isPending && !showSuccess}
+                  error={fieldState.error?.message}
+                  keyboardType="number-pad"
+                  label="Preço"
+                  onBlur={field.onBlur}
+                  onChangeText={(value) =>
+                    field.onChange(formatPriceInput(value))
+                  }
+                  reserveMessageSpace={Boolean(fieldState.error)}
+                  value={field.value}
+                />
+              )}
             />
-          )}
-        />
-        <Controller
-          control={form.control}
-          name="estimatedDurationMinutes"
-          render={({ field, fieldState }) => (
-            <Input
-              editable={!mutation.isPending && !showSuccess}
-              error={fieldState.error?.message}
-              helperText="Tempo aproximado necessário para realizar o serviço."
-              keyboardType="number-pad"
-              label="Duração estimada em minutos (opcional)"
-              maxLength={6}
-              onBlur={field.onBlur}
-              onChangeText={(value) => field.onChange(value.replace(/\D/g, ''))}
-              value={field.value}
+          </View>
+          <View style={styles.valueField}>
+            <Controller
+              control={form.control}
+              name="estimatedDurationMinutes"
+              render={({ field, fieldState }) => (
+                <Input
+                  editable={!mutation.isPending && !showSuccess}
+                  error={fieldState.error?.message}
+                  keyboardType="number-pad"
+                  label="Duração média"
+                  maxLength={6}
+                  onBlur={field.onBlur}
+                  onChangeText={(value) =>
+                    field.onChange(value.replace(/\D/g, ''))
+                  }
+                  placeholder="Ex.: 3h"
+                  reserveMessageSpace={Boolean(fieldState.error)}
+                  value={field.value}
+                />
+              )}
             />
-          )}
-        />
-      </FormSection>
-      {service ? (
-        <FormSection title="Disponibilidade">
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          STATUS
+        </Text>
+        <View
+          style={[
+            styles.statusRow,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
+        >
+          <Text variant="label">Serviço ativo</Text>
           <Controller
             control={form.control}
             name="status"
             render={({ field }) => (
-              <SegmentedControl
+              <Switch
+                accessibilityLabel="Serviço ativo"
+                accessibilityRole="switch"
+                accessibilityState={{ checked: field.value === 'active' }}
                 disabled={mutation.isPending || showSuccess}
-                label="Status do serviço"
-                onChange={field.onChange}
-                options={[
-                  { label: 'Ativo', value: 'active' },
-                  { label: 'Inativo', value: 'inactive' },
-                ]}
-                value={field.value}
+                ios_backgroundColor={colors.disabled}
+                onValueChange={(active) =>
+                  field.onChange(active ? 'active' : 'inactive')
+                }
+                thumbColor={colors.textOnPrimary}
+                trackColor={{
+                  false: colors.disabled,
+                  true: colors.primary,
+                }}
+                value={field.value === 'active'}
               />
             )}
           />
-        </FormSection>
-      ) : null}
+        </View>
+      </View>
       {mutation.isError ? (
         <InlineFeedback
           message="Não foi possível salvar o serviço. Revise os dados e tente novamente."
@@ -228,10 +249,23 @@ export function ServiceFormScreen({
 }
 
 const styles = StyleSheet.create({
-  intro: { gap: spacing.xs },
+  screenContent: { paddingHorizontal: spacing.lg },
+  section: { gap: spacing.md },
+  sectionTitle: { fontSize: 10, lineHeight: 14 },
   description: {
-    minHeight: 112,
+    minHeight: 96,
     paddingTop: spacing.md,
     textAlignVertical: 'top',
+  },
+  valueRow: { flexDirection: 'row', gap: spacing.sm },
+  valueField: { flex: 1, minWidth: 0 },
+  statusRow: {
+    alignItems: 'center',
+    borderRadius: 12,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 56,
+    paddingHorizontal: spacing.md,
   },
 });
