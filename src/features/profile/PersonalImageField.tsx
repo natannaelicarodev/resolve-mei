@@ -62,33 +62,38 @@ export function PersonalImageField({
   };
   return (
     <View style={styles.container}>
-      <Text variant="label">Imagem do perfil</Text>
-      {imageUri ? (
-        <Image
-          accessibilityLabel="Imagem atual do perfil"
-          source={{ uri: imageUri }}
-          style={styles.image}
-        />
-      ) : (
-        <View
-          accessibilityLabel="Avatar sem foto"
-          style={[styles.fallback, { backgroundColor: colors.primarySubtle }]}
-          testID="personal-image-fallback"
-        >
-          <Text color="primary" variant="title">
-            {fallbackInitial ?? 'U'}
+      <View style={styles.imageRow}>
+        {imageUri ? (
+          <Image
+            accessibilityLabel="Imagem atual do perfil"
+            source={{ uri: imageUri }}
+            style={styles.image}
+          />
+        ) : (
+          <View
+            accessibilityLabel="Avatar sem foto"
+            style={[styles.fallback, { backgroundColor: colors.primarySubtle }]}
+            testID="personal-image-fallback"
+          >
+            <Text color="primary" variant="title">
+              {fallbackInitial ?? 'U'}
+            </Text>
+          </View>
+        )}
+        <View style={styles.imageCopy}>
+          <Text variant="label">Imagem do perfil</Text>
+          <Text color="textMuted" variant="caption">
+            JPEG, PNG ou WebP, com até 5 MB.
           </Text>
+          <Button
+            disabled={disabled}
+            label={imageUri ? 'Trocar foto' : 'Adicionar foto'}
+            onPress={() => void pickImage()}
+            size="small"
+            variant="secondary"
+          />
         </View>
-      )}
-      <Button
-        disabled={disabled}
-        label={imageUri ? 'Trocar foto' : 'Adicionar foto'}
-        onPress={() => void pickImage()}
-        variant="secondary"
-      />
-      <Text color="textMuted" variant="caption">
-        JPEG, PNG ou WebP, com até 5 MB.
-      </Text>
+      </View>
       {selected ? (
         <InlineFeedback
           message="Imagem selecionada e pronta para envio."
@@ -102,18 +107,18 @@ export function PersonalImageField({
 
 const styles = StyleSheet.create({
   container: { gap: spacing.sm },
+  imageRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  imageCopy: { flex: 1, gap: spacing.sm, minWidth: 0 },
   image: {
-    alignSelf: 'center',
     borderRadius: radii.circular,
-    height: 112,
-    width: 112,
+    height: 72,
+    width: 72,
   },
   fallback: {
     alignItems: 'center',
-    alignSelf: 'center',
     borderRadius: radii.circular,
-    height: 112,
+    height: 72,
     justifyContent: 'center',
-    width: 112,
+    width: 72,
   },
 });

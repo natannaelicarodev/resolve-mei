@@ -426,7 +426,10 @@ export function ProfileScreen() {
       <Screen keyboardAvoiding safeAreaEdges={[]} scrollRef={scrollRef}>
         <ProtectedPageHeader title="Perfil" settings />
         <FadeInView
-          style={[styles.identity, { backgroundColor: colors.primarySubtle }]}
+          style={[
+            styles.identity,
+            { backgroundColor: colors.surface, borderColor: colors.border },
+          ]}
           testID="profile-identity"
         >
           {image.data ? (
@@ -474,8 +477,14 @@ export function ProfileScreen() {
               query.isLoading ? (
                 <ProfileSkeleton />
               ) : (
-                <Card>
-                  <Text variant="cardTitle">Dados pessoais</Text>
+                <Card style={styles.formCard}>
+                  <Text
+                    color="primary"
+                    style={styles.formSectionTitle}
+                    variant="caption"
+                  >
+                    DADOS PESSOAIS
+                  </Text>
                   <PersonalImageField
                     currentUrl={image.data}
                     fallbackInitial={getProfileInitial(query.data?.full_name)}
@@ -625,18 +634,30 @@ const styles = StyleSheet.create({
   menuLabel: { flex: 1, fontSize: 12, lineHeight: 17 },
   identity: {
     alignItems: 'center',
-    borderRadius: radii.card,
+    borderRadius: radii.medium,
+    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     gap: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.md,
   },
   identityAvatar: {
     alignItems: 'center',
     borderRadius: radii.circular,
-    height: 72,
+    height: 56,
     justifyContent: 'center',
-    width: 72,
+    width: 56,
   },
   identityCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   section: { gap: spacing.lg },
+  formCard: {
+    borderRadius: radii.medium,
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  formSectionTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    lineHeight: 14,
+  },
 });
