@@ -20,5 +20,6 @@ export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export type { SegmentOption } from './SegmentedControl';
 export { Skeleton } from './Skeleton';
+export { StatusLed } from './StatusLed';
 export { Text } from './Text';
 export type { TextProps } from './Text';

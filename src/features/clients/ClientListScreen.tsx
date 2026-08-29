@@ -9,7 +9,14 @@ import {
   FadeInView,
   useReducedMotion,
 } from '@/components/motion';
-import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
+import {
+  Button,
+  Card,
+  InlineFeedback,
+  Skeleton,
+  StatusLed,
+  Text,
+} from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
 import {
@@ -36,36 +43,6 @@ function clientContact(client: Client) {
   if (client.document)
     return formatClientDocument(client.document, client.type);
   return client.email ?? 'Sem contato informado';
-}
-
-function StatusLed({ active }: { active: boolean }) {
-  const { colors } = useTheme();
-  return (
-    <View
-      accessible
-      accessibilityLabel={`Status: ${active ? 'Ativo' : 'Inativo'}`}
-      style={styles.statusRow}
-    >
-      <View
-        accessibilityElementsHidden
-        importantForAccessibility="no"
-        style={[
-          styles.led,
-          {
-            backgroundColor: active ? colors.success : colors.textMuted,
-            ...(active ? { boxShadow: `0 0 6px ${colors.success}` } : null),
-          },
-        ]}
-      />
-      <Text
-        color={active ? 'success' : 'textMuted'}
-        style={styles.statusText}
-        variant="status"
-      >
-        {active ? 'Ativo' : 'Inativo'}
-      </Text>
-    </View>
-  );
 }
 
 function ClientRow({ client, index }: { client: Client; index: number }) {
@@ -472,8 +449,5 @@ const styles = StyleSheet.create({
   rowCopy: { flex: 1, gap: 1, minWidth: 0 },
   clientName: { fontSize: 12, lineHeight: 17 },
   contact: { fontSize: 10, lineHeight: 14 },
-  statusRow: { alignItems: 'center', flexDirection: 'row', gap: 5 },
-  led: { borderRadius: 2, height: 7, width: 7 },
-  statusText: { fontSize: 9, lineHeight: 12 },
   empty: { alignItems: 'center', marginTop: 8 },
 });

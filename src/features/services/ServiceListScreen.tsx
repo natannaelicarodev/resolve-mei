@@ -3,6 +3,7 @@ import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   StyleSheet,
   TextInput,
@@ -10,11 +11,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedPressable } from '@/components/motion';
-import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
+import {
+  AnimatedPressable,
+  FadeInView,
+  useReducedMotion,
+} from '@/components/motion';
+import {
+  Button,
+  Card,
+  InlineFeedback,
+  Skeleton,
+  StatusLed,
+  Text,
+} from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
+import {
+  getThemeShadows,
+  motion,
+  radii,
+  sizes,
+  spacing,
+  useTheme,
+} from '@/theme';
 import type { Service, ServiceStatusFilter } from './api';
 import { formatDuration, formatPriceCents } from './format';
 import { useServices } from './hooks';
@@ -36,77 +55,74 @@ function serviceSummary(service: Service) {
   return 'Sem descrição';
 }
 
-function ServiceRow({ service }: { service: Service }) {
+function ServiceRow({ service, index }: { service: Service; index: number }) {
   const { colors } = useTheme();
   const active = service.status === 'active';
   return (
-    <AnimatedPressable
-      accessibilityHint="Abre os detalhes do serviço."
-      accessibilityLabel={`${service.name}, ${formatPriceCents(service.price_cents)}, ${serviceSummary(service)}, ${active ? 'ativo' : 'inativo'}`}
-      accessibilityRole="button"
-      onPress={() =>
-        router.push({
-          pathname: '/services/[id]',
-          params: { id: service.id },
-        })
-      }
+    <FadeInView delay={Math.min(index, 8) * motion.stagger}>
+      <AnimatedPressable
+        accessibilityHint="Abre os detalhes do serviço."
+        accessibilityLabel={`${service.name}, ${formatPriceCents(service.price_cents)}, ${serviceSummary(service)}, ${active ? 'ativo' : 'inativo'}`}
+        accessibilityRole="button"
+        onPress={() =>
+          router.push({
+            pathname: '/services/[id]',
+            params: { id: service.id },
+          })
+        }
+        style={[
+          styles.serviceRow,
+          { backgroundColor: colors.surface, borderColor: colors.border },
+        ]}
+        testID="service-list-row"
+      >
+        <View style={styles.rowCopy}>
+          <Text numberOfLines={1} style={styles.serviceName} variant="label">
+            {service.name}
+          </Text>
+          <Text
+            color="textMuted"
+            numberOfLines={1}
+            style={styles.summary}
+            variant="caption"
+          >
+            {serviceSummary(service)}
+          </Text>
+        </View>
+        <View style={styles.rowAside}>
+          <Text numberOfLines={1} style={styles.price} variant="label">
+            {formatPriceCents(service.price_cents)}
+          </Text>
+          <StatusLed active={active} />
+        </View>
+        <MaterialCommunityIcons
+          color={colors.textMuted}
+          name="chevron-right"
+          size={20}
+        />
+      </AnimatedPressable>
+    </FadeInView>
+  );
+}
+
+function ServiceRowSkeleton() {
+  const { colors } = useTheme();
+  return (
+    <View
       style={[
         styles.serviceRow,
         { backgroundColor: colors.surface, borderColor: colors.border },
       ]}
-      testID="service-list-row"
     >
-      {active ? (
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no"
-          style={[styles.activeEdge, { backgroundColor: colors.success }]}
-        />
-      ) : null}
       <View style={styles.rowCopy}>
-        <Text numberOfLines={1} style={styles.serviceName} variant="label">
-          {service.name}
-        </Text>
-        <Text
-          color="textMuted"
-          numberOfLines={1}
-          style={styles.summary}
-          variant="caption"
-        >
-          {serviceSummary(service)}
-        </Text>
+        <Skeleton height={12} width="60%" />
+        <Skeleton height={10} width="40%" />
       </View>
       <View style={styles.rowAside}>
-        <Text numberOfLines={1} style={styles.price} variant="label">
-          {formatPriceCents(service.price_cents)}
-        </Text>
-        <View
-          accessible
-          accessibilityLabel={`Status: ${active ? 'Ativo' : 'Inativo'}`}
-          style={[
-            styles.status,
-            {
-              backgroundColor: active
-                ? colors.successSubtle
-                : colors.surfacePressed,
-            },
-          ]}
-        >
-          <Text
-            color={active ? 'success' : 'textMuted'}
-            style={styles.statusText}
-            variant="status"
-          >
-            {active ? 'Ativo' : 'Inativo'}
-          </Text>
-        </View>
+        <Skeleton height={12} width={48} />
+        <Skeleton height={16} radius={radii.pill} width={54} />
       </View>
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
-    </AnimatedPressable>
+    </View>
   );
 }
 
@@ -118,27 +134,58 @@ function ServiceFilters({
   onChange: (status: ServiceStatusFilter) => void;
 }) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const activeIndex = FILTERS.findIndex((filter) => filter.value === value);
+  const [position] = useState(() => new Animated.Value(activeIndex));
+  useEffect(() => {
+    if (reducedMotion) {
+      position.setValue(activeIndex);
+      return;
+    }
+    const animation = Animated.spring(position, {
+      toValue: activeIndex,
+      useNativeDriver: false,
+      ...motion.spring,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [activeIndex, position, reducedMotion]);
   return (
     <View
       accessibilityLabel="Filtrar serviços"
       accessibilityRole="radiogroup"
-      style={styles.filters}
+      style={[
+        styles.filters,
+        { backgroundColor: colors.surface, borderColor: colors.border },
+      ]}
     >
+      <Animated.View
+        importantForAccessibility="no"
+        pointerEvents="none"
+        style={[
+          styles.filterThumb,
+          {
+            backgroundColor: colors.primary,
+            left: position.interpolate({
+              inputRange: FILTERS.map((_, filterIndex) => filterIndex),
+              outputRange: FILTERS.map(
+                (_, filterIndex) => `${(filterIndex * 100) / FILTERS.length}%`,
+              ),
+            }),
+            width: `${100 / FILTERS.length}%`,
+          },
+        ]}
+      />
       {FILTERS.map((filter) => {
         const selected = value === filter.value;
         return (
           <AnimatedPressable
             accessibilityRole="radio"
             accessibilityState={{ checked: selected }}
+            containerStyle={styles.filterSlot}
             key={filter.value}
             onPress={() => onChange(filter.value)}
-            style={[
-              styles.filter,
-              {
-                backgroundColor: selected ? colors.primary : colors.surface,
-                borderColor: selected ? colors.primary : colors.border,
-              },
-            ]}
+            style={styles.filter}
           >
             <Text
               color={selected ? 'textOnPrimary' : 'textSecondary'}
@@ -178,7 +225,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
   };
 
   const header = (
-    <View style={styles.header}>
+    <FadeInView style={styles.header}>
       <View style={styles.titleRow}>
         <View style={styles.titleCopy}>
           <Text style={styles.title} variant="sectionTitle">
@@ -233,7 +280,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
         />
       </View>
       <ServiceFilters onChange={setStatus} value={status} />
-    </View>
+    </FadeInView>
   );
 
   const empty = (
@@ -286,9 +333,14 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
             accessibilityLiveRegion="polite"
             style={styles.loading}
           >
-            <Skeleton height={64} />
-            <Skeleton height={64} />
-            <Skeleton height={64} />
+            {[0, 1, 2].map((skeletonIndex) => (
+              <FadeInView
+                delay={skeletonIndex * motion.stagger}
+                key={skeletonIndex}
+              >
+                <ServiceRowSkeleton />
+              </FadeInView>
+            ))}
           </View>
         </View>
       ) : query.isError ? (
@@ -324,7 +376,9 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
           ListHeaderComponent={header}
           onEndReached={loadMore}
           onEndReachedThreshold={0.35}
-          renderItem={({ item }) => <ServiceRow service={item} />}
+          renderItem={({ item, index }) => (
+            <ServiceRow index={index} service={item} />
+          )}
           showsVerticalScrollIndicator={false}
           style={styles.list}
         />
@@ -384,14 +438,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   searchInput: { flex: 1, fontSize: 12, minHeight: 44, paddingVertical: 0 },
-  filters: { flexDirection: 'row', gap: 8 },
+  filters: {
+    borderRadius: radii.medium,
+    borderWidth: StyleSheet.hairlineWidth,
+    flexDirection: 'row',
+    padding: 3,
+    position: 'relative',
+  },
+  filterThumb: {
+    borderRadius: radii.small,
+    bottom: 3,
+    position: 'absolute',
+    top: 3,
+  },
+  filterSlot: { flex: 1 },
   filter: {
     alignItems: 'center',
-    borderRadius: radii.pill,
-    borderWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
     minHeight: 36,
-    paddingHorizontal: 15,
   },
   filterText: { fontSize: 11 },
   listGap: { height: 8 },
@@ -407,18 +471,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  activeEdge: { bottom: 0, left: 0, position: 'absolute', top: 0, width: 3 },
   rowCopy: { flex: 1, gap: 1, minWidth: 0 },
   serviceName: { fontSize: 12, lineHeight: 17 },
   summary: { fontSize: 10, lineHeight: 14 },
   rowAside: { alignItems: 'flex-end', gap: 3 },
   price: { fontSize: 12, lineHeight: 17 },
-  status: {
-    borderRadius: radii.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-  },
-  statusText: { fontSize: 9, lineHeight: 12 },
   empty: { alignItems: 'center', marginTop: 8 },
   footer: { padding: spacing.lg },
 });

@@ -11,6 +11,9 @@ import { clientsQueryKey } from '@/features/clients/hooks';
 import { HomeMockupScreen } from '@/features/home/HomeMockupScreen';
 import type { HomeDashboardData } from '@/features/home/api';
 import type { Quote } from '@/features/quotes/api';
+import type { Service } from '@/features/services/api';
+import { ServiceListScreen } from '@/features/services/ServiceListScreen';
+import { servicesQueryKey } from '@/features/services/hooks';
 import { AuthContext } from '@/providers/AuthProvider';
 import type { AuthContextValue } from '@/providers/AuthProvider';
 import { LightThemeScope } from '@/theme';
@@ -144,6 +147,42 @@ const previewClients: Client[] = [
   },
 ];
 
+const previewServices: Service[] = [
+  {
+    id: 'preview-service-1',
+    business_id: PREVIEW_BUSINESS_ID,
+    name: 'Instalação residencial',
+    description: null,
+    price_cents: 35000,
+    estimated_duration_minutes: 180,
+    status: 'active',
+    created_at: '2026-08-01T12:00:00Z',
+    updated_at: '2026-08-01T12:00:00Z',
+  },
+  {
+    id: 'preview-service-2',
+    business_id: PREVIEW_BUSINESS_ID,
+    name: 'Manutenção preventiva',
+    description: null,
+    price_cents: 12000,
+    estimated_duration_minutes: 60,
+    status: 'inactive',
+    created_at: '2026-07-20T12:00:00Z',
+    updated_at: '2026-07-20T12:00:00Z',
+  },
+  {
+    id: 'preview-service-3',
+    business_id: PREVIEW_BUSINESS_ID,
+    name: 'Reparo emergencial',
+    description: null,
+    price_cents: 50000,
+    estimated_duration_minutes: 120,
+    status: 'active',
+    created_at: '2026-08-10T12:00:00Z',
+    updated_at: '2026-08-10T12:00:00Z',
+  },
+];
+
 // A dedicated, pre-seeded query cache plus a fixture auth value shadow the
 // real providers from AppProviders for this subtree only, so the preview
 // never issues a real Supabase call or touches the real session.
@@ -166,6 +205,25 @@ previewQueryClient.setQueryData(
     0,
   ],
   previewClients,
+);
+previewQueryClient.setQueryData(
+  [
+    ...servicesQueryKey(PREVIEW_USER_ID, PREVIEW_BUSINESS_ID),
+    'list',
+    '',
+    'all',
+  ],
+  {
+    pages: [
+      {
+        items: previewServices,
+        hasMore: false,
+        nextCursor: null,
+        totalCount: previewServices.length,
+      },
+    ],
+    pageParams: [null],
+  },
 );
 
 const previewAuthValue: AuthContextValue = {
@@ -192,6 +250,20 @@ function ClientsPreview({ theme }: { theme: 'dark' | 'light' }) {
   return theme === 'light' ? <LightThemeScope>{list}</LightThemeScope> : list;
 }
 
+function ServicesPreview({ theme }: { theme: 'dark' | 'light' }) {
+  const [client] = useState(() => previewQueryClient);
+  const list = (
+    <AuthContext.Provider value={previewAuthValue}>
+      <QueryClientProvider client={client}>
+        <View style={{ height: 900 }}>
+          <ServiceListScreen businessId={PREVIEW_BUSINESS_ID} />
+        </View>
+      </QueryClientProvider>
+    </AuthContext.Provider>
+  );
+  return theme === 'light' ? <LightThemeScope>{list}</LightThemeScope> : list;
+}
+
 export default function DesignPreviewRoute() {
   if (!isDesignSystemAvailable(__DEV__)) return <Redirect href="/" />;
   return (
@@ -205,6 +277,8 @@ export default function DesignPreviewRoute() {
       />
       <ClientsPreview theme="dark" />
       <ClientsPreview theme="light" />
+      <ServicesPreview theme="dark" />
+      <ServicesPreview theme="light" />
     </ScrollView>
   );
 }
