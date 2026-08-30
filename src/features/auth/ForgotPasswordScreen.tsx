@@ -1,18 +1,38 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import { ArrowLeft, Mail, ShieldCheck } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { Controller, useForm } from 'react-hook-form';
 
 import { AnimatedPressable, FadeInView } from '@/components/motion';
 import { Screen, Text } from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { darkColors, radii, spacing, typography } from '@/theme';
+import { triggerHaptic } from '@/lib/haptics';
 import { requestPasswordReset } from './api';
 import { forgotPasswordSchema } from './schemas';
 import type { ForgotPasswordData } from './schemas';
 import { WelcomeAmbientBackground } from './WelcomeScreen';
+
+const palette = {
+  background: '#000000',
+  surface: '#0A0A0A',
+  border: 'rgba(255,255,255,0.07)',
+  primary: '#45E6B0',
+  primarySoft: 'rgba(69,230,176,0.12)',
+  text: '#FFFFFF',
+  textSecondary: '#A1A1A7',
+  textMuted: '#717178',
+  danger: '#FF6B6B',
+  dangerSoft: '#240D0F',
+} as const;
 
 export function ForgotPasswordScreen() {
   const [sentEmail, setSentEmail] = useState('');
@@ -30,146 +50,243 @@ export function ForgotPasswordScreen() {
     try {
       await requestPasswordReset(data.email);
       setSentEmail(data.email.trim().toLowerCase());
+      void triggerHaptic('success');
     } catch (error) {
+      void triggerHaptic('error');
       setError('root', { message: normalizeError(error).message });
     }
   };
 
+  if (isSubmitSuccessful) {
+    return <RecoverySentState email={sentEmail} />;
+  }
+
+  return (
+    <View style={styles.root}>
+      <StatusBar style="light" />
+      <WelcomeAmbientBackground dark />
+      <Screen
+        background="transparent"
+        contentContainerStyle={styles.screen}
+        scroll={false}
+        showsVerticalScrollIndicator={false}
+      >
+        <FadeInView delay={20} distance={8} style={styles.topBar}>
+          <AnimatedPressable
+            accessibilityLabel="Voltar para entrar"
+            accessibilityRole="button"
+            onPress={() => router.replace('/sign-in')}
+            style={styles.backButton}
+          >
+            <ArrowLeft color={palette.text} size={20} strokeWidth={1.8} />
+          </AnimatedPressable>
+          <Text style={styles.topLabel}>RECUPERAR ACESSO</Text>
+        </FadeInView>
+
+        <FadeInView delay={60} distance={10} style={styles.heading}>
+          <Text style={styles.title}>Vamos recuperar sua conta.</Text>
+          <Text style={styles.subtitle}>
+            Informe o e-mail usado no cadastro. Enviaremos as instruções para
+            criar uma nova senha.
+          </Text>
+        </FadeInView>
+
+        <View style={styles.form}>
+          <Controller
+            control={control}
+            name="email"
+            render={({ field }) => (
+              <RecoveryEmailField
+                error={errors.email?.message}
+                onBlur={field.onBlur}
+                onChangeText={field.onChange}
+                onSubmit={() => void handleSubmit(submit)()}
+                value={field.value}
+              />
+            )}
+          />
+
+          <View style={styles.securityNote}>
+            <View style={styles.securityIcon}>
+              <ShieldCheck
+                color={palette.primary}
+                size={17}
+                strokeWidth={1.8}
+              />
+            </View>
+            <Text style={styles.securityText}>
+              O link é individual e expira automaticamente por segurança.
+            </Text>
+          </View>
+
+          {errors.root?.message ? (
+            <View
+              accessibilityLiveRegion="polite"
+              accessibilityRole="alert"
+              style={styles.errorBox}
+            >
+              <View style={styles.errorIcon}>
+                <Text style={styles.errorIconText}>!</Text>
+              </View>
+              <View style={styles.errorCopy}>
+                <Text style={styles.errorTitle}>
+                  Não conseguimos enviar o link
+                </Text>
+                <Text style={styles.errorMessage}>{errors.root.message}</Text>
+              </View>
+            </View>
+          ) : null}
+
+          <AnimatedPressable
+            accessibilityLabel="Enviar link"
+            accessibilityRole="button"
+            accessibilityState={{ busy: isSubmitting, disabled: isSubmitting }}
+            disabled={isSubmitting}
+            onPress={() => void handleSubmit(submit)()}
+            style={styles.primaryButton}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator color="#07110E" size="small" />
+            ) : (
+              <Text style={styles.primaryLabel}>Enviar link seguro</Text>
+            )}
+          </AnimatedPressable>
+        </View>
+
+        <FadeInView delay={150} distance={8} style={styles.loginFooter}>
+          <Text style={styles.loginPrompt}>Lembrou sua senha?</Text>
+          <AnimatedPressable
+            accessibilityRole="link"
+            onPress={() => router.replace('/sign-in')}
+            style={styles.loginLinkButton}
+          >
+            <Text style={styles.loginLink}>Voltar para entrar</Text>
+          </AnimatedPressable>
+        </FadeInView>
+      </Screen>
+    </View>
+  );
+}
+
+type RecoveryEmailFieldProps = {
+  error?: string;
+  onBlur: () => void;
+  onChangeText: (value: string) => void;
+  onSubmit: () => void;
+  value: string;
+};
+
+function RecoveryEmailField({
+  error,
+  onBlur,
+  onChangeText,
+  onSubmit,
+  value,
+}: RecoveryEmailFieldProps) {
+  const [focusProgress] = useState(() => new Animated.Value(0));
+
+  const animateFocus = (toValue: 0 | 1) => {
+    focusProgress.stopAnimation();
+    Animated.timing(focusProgress, {
+      duration: 140,
+      toValue,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  return (
+    <View style={styles.fieldBlock}>
+      <Animated.Text
+        style={[
+          styles.label,
+          {
+            color: focusProgress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [palette.textSecondary, palette.primary],
+            }),
+          },
+        ]}
+      >
+        E-mail
+      </Animated.Text>
+      <Animated.View
+        style={[
+          styles.inputShell,
+          {
+            backgroundColor: focusProgress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [palette.surface, '#121212'],
+            }),
+            borderColor: focusProgress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [palette.border, 'rgba(69,230,176,0.72)'],
+            }),
+          },
+          error && styles.inputShellError,
+        ]}
+      >
+        <Mail color={palette.textMuted} size={19} strokeWidth={1.8} />
+        <TextInput
+          accessibilityHint={error}
+          accessibilityLabel="E-mail"
+          autoCapitalize="none"
+          autoComplete="email"
+          blurOnSubmit={false}
+          keyboardType="email-address"
+          onBlur={() => {
+            animateFocus(0);
+            onBlur();
+          }}
+          onChangeText={onChangeText}
+          onFocus={() => animateFocus(1)}
+          onSubmitEditing={onSubmit}
+          placeholder="voce@exemplo.com"
+          placeholderTextColor={palette.textMuted}
+          returnKeyType="send"
+          selectionColor={palette.primary}
+          style={styles.input}
+          textContentType="emailAddress"
+          value={value}
+        />
+      </Animated.View>
+      {error ? (
+        <Text accessibilityLiveRegion="polite" style={styles.fieldError}>
+          {error}
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function RecoverySentState({ email }: { email: string }) {
   return (
     <View style={styles.root}>
       <WelcomeAmbientBackground dark />
       <Screen
         background="transparent"
-        contentContainerStyle={styles.screen}
-        keyboardAvoiding
+        contentContainerStyle={styles.sentScreen}
       >
-        <FadeInView style={styles.card}>
-          <View style={styles.header}>
-            <AnimatedPressable
-              accessibilityLabel="Voltar para entrar"
-              accessibilityRole="button"
-              onPress={() => router.replace('/sign-in')}
-              style={styles.backButton}
-            >
-              <MaterialCommunityIcons
-                color="#AEB3B8"
-                name="chevron-left"
-                size={28}
-              />
-            </AnimatedPressable>
-            <Text style={styles.title}>Recuperar senha</Text>
+        <FadeInView style={styles.sentLegacyCard}>
+          <View style={styles.sentIcon}>
+            <Mail color={palette.primary} size={30} strokeWidth={1.8} />
           </View>
-
-          {isSubmitSuccessful ? (
-            <FadeInView style={styles.successContent}>
-              <View style={styles.mailIcon}>
-                <MaterialCommunityIcons
-                  color="#31E39A"
-                  name="email-outline"
-                  size={34}
-                />
-              </View>
-              <View style={styles.successCopy}>
-                <Text style={styles.successTitle}>Verifique seu e-mail</Text>
-                <Text style={styles.successMessage}>
-                  Enviamos um link de redefinição para
-                </Text>
-                <Text style={styles.sentEmail}>{sentEmail}</Text>
-              </View>
-              <AnimatedPressable
-                accessibilityLabel="Voltar para o login"
-                accessibilityRole="button"
-                containerStyle={styles.loginButtonContainer}
-                onPress={() => router.replace('/sign-in')}
-                style={styles.loginButton}
-              >
-                <Text style={styles.loginButtonLabel}>Voltar para o login</Text>
-              </AnimatedPressable>
-            </FadeInView>
-          ) : (
-            <>
-              <Text style={styles.subtitle}>
-                Informe seu e-mail e enviaremos um link para você criar uma nova
-                senha.
-              </Text>
-
-              <View style={styles.form}>
-                <Controller
-                  control={control}
-                  name="email"
-                  render={({ field }) => (
-                    <View style={styles.fieldBlock}>
-                      <Text style={styles.label}>E-mail</Text>
-                      <View
-                        style={[
-                          styles.inputShell,
-                          errors.email?.message && styles.inputShellError,
-                        ]}
-                      >
-                        <TextInput
-                          accessibilityLabel="E-mail"
-                          autoCapitalize="none"
-                          autoComplete="email"
-                          keyboardType="email-address"
-                          onBlur={field.onBlur}
-                          onChangeText={field.onChange}
-                          placeholder="seuemail@exemplo.com"
-                          placeholderTextColor="#858A90"
-                          returnKeyType="send"
-                          selectionColor="#2DD4BF"
-                          style={styles.input}
-                          value={field.value}
-                        />
-                      </View>
-                      {errors.email?.message ? (
-                        <Text style={styles.fieldError}>
-                          {errors.email.message}
-                        </Text>
-                      ) : null}
-                    </View>
-                  )}
-                />
-
-                {errors.root?.message ? (
-                  <View
-                    accessibilityLiveRegion="polite"
-                    accessibilityRole="alert"
-                    style={styles.errorBox}
-                  >
-                    <MaterialCommunityIcons
-                      color={darkColors.danger}
-                      name="alert-circle-outline"
-                      size={20}
-                    />
-                    <View style={styles.errorCopy}>
-                      <Text style={styles.errorTitle}>
-                        Não foi possível enviar
-                      </Text>
-                      <Text style={styles.errorMessage}>
-                        {errors.root.message}
-                      </Text>
-                    </View>
-                  </View>
-                ) : null}
-
-                <AnimatedPressable
-                  accessibilityLabel="Enviar link"
-                  accessibilityRole="button"
-                  accessibilityState={{
-                    busy: isSubmitting,
-                    disabled: isSubmitting,
-                  }}
-                  disabled={isSubmitting}
-                  onPress={() => void handleSubmit(submit)()}
-                  style={styles.primaryButton}
-                >
-                  <Text style={styles.primaryLabel}>
-                    {isSubmitting ? 'Enviando...' : 'Enviar link'}
-                  </Text>
-                </AnimatedPressable>
-              </View>
-            </>
-          )}
+          <Text align="center" style={styles.sentTitle}>
+            Verifique seu e-mail
+          </Text>
+          <Text align="center" style={styles.sentMessage}>
+            Enviamos um link de redefinição para
+          </Text>
+          <Text align="center" style={styles.sentEmail}>
+            {email}
+          </Text>
+          <AnimatedPressable
+            accessibilityLabel="Voltar para o login"
+            accessibilityRole="button"
+            onPress={() => router.replace('/sign-in')}
+            style={styles.sentButton}
+          >
+            <Text style={styles.sentButtonLabel}>Voltar para o login</Text>
+          </AnimatedPressable>
         </FadeInView>
       </Screen>
     </View>
@@ -177,147 +294,238 @@ export function ForgotPasswordScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: '#14161A', flex: 1 },
-  screen: { justifyContent: 'center', padding: spacing.xs },
-  card: {
-    backgroundColor: '#14161A',
-    borderColor: '#20242A',
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
-    width: '100%',
+  root: { backgroundColor: palette.background, flex: 1 },
+  screen: {
+    gap: 30,
+    justifyContent: 'center',
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 12,
   },
-  header: {
+  topBar: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: spacing.md,
+    justifyContent: 'space-between',
   },
   backButton: {
     alignItems: 'center',
-    backgroundColor: '#1F2227',
-    borderColor: '#343941',
-    borderRadius: 6,
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 12,
     borderWidth: 1,
-    height: 48,
+    height: 46,
     justifyContent: 'center',
-    width: 48,
+    width: 46,
   },
+  topLabel: {
+    color: palette.textMuted,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    lineHeight: 14,
+  },
+  heading: { gap: 10 },
   title: {
-    color: '#F2F2F0',
-    fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 31,
+    color: palette.text,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 33,
+    letterSpacing: -1.15,
+    lineHeight: 40,
+    maxWidth: 355,
   },
-  subtitle: { color: '#BFC3C7', fontSize: 16, lineHeight: 23 },
-  form: { gap: spacing.lg },
-  fieldBlock: { gap: spacing.xs },
+  subtitle: {
+    color: palette.textSecondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 15,
+    lineHeight: 23,
+    maxWidth: 350,
+  },
+  form: { gap: 19 },
+  fieldBlock: { gap: 7 },
   label: {
-    color: '#D4D6D9',
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
-  },
-  inputShell: {
-    backgroundColor: '#1F2227',
-    borderColor: '#343941',
-    borderRadius: 6,
-    borderWidth: 1,
-    minHeight: 56,
-    overflow: 'hidden',
-    paddingHorizontal: spacing.md,
-  },
-  inputShellError: { borderColor: darkColors.danger },
-  input: {
-    color: '#F2F2F0',
-    minHeight: 54,
-    paddingVertical: 0,
-    ...typography.body,
-  },
-  fieldError: { color: darkColors.danger, fontSize: 12, lineHeight: 17 },
-  errorBox: {
-    alignItems: 'center',
-    backgroundColor: '#301B1A',
-    borderColor: '#69322E',
-    borderRadius: radii.medium,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 58,
-    padding: spacing.sm,
-  },
-  errorCopy: { flex: 1, gap: 2 },
-  errorTitle: {
-    color: darkColors.danger,
+    color: palette.textSecondary,
+    fontFamily: 'Manrope_600SemiBold',
     fontSize: 13,
-    fontWeight: '700',
     lineHeight: 18,
   },
-  errorMessage: { color: '#E0B7B3', fontSize: 12, lineHeight: 17 },
+  inputShell: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    minHeight: 56,
+    paddingHorizontal: 15,
+  },
+  inputShellError: { borderColor: palette.danger },
+  input: {
+    color: palette.text,
+    flex: 1,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 15,
+    minHeight: 54,
+    paddingVertical: 0,
+  },
+  fieldError: {
+    color: palette.danger,
+    fontFamily: 'Manrope_500Medium',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  securityNote: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    padding: 13,
+  },
+  securityIcon: {
+    alignItems: 'center',
+    backgroundColor: palette.primarySoft,
+    borderRadius: 11,
+    height: 34,
+    justifyContent: 'center',
+    width: 34,
+  },
+  securityText: {
+    color: palette.textMuted,
+    flex: 1,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  errorBox: {
+    alignItems: 'flex-start',
+    backgroundColor: palette.dangerSoft,
+    borderColor: 'rgba(255,107,107,0.24)',
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 11,
+    padding: 13,
+  },
+  errorIcon: {
+    alignItems: 'center',
+    borderColor: palette.danger,
+    borderRadius: 9,
+    borderWidth: 1,
+    height: 20,
+    justifyContent: 'center',
+    marginTop: 1,
+    width: 20,
+  },
+  errorIconText: {
+    color: palette.danger,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 12,
+    lineHeight: 15,
+  },
+  errorCopy: { flex: 1, gap: 3 },
+  errorTitle: {
+    color: '#FF9999',
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  errorMessage: {
+    color: '#D7A6A6',
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   primaryButton: {
     alignItems: 'center',
-    backgroundColor: '#2DD4BF',
-    borderRadius: 6,
+    backgroundColor: palette.primary,
+    borderRadius: 14,
     justifyContent: 'center',
-    minHeight: 60,
+    minHeight: 56,
   },
   primaryLabel: {
-    color: '#101416',
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 23,
+    color: '#07110E',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 15,
+    lineHeight: 20,
   },
-  successContent: {
+  loginFooter: {
     alignItems: 'center',
-    gap: spacing.xl,
-    paddingTop: spacing.lg,
-  },
-  mailIcon: {
-    alignItems: 'center',
-    backgroundColor: '#172821',
-    borderColor: '#31E39A',
-    borderRadius: 10,
-    borderWidth: 2,
-    height: 78,
+    flexDirection: 'row',
+    gap: 4,
     justifyContent: 'center',
-    width: 78,
+    minHeight: 48,
   },
-  successCopy: { alignItems: 'center', gap: spacing.xs },
-  successTitle: {
-    color: '#F2F2F0',
+  loginPrompt: {
+    color: palette.textMuted,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  loginLinkButton: {
+    justifyContent: 'center',
+    minHeight: 44,
+    paddingHorizontal: 3,
+  },
+  loginLink: {
+    color: palette.primary,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  sentScreen: { justifyContent: 'center', paddingHorizontal: 20 },
+  sentLegacyCard: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    gap: 12,
+    padding: 24,
+  },
+  sentIcon: {
+    alignItems: 'center',
+    backgroundColor: palette.primarySoft,
+    borderRadius: 20,
+    height: 72,
+    justifyContent: 'center',
+    marginBottom: 6,
+    width: 72,
+  },
+  sentTitle: {
+    color: palette.text,
+    fontFamily: 'Manrope_700Bold',
     fontSize: 24,
-    fontWeight: '800',
-    lineHeight: 31,
-    textAlign: 'center',
+    lineHeight: 30,
   },
-  successMessage: {
-    color: '#BFC3C7',
-    fontSize: 16,
-    lineHeight: 22,
-    textAlign: 'center',
+  sentMessage: {
+    color: palette.textSecondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 14,
+    lineHeight: 20,
   },
   sentEmail: {
-    color: '#F2F2F0',
-    fontSize: 16,
-    fontWeight: '800',
-    lineHeight: 22,
-    textAlign: 'center',
+    color: palette.text,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+    lineHeight: 20,
   },
-  loginButton: {
+  sentButton: {
     alignItems: 'center',
-    borderColor: '#343941',
-    borderRadius: 6,
+    borderColor: palette.border,
+    borderRadius: 14,
     borderWidth: 1,
     justifyContent: 'center',
-    minHeight: 60,
+    marginTop: 10,
+    minHeight: 52,
     width: '100%',
   },
-  loginButtonContainer: { marginTop: spacing.sm, width: '100%' },
-  loginButtonLabel: {
-    color: '#F2F2F0',
-    fontSize: 17,
-    fontWeight: '800',
-    lineHeight: 22,
+  sentButtonLabel: {
+    color: palette.text,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 14,
+    lineHeight: 20,
   },
 });

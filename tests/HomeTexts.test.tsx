@@ -5,6 +5,8 @@ import type { ReactElement } from 'react';
 import HomeRoute from '@app/(protected)/home';
 import { useMyBusiness } from '@/features/business/hooks';
 import { useHomeDashboard } from '@/features/home/hooks';
+import { useQuotes } from '@/features/quotes/hooks';
+import { useServices } from '@/features/services/hooks';
 import { createAvatarSignedUrl } from '@/features/profile/avatar';
 import { getMyProfile } from '@/features/profile/api';
 import { useAuth } from '@/providers/AuthProvider';
@@ -12,6 +14,8 @@ import type { HomeDashboardData } from '@/features/home/api';
 
 jest.mock('@/features/business/hooks', () => ({ useMyBusiness: jest.fn() }));
 jest.mock('@/features/home/hooks', () => ({ useHomeDashboard: jest.fn() }));
+jest.mock('@/features/quotes/hooks', () => ({ useQuotes: jest.fn() }));
+jest.mock('@/features/services/hooks', () => ({ useServices: jest.fn() }));
 jest.mock('@/features/profile/avatar', () => ({
   ...jest.requireActual('@/features/profile/avatar'),
   createAvatarSignedUrl: jest.fn(),
@@ -75,6 +79,17 @@ beforeEach(() => {
     isError: false,
     refetch: jest.fn(),
   } as unknown as ReturnType<typeof useHomeDashboard>);
+  jest.mocked(useQuotes).mockReturnValue({
+    data: { pages: [{ items: [], totalCount: 0 }] },
+    isLoading: false,
+    isError: false,
+    refetch: jest.fn(),
+  } as unknown as ReturnType<typeof useQuotes>);
+  jest.mocked(useServices).mockReturnValue({
+    data: { pages: [{ items: [], totalCount: 0 }] },
+    isLoading: false,
+    isError: false,
+  } as unknown as ReturnType<typeof useServices>);
 });
 
 async function renderWithClient(element: ReactElement) {
@@ -89,11 +104,11 @@ async function renderWithClient(element: ReactElement) {
 
 it('shows the personalized CRM dashboard with real sections', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  expect(await screen.findByText(/Ana$/)).toBeTruthy();
-  expect(screen.getByText('Painel do seu negócio')).toBeTruthy();
-  expect(screen.getByText('Balanço estimado')).toBeTruthy();
-  expect(screen.getByText('Ações rápidas')).toBeTruthy();
-  expect(screen.getByText('Faturamento')).toBeTruthy();
+  expect(await screen.findByText(/Ana\.$/)).toBeTruthy();
+  expect(screen.getByText('ResolveMEI')).toBeTruthy();
+  expect(screen.getByText('EM NEGOCIAÇÃO')).toBeTruthy();
+  expect(screen.getByText('Valor dos orçamentos enviados')).toBeTruthy();
+  expect(screen.getByText('Novo orçamento')).toBeTruthy();
   expect(screen.queryByText('Ver perfil')).toBeNull();
   await screen.unmount();
   queryClient.clear();

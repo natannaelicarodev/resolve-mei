@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 import { ForgotPasswordScreen } from '@/features/auth/ForgotPasswordScreen';
 import { SignInScreen } from '@/features/auth/SignInScreen';
@@ -46,6 +46,26 @@ it('updates password requirements progressively during sign-up', async () => {
   expect(screen.getByText('Uma letra maiúscula')).toBeTruthy();
   expect(screen.getByText('Um número')).toBeTruthy();
   expect(signUp).not.toHaveBeenCalled();
+  await screen.unmount();
+});
+
+it('removes the sign-up focus highlight when a field loses focus', async () => {
+  const screen = await render(<SignUpScreen />);
+  const email = screen.getByLabelText('E-mail');
+
+  await fireEvent(email, 'focus', { nativeEvent: {} });
+  await waitFor(() =>
+    expect(screen.getByText('E-mail')).toHaveStyle({
+      color: 'rgba(69, 230, 176, 1)',
+    }),
+  );
+
+  await fireEvent(email, 'blur', { nativeEvent: {} });
+  await waitFor(() =>
+    expect(screen.getByText('E-mail')).toHaveStyle({
+      color: 'rgba(161, 161, 167, 1)',
+    }),
+  );
   await screen.unmount();
 });
 

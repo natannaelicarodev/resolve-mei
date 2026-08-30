@@ -1,6 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import {
+  BadgeCheck,
+  BriefcaseBusiness,
+  MapPinned,
+  Phone,
+  WalletCards,
+} from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import type { Control, FieldPath, UseFormSetValue } from 'react-hook-form';
@@ -13,7 +21,7 @@ import { WelcomeAmbientBackground } from '@/features/auth/WelcomeScreen';
 import { triggerHaptic } from '@/lib/haptics';
 import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
-import { DarkThemeScope, radii, spacing, typography } from '@/theme';
+import { DarkThemeScope, radii, spacing } from '@/theme';
 import { formatDocument } from '@/utils/documents';
 import { completeOnboarding } from './api';
 import type { BusinessFormSection } from './BusinessFormFields';
@@ -24,6 +32,7 @@ import type { BusinessFormData } from './schemas';
 interface OnboardingStep {
   title: string;
   description: string;
+  icon: LucideIcon;
   section?: BusinessFormSection;
   fields: readonly FieldPath<BusinessFormData>[];
 }
@@ -32,30 +41,35 @@ const steps: readonly [OnboardingStep, ...OnboardingStep[]] = [
   {
     title: 'Conte sobre seu negócio',
     description: 'Isso ajuda a personalizar sua experiência no ResolveMEI.',
+    icon: BriefcaseBusiness,
     section: 'business',
     fields: ['businessName', 'documentType', 'documentNumber'],
   },
   {
     title: 'Contato',
     description: 'Onde seus clientes poderão falar com você.',
+    icon: Phone,
     section: 'contact',
     fields: ['professionalPhone', 'email'],
   },
   {
     title: 'Endereço',
     description: 'Informações usadas nos seus documentos.',
+    icon: MapPinned,
     section: 'address',
     fields: ['street', 'number', 'neighborhood', 'city', 'state', 'postalCode'],
   },
   {
     title: 'Detalhes opcionais',
     description: 'Você pode adicionar uma chave Pix agora ou depois.',
+    icon: WalletCards,
     section: 'details',
     fields: ['pixKey'],
   },
   {
     title: 'Tudo certo?',
     description: 'Revise os dados antes de concluir seu perfil.',
+    icon: BadgeCheck,
     fields: [],
   },
 ] as const;
@@ -491,12 +505,13 @@ export function OnboardingScreen() {
       if (user) {
         queryClient.setQueryData(businessQueryKey(user.id), completedBusiness);
       }
-      router.replace('/welcome');
+      router.replace('/onboarding-complete');
     },
     onError: (error) =>
       setError('root', { message: normalizeError(error).message }),
   });
   const current = steps[step] ?? steps[0];
+  const CurrentStepIcon = current.icon;
   const goNext = async () => {
     const valid = await trigger(current.fields, { shouldFocus: true });
     if (!valid) return;
@@ -521,6 +536,12 @@ export function OnboardingScreen() {
           keyboardAvoiding
         >
           <View style={styles.card}>
+            <View style={styles.stepMeta}>
+              <Text style={styles.stepEyebrow}>PERFIL PROFISSIONAL</Text>
+              <Text style={styles.stepCount}>
+                {String(step + 1).padStart(2, '0')} / {steps.length}
+              </Text>
+            </View>
             <View
               accessibilityLabel={`${Math.round(((step + 1) / steps.length) * 100)}% concluído`}
               accessibilityRole="progressbar"
@@ -538,32 +559,42 @@ export function OnboardingScreen() {
             </View>
 
             <View style={styles.header}>
-              <Text style={styles.title}>{current.title}</Text>
-              <Text style={styles.description}>{current.description}</Text>
+              <View style={styles.stepIcon}>
+                <CurrentStepIcon color="#45E6B0" size={22} strokeWidth={1.7} />
+              </View>
+              <View style={styles.headerCopy}>
+                <Text style={styles.title}>{current.title}</Text>
+                <Text style={styles.description}>{current.description}</Text>
+              </View>
             </View>
 
-            <StepTransition direction={direction} step={step}>
-              {step === 0 ? (
-                <BusinessIdentityFields control={control} setValue={setValue} />
-              ) : current.section === 'contact' ? (
-                <ContactFields
-                  control={control}
-                  disabled={mutation.isPending}
-                />
-              ) : current.section === 'address' ? (
-                <AddressFields
-                  control={control}
-                  disabled={mutation.isPending}
-                />
-              ) : current.section === 'details' ? (
-                <OptionalDetailsFields
-                  control={control}
-                  disabled={mutation.isPending}
-                />
-              ) : (
-                <ReviewFields values={values} />
-              )}
-            </StepTransition>
+            <View style={styles.formSurface}>
+              <StepTransition direction={direction} step={step}>
+                {step === 0 ? (
+                  <BusinessIdentityFields
+                    control={control}
+                    setValue={setValue}
+                  />
+                ) : current.section === 'contact' ? (
+                  <ContactFields
+                    control={control}
+                    disabled={mutation.isPending}
+                  />
+                ) : current.section === 'address' ? (
+                  <AddressFields
+                    control={control}
+                    disabled={mutation.isPending}
+                  />
+                ) : current.section === 'details' ? (
+                  <OptionalDetailsFields
+                    control={control}
+                    disabled={mutation.isPending}
+                  />
+                ) : (
+                  <ReviewFields values={values} />
+                )}
+              </StepTransition>
+            </View>
 
             {errors.root?.message ? (
               <InlineFeedback message={errors.root.message} variant="error" />
@@ -614,34 +645,75 @@ export function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: '#14161A', flex: 1 },
-  screen: { justifyContent: 'center', padding: spacing.sm },
+  root: { backgroundColor: '#000000', flex: 1 },
+  screen: {
+    justifyContent: 'center',
+    paddingBottom: 24,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
   card: {
-    backgroundColor: '#14161A',
-    borderColor: '#20242A',
-    borderRadius: 28,
-    borderWidth: 1,
-    gap: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xl,
+    gap: 22,
     width: '100%',
   },
-  header: { gap: spacing.sm },
-  title: {
-    color: '#F2F2F0',
-    fontSize: 25,
-    fontWeight: '800',
-    lineHeight: 32,
+  stepMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  description: { color: '#BFC3C7', fontSize: 15, lineHeight: 22 },
+  stepEyebrow: {
+    color: '#717178',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 10,
+    letterSpacing: 1.5,
+    lineHeight: 14,
+  },
+  stepCount: {
+    color: '#A1A1A7',
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  header: { alignItems: 'flex-start', flexDirection: 'row', gap: 14 },
+  headerCopy: { flex: 1, gap: 7, paddingTop: 1 },
+  stepIcon: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(69,230,176,0.10)',
+    borderColor: 'rgba(69,230,176,0.24)',
+    borderRadius: 14,
+    borderWidth: 1,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  title: {
+    color: '#FFFFFF',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 28,
+    letterSpacing: -0.7,
+    lineHeight: 34,
+  },
+  description: {
+    color: '#A1A1A7',
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 14,
+    lineHeight: 21,
+  },
   progressRow: { flexDirection: 'row', gap: 6 },
   progressSegment: {
-    backgroundColor: '#343941',
+    backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: radii.pill,
     flex: 1,
-    height: 5,
+    height: 3,
   },
-  progressSegmentComplete: { backgroundColor: '#2DD4BF' },
+  progressSegmentComplete: { backgroundColor: '#45E6B0' },
+  formSurface: {
+    backgroundColor: '#0A0A0A',
+    borderColor: 'rgba(255,255,255,0.07)',
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 18,
+  },
   identityFields: { gap: spacing.md },
   contactFields: { gap: spacing.md },
   formFields: { gap: spacing.md },
@@ -651,67 +723,92 @@ const styles = StyleSheet.create({
   stateColumn: { flex: 1 },
   fieldBlock: { gap: spacing.xs },
   fieldLabel: {
-    color: '#D4D6D9',
-    fontSize: 14,
-    fontWeight: '700',
-    lineHeight: 20,
+    color: '#A1A1A7',
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 13,
+    lineHeight: 18,
   },
   input: {
-    backgroundColor: '#1F2227',
-    borderColor: '#343941',
-    borderRadius: 6,
+    backgroundColor: '#121212',
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 14,
     borderWidth: 1,
-    color: '#F2F2F0',
+    color: '#FFFFFF',
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 15,
     minHeight: 56,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: 15,
     paddingVertical: 0,
-    ...typography.body,
   },
-  inputError: { borderColor: '#FF9187' },
-  fieldError: { color: '#FF9187', fontSize: 12, lineHeight: 17 },
+  inputError: { borderColor: '#FF6B6B' },
+  fieldError: {
+    color: '#FF6B6B',
+    fontFamily: 'Manrope_500Medium',
+    fontSize: 12,
+    lineHeight: 17,
+  },
   helperPanel: {
-    backgroundColor: '#192624',
-    borderColor: '#28423E',
-    borderRadius: 8,
+    backgroundColor: 'rgba(69,230,176,0.07)',
+    borderColor: 'rgba(69,230,176,0.16)',
+    borderRadius: 14,
     borderWidth: 1,
     gap: 4,
     padding: spacing.md,
   },
-  helperTitle: { color: '#74E4D4', fontSize: 13, fontWeight: '700' },
-  helperText: { color: '#BFC3C7', fontSize: 13, lineHeight: 19 },
+  helperTitle: {
+    color: '#45E6B0',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 13,
+  },
+  helperText: {
+    color: '#A1A1A7',
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 13,
+    lineHeight: 19,
+  },
   reviewPanel: {
-    backgroundColor: '#1F2227',
-    borderColor: '#343941',
-    borderRadius: 10,
+    backgroundColor: '#121212',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 16,
     borderWidth: 1,
     gap: spacing.md,
     padding: spacing.lg,
   },
   reviewHeader: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   reviewMark: {
-    backgroundColor: '#2DD4BF',
+    backgroundColor: '#45E6B0',
     borderRadius: radii.pill,
     height: 40,
     width: 4,
   },
   reviewHeaderCopy: { flex: 1, gap: 2 },
-  reviewTitle: { color: '#F2F2F0', fontSize: 18, fontWeight: '800' },
-  reviewSubtitle: { color: '#74E4D4', fontSize: 12, lineHeight: 17 },
-  reviewDivider: { backgroundColor: '#343941', height: 1 },
+  reviewTitle: {
+    color: '#FFFFFF',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 18,
+  },
+  reviewSubtitle: { color: '#45E6B0', fontSize: 12, lineHeight: 17 },
+  reviewDivider: { backgroundColor: 'rgba(255,255,255,0.07)', height: 1 },
   reviewRows: { gap: spacing.md },
   reviewRow: { gap: 3 },
   reviewLabel: {
-    color: '#8D949B',
+    color: '#717178',
+    fontFamily: 'Manrope_700Bold',
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
   },
-  reviewValue: { color: '#F2F2F0', fontSize: 14, lineHeight: 20 },
+  reviewValue: {
+    color: '#FFFFFF',
+    fontFamily: 'Manrope_500Medium',
+    fontSize: 14,
+    lineHeight: 20,
+  },
   documentSelector: {
-    backgroundColor: '#1F2227',
-    borderColor: '#343941',
-    borderRadius: 6,
+    backgroundColor: '#121212',
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: 14,
     borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
@@ -720,39 +817,45 @@ const styles = StyleSheet.create({
   documentOptionContainer: { flex: 1 },
   documentOption: {
     alignItems: 'center',
-    borderRadius: 5,
+    borderRadius: 11,
     justifyContent: 'center',
     minHeight: 48,
   },
-  documentOptionSelected: { backgroundColor: '#2DD4BF' },
+  documentOptionSelected: { backgroundColor: '#45E6B0' },
   documentOptionLabel: {
-    color: '#BFC3C7',
+    color: '#A1A1A7',
+    fontFamily: 'Manrope_700Bold',
     fontSize: 14,
     fontWeight: '700',
     lineHeight: 20,
   },
-  documentOptionLabelSelected: { color: '#101416' },
+  documentOptionLabelSelected: { color: '#07110E' },
   actions: { gap: spacing.sm },
   primaryAction: {
     alignItems: 'center',
-    backgroundColor: '#2DD4BF',
-    borderRadius: 6,
+    backgroundColor: '#45E6B0',
+    borderRadius: 14,
     justifyContent: 'center',
     minHeight: 60,
   },
   primaryActionLabel: {
-    color: '#101416',
-    fontSize: 18,
-    fontWeight: '800',
-    lineHeight: 23,
+    color: '#07110E',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 16,
+    lineHeight: 22,
   },
   backAction: {
     alignItems: 'center',
-    borderColor: '#343941',
-    borderRadius: 6,
+    backgroundColor: '#0A0A0A',
+    borderColor: 'rgba(255,255,255,0.09)',
+    borderRadius: 14,
     borderWidth: 1,
     justifyContent: 'center',
     minHeight: 52,
   },
-  backActionLabel: { color: '#F2F2F0', fontSize: 15, fontWeight: '700' },
+  backActionLabel: {
+    color: '#FFFFFF',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+  },
 });

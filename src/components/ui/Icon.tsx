@@ -1,5 +1,8 @@
 import {
+  Archive,
+  ArrowDown,
   ArrowLeft,
+  ArrowUp,
   Briefcase,
   Calendar,
   ChevronDown,
@@ -13,14 +16,17 @@ import {
   Copy,
   FileText,
   Filter,
+  GripVertical,
   Mail,
   MessageCircle,
   Info,
   Pencil,
   Phone,
   Plus,
+  RotateCcw,
   Search,
   Settings,
+  Star,
   Trash2,
   TrendingDown,
   TrendingUp,
@@ -71,6 +77,13 @@ const icons = {
   phone: Phone,
   email: Mail,
   whatsapp: MessageCircle,
+  // Tactile organization
+  favorite: Star,
+  archive: Archive,
+  restore: RotateCcw,
+  reorder: GripVertical,
+  moveUp: ArrowUp,
+  moveDown: ArrowDown,
 } as const;
 
 export type IconName = keyof typeof icons;

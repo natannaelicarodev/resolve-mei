@@ -1,195 +1,49 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
-import type { Href } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
   Animated,
   Easing,
   Image,
-  Modal,
-  Pressable,
   StyleSheet,
   useWindowDimensions,
   View,
 } from 'react-native';
 import type { LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Circle, Path, Svg, Text as SvgText } from 'react-native-svg';
 
-import {
-  AnimatedPressable,
-  FadeInView,
-  useReducedMotion,
-} from '@/components/motion';
+import { AnimatedPressable, useReducedMotion } from '@/components/motion';
 import { Skeleton, Text } from '@/components/ui';
+import { WelcomeAmbientBackground } from '@/features/auth/WelcomeScreen';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
-import { getProfileInitial } from '@/features/profile/avatar';
 import type { Quote } from '@/features/quotes/api';
-import { formatDateForDisplay } from '@/features/quotes/date';
 import { formatMoney, formatQuoteNumber } from '@/features/quotes/domain';
 import type { DashboardPeriod, HomeDashboardData } from './api';
 
-const PERIODS = [
-  { compact: 'Este mês', label: 'Este mês', value: 'month' },
-  { compact: '3 meses', label: 'Últimos 3 meses', value: '3months' },
-  { compact: '6 meses', label: 'Últimos 6 meses', value: '6months' },
-  { compact: 'Este ano', label: 'Este ano', value: 'year' },
-] as const;
-
-const HOME = {
-  background: '#14161A',
-  card: '#1E2126',
-  border: '#2C3037',
-  muted: '#6E7076',
-  teal: '#2DD4BF',
-  tealDark: '#163B36',
-  blue: '#3488F6',
-  purple: '#B05CFF',
-  green: '#28D17C',
+const palette = {
+  background: '#000000',
+  surface: '#0A0A0A',
+  raised: '#121212',
+  border: 'rgba(255,255,255,0.07)',
+  borderStrong: 'rgba(255,255,255,0.12)',
+  primary: '#45E6B0',
+  primarySoft: 'rgba(69,230,176,0.13)',
+  text: '#FFFFFF',
+  secondary: '#A1A1A7',
+  muted: '#85878E',
+  warning: '#F2B84B',
 } as const;
 
-const CARD_SHADOW = {
-  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.40), 0 6px 18px rgba(0, 0, 0, 0.35)',
-  elevation: 5,
-} as const;
-
-const ELEVATED_SHADOW = {
-  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.50), 0 14px 28px rgba(0, 0, 0, 0.40)',
-  elevation: 8,
-} as const;
-
-const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
-
-function useAnimatedNumber(target: number, duration = 700, active = true) {
-  const reducedMotion = useReducedMotion();
-  const showImmediately = reducedMotion || process.env.NODE_ENV === 'test';
-  const [value] = useState(() => new Animated.Value(target));
-  const [displayValue, setDisplayValue] = useState(active ? target : 0);
-
-  useEffect(() => {
-    if (!active) {
-      value.setValue(0);
-      return;
-    }
-    if (showImmediately) {
-      value.setValue(target);
-      return;
-    }
-    value.stopAnimation();
-    value.setValue(0);
-    const subscription = value.addListener(({ value: next }) =>
-      setDisplayValue(Math.round(next)),
-    );
-    const animation = Animated.timing(value, {
-      duration,
-      easing: Easing.out(Easing.cubic),
-      toValue: target,
-      useNativeDriver: false,
-    });
-    animation.start();
-    return () => {
-      animation.stop();
-      value.removeListener(subscription);
-    };
-  }, [active, duration, showImmediately, target, value]);
-
-  return showImmediately ? (active ? target : 0) : displayValue;
-}
-
-// `nativeDriver` must stay false for callers that interpolate this value into
-// a non-transform/opacity prop (SVG strokeDasharray, layout width, etc.) -
-// only opacity/transform consumers can safely opt into the UI thread.
-function useRevealProgress(
-  active: boolean,
-  delay = 0,
-  duration = 700,
-  nativeDriver = false,
-) {
-  const reducedMotion = useReducedMotion();
-  const [progress] = useState(() => new Animated.Value(active ? 1 : 0));
-  useEffect(() => {
-    if (!active) {
-      progress.setValue(0);
-      return;
-    }
-    const animation = Animated.timing(progress, {
-      delay: reducedMotion ? 0 : delay,
-      duration: reducedMotion ? 1 : duration,
-      easing: Easing.out(Easing.cubic),
-      toValue: 1,
-      useNativeDriver: nativeDriver,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [active, delay, duration, nativeDriver, progress, reducedMotion]);
-  return progress;
-}
-
-function VisibilityTrigger({
-  children,
-  onVisible,
-  scrollY,
-  testID,
-  viewportHeight,
-}: {
-  children: ReactNode;
-  onVisible: () => void;
-  scrollY: Animated.Value;
-  testID?: string;
-  viewportHeight: number;
-}) {
-  const topRef = useRef<number | null>(null);
-  const scrollOffsetRef = useRef(0);
-  const revealedRef = useRef(false);
-
-  const revealIfVisible = useCallback(
-    (offset: number) => {
-      if (
-        revealedRef.current ||
-        topRef.current === null ||
-        topRef.current > offset + viewportHeight * 0.78
-      )
-        return;
-      revealedRef.current = true;
-      onVisible();
-    },
-    [onVisible, viewportHeight],
-  );
-
-  useEffect(() => {
-    const subscription = scrollY.addListener(({ value }) => {
-      scrollOffsetRef.current = value;
-      revealIfVisible(value);
-    });
-    revealIfVisible(scrollOffsetRef.current);
-    return () => scrollY.removeListener(subscription);
-  }, [revealIfVisible, scrollY]);
-
-  const handleLayout = (event: LayoutChangeEvent) => {
-    topRef.current = event.nativeEvent.layout.y;
-    revealIfVisible(scrollOffsetRef.current);
-  };
-
-  return (
-    <View onLayout={handleLayout} testID={testID}>
-      {children}
-    </View>
-  );
-}
-
-function formatDashboardMoney(cents: number) {
-  return new Intl.NumberFormat('pt-BR', {
-    currency: 'BRL',
-    maximumFractionDigits: 0,
-    minimumFractionDigits: 0,
-    style: 'currency',
-  }).format(cents / 100);
-}
+const PERIOD_LABELS: Record<DashboardPeriod, string> = {
+  month: 'este mês',
+  '3months': 'nos últimos 3 meses',
+  '6months': 'nos últimos 6 meses',
+  year: 'neste ano',
+};
 
 export interface HomeMockupScreenProps {
   firstName?: string;
+  businessName?: string;
   avatarUrl?: string;
   period: DashboardPeriod;
   onPeriodChange: (period: DashboardPeriod) => void;
@@ -199,1201 +53,591 @@ export interface HomeMockupScreenProps {
   onRetry?: () => void;
   recentQuotes?: Quote[];
   recentQuotesLoading?: boolean;
+  recentQuotesError?: boolean;
   serviceCount?: number;
 }
 
-function Header({
-  firstName,
-  avatarUrl,
-}: Pick<HomeMockupScreenProps, 'firstName' | 'avatarUrl'>) {
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
-  return (
-    <View style={styles.header}>
-      {avatarUrl ? (
-        <Image
-          accessibilityLabel={`Foto de ${firstName ?? 'perfil'}`}
-          source={{ uri: avatarUrl }}
-          style={styles.avatar}
-          testID="profile-image"
-        />
-      ) : (
-        <View
-          style={[styles.avatar, styles.avatarFallback]}
-          testID="profile-image-fallback"
-        >
-          <Text style={styles.avatarInitial} variant="label">
-            {getProfileInitial(firstName)}
-          </Text>
-        </View>
-      )}
-      <View style={styles.greeting}>
-        <Text numberOfLines={1} style={styles.greetingTitle} variant="label">
-          {greeting}
-          {firstName ? `, ${firstName}` : ''}
-        </Text>
-        <Text
-          color="textMuted"
-          numberOfLines={1}
-          style={styles.greetingSubtitle}
-          variant="caption"
-        >
-          Painel do seu negócio
-        </Text>
-      </View>
-      <AnimatedPressable
-        accessibilityLabel="Abrir configurações"
-        accessibilityRole="button"
-        hitSlop={6}
-        onPress={() => router.push('/settings')}
-        style={[
-          styles.settings,
-          { backgroundColor: HOME.card, borderColor: HOME.border },
-        ]}
-      >
-        <MaterialCommunityIcons color="#B9BEC5" name="tune-variant" size={21} />
-      </AnimatedPressable>
-    </View>
-  );
-}
-
-function PeriodPicker({
-  displayLabel,
-  value,
-  onChange,
-}: {
-  displayLabel?: string;
-  value: DashboardPeriod;
-  onChange: (value: DashboardPeriod) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = PERIODS.find((item) => item.value === value) ?? PERIODS[0];
-  return (
-    <>
-      <AnimatedPressable
-        accessibilityLabel={`Período: ${selected.label}`}
-        accessibilityRole="button"
-        hitSlop={7}
-        onPress={() => setOpen(true)}
-        style={styles.periodChip}
-      >
-        <Text numberOfLines={1} style={styles.periodChipText} variant="status">
-          {displayLabel ?? selected.compact}
-        </Text>
-      </AnimatedPressable>
-      <Modal
-        animationType="fade"
-        onRequestClose={() => setOpen(false)}
-        transparent
-        visible={open}
-      >
-        <Pressable
-          onPress={() => setOpen(false)}
-          style={[styles.backdrop, { backgroundColor: 'rgba(0,0,0,0.72)' }]}
-        >
-          <Pressable
-            onPress={(event) => event.stopPropagation()}
-            style={styles.periodMenu}
-          >
-            {PERIODS.map((item) => (
-              <AnimatedPressable
-                accessibilityRole="radio"
-                accessibilityState={{ checked: item.value === value }}
-                key={item.value}
-                onPress={() => {
-                  onChange(item.value);
-                  setOpen(false);
-                }}
-                style={styles.periodOption}
-              >
-                <Text
-                  style={
-                    item.value === value ? styles.periodOptionActive : undefined
-                  }
-                  variant="label"
-                >
-                  {item.label}
-                </Text>
-              </AnimatedPressable>
-            ))}
-          </Pressable>
-        </Pressable>
-      </Modal>
-    </>
-  );
-}
-
-function trendText(current: number, previous: number) {
-  if (!previous)
-    return current ? 'SEM BASE NO MÊS ANTERIOR' : 'SEM VALORES NO PERÍODO';
-  const percent = Math.round(((current - previous) / previous) * 100);
-  if (!percent) return 'ESTÁVEL VS. MÊS ANTERIOR';
-  return `${percent > 0 ? '+' : '−'}${Math.abs(percent)}% VS. MÊS ANTERIOR`;
-}
-
-function AreaChart({
-  monthly,
-  period,
-}: {
-  monthly: HomeDashboardData['monthly'];
-  period: DashboardPeriod;
-}) {
-  // BACKLOG(perf): this drives strokeDashoffset (SVG), which the classic
-  // Animated API can't run on the native/UI thread - stays JS-driven.
-  // Migrating to react-native-reanimated's useAnimatedProps (already a
-  // project dependency) would move it off the JS thread entirely, same as
-  // the ranking bar's width fill in RankingRow below. Left out of the
-  // 2026-08-28 Home performance pass since neither showed evidence of
-  // being the actual jank source (see AnimatedApprovedValue et al.) - do
-  // this only if profiling shows it's still needed.
+function useAnimatedNumber(target: number, active: boolean) {
   const reducedMotion = useReducedMotion();
-  const [drawProgress] = useState(() => new Animated.Value(0));
-  const width = 340;
-  const height = 130;
-  const maximum = Math.max(...monthly.map((item) => item.approvedCents), 1);
-  const points = monthly.map((item, index) => ({
-    x: monthly.length === 1 ? 285 : 10 + (index / (monthly.length - 1)) * 275,
-    y: 15 + (1 - item.approvedCents / maximum) * 83,
-  }));
-  const line = points.reduce(
-    (path, point, index) =>
-      `${path}${index ? ' L' : 'M'} ${point.x} ${point.y}`,
-    '',
-  );
-  const periodLabel =
-    period === 'month'
-      ? 'neste mês'
-      : period === 'year'
-        ? 'neste ano'
-        : `nos últimos ${period === '3months' ? 3 : 6} meses`;
+  const shouldAnimate =
+    active && !reducedMotion && process.env.NODE_ENV !== 'test';
+  const [animated] = useState(() => new Animated.Value(target));
+  const [display, setDisplay] = useState(target);
   useEffect(() => {
-    drawProgress.setValue(reducedMotion ? 1 : 0);
-    const animation = Animated.timing(drawProgress, {
-      delay: reducedMotion ? 0 : 120,
-      duration: reducedMotion ? 1 : 850,
+    if (!shouldAnimate) {
+      animated.setValue(target);
+      return;
+    }
+    animated.setValue(0);
+    const listener = animated.addListener(({ value }) =>
+      setDisplay(Math.round(value)),
+    );
+    const animation = Animated.timing(animated, {
+      duration: 900,
       easing: Easing.out(Easing.cubic),
-      toValue: 1,
+      toValue: target,
       useNativeDriver: false,
     });
     animation.start();
-    return () => animation.stop();
-  }, [drawProgress, monthly, reducedMotion]);
+    return () => {
+      animation.stop();
+      animated.removeListener(listener);
+    };
+  }, [animated, shouldAnimate, target]);
+  return shouldAnimate ? display : target;
+}
+
+function BrandMark() {
   return (
-    <View
-      accessible
-      accessibilityLabel={`Gráfico do valor aprovado ${periodLabel}`}
-      style={styles.chartBlock}
-    >
-      <Svg
-        accessibilityElementsHidden
-        height={height}
-        importantForAccessibility="no-hide-descendants"
-        preserveAspectRatio="xMidYMid meet"
-        viewBox={`0 0 ${width} ${height}`}
-        width="100%"
-      >
-        {[10, 45, 80, 105].map((y) => (
-          <Path
-            d={`M 0 ${y} L ${width} ${y}`}
-            key={y}
-            stroke="#2B3036"
-            strokeWidth={1}
-          />
-        ))}
-        <AnimatedPath
-          d={line}
-          fill="none"
-          stroke={HOME.teal}
-          strokeDasharray="420 420"
-          strokeDashoffset={drawProgress.interpolate({
-            inputRange: [0, 1],
-            outputRange: [420, 0],
-          })}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2.2}
-        />
-        {points.map((point, index) => (
-          <Circle
-            cx={point.x}
-            cy={point.y}
-            fill={HOME.card}
-            key={`${point.x}:${point.y}`}
-            r={index === points.length - 1 ? 4.5 : 3.5}
-            stroke={HOME.teal}
-            strokeWidth={2.4}
-          />
-        ))}
-        {monthly.map((item, index) => (
-          <SvgText
-            fill={HOME.muted}
-            fontFamily="Poppins_400Regular"
-            fontSize={8.5}
-            key={`${item.month}:label`}
-            textAnchor="middle"
-            x={points[index]?.x ?? 0}
-            y={124}
-          >
-            {new Intl.DateTimeFormat('pt-BR', { month: 'short' })
-              .format(new Date(`${item.month}T12:00:00`))
-              .replace('.', '')
-              .toUpperCase()}
-          </SvgText>
-        ))}
-        {points.length ? (
-          <SvgText
-            fill="#F2F2F0"
-            fontFamily="Poppins_700Bold"
-            fontSize={8.5}
-            textAnchor="middle"
-            x={points.at(-1)?.x ?? 0}
-            y={Math.max(8, (points.at(-1)?.y ?? 15) - 8)}
-          >
-            {formatDashboardMoney(monthly.at(-1)?.approvedCents ?? 0)}
-          </SvgText>
-        ) : null}
-      </Svg>
+    <View accessibilityElementsHidden style={styles.mark}>
+      <View style={[styles.markPiece, styles.markTop]} />
+      <View style={[styles.markPiece, styles.markBottom]} />
+      <View style={styles.markCore} />
     </View>
   );
 }
 
-// Isolated so the per-frame updates driving the count-up animation only
-// re-render this small value, not the whole BalanceCard (period picker,
-// trend pill, Intl formatting, etc.).
-function AnimatedApprovedValue({
-  approvedCents,
-  hidden,
-}: {
-  approvedCents: number;
-  hidden: boolean;
-}) {
-  const animatedApprovedCents = useAnimatedNumber(approvedCents, 900);
+function Header({
+  businessName,
+  firstName,
+  avatarUrl,
+}: Pick<HomeMockupScreenProps, 'businessName' | 'firstName' | 'avatarUrl'>) {
   return (
-    <Text
-      adjustsFontSizeToFit
-      accessibilityLabel={`Valor aprovado: ${formatMoney(approvedCents)}`}
-      minimumFontScale={0.72}
-      numberOfLines={1}
-      style={styles.heroValue}
-    >
-      {hidden ? 'R$ ••••••' : formatDashboardMoney(animatedApprovedCents)}
-    </Text>
-  );
-}
-
-function BalanceCard(
-  props: Pick<
-    HomeMockupScreenProps,
-    | 'dashboard'
-    | 'dashboardLoading'
-    | 'dashboardError'
-    | 'period'
-    | 'onPeriodChange'
-    | 'onRetry'
-  >,
-) {
-  const data = props.dashboard;
-  const [valuesHidden, setValuesHidden] = useState(false);
-  const periodDate = data?.periodEnd
-    ? new Date(new Date(`${data.periodEnd}T12:00:00`).getTime() - 86_400_000)
-    : new Date();
-  const periodLabel = new Intl.DateTimeFormat('pt-BR', {
-    month: 'short',
-    year: 'numeric',
-  })
-    .format(periodDate)
-    .replace('.', '')
-    .replace(' de ', ' ')
-    .replace(/^./, (letter) => letter.toUpperCase());
-  return (
-    <View
-      style={[
-        styles.balanceCard,
-        { backgroundColor: HOME.card, borderColor: HOME.border },
-      ]}
-      testID="mockup-balance-card"
-    >
-      <View style={styles.balanceTop}>
-        <View style={styles.balanceHeading}>
-          <Text style={styles.panelLabel} variant="label">
-            Balanço estimado
-          </Text>
-        </View>
-        <View style={styles.balanceControls}>
-          <AnimatedPressable
-            accessibilityLabel={
-              valuesHidden ? 'Mostrar valores' : 'Ocultar valores'
-            }
-            accessibilityRole="button"
-            onPress={() => setValuesHidden((hidden) => !hidden)}
-            style={styles.eyeButton}
-          >
-            <MaterialCommunityIcons
-              color={HOME.muted}
-              name={valuesHidden ? 'eye-off-outline' : 'eye-outline'}
-              size={18}
-            />
-          </AnimatedPressable>
-          <PeriodPicker
-            displayLabel={periodLabel}
-            onChange={props.onPeriodChange}
-            value={props.period}
-          />
-        </View>
-      </View>
-      <Text color="textMuted" style={styles.approvedLabel} variant="caption">
-        Aprovado
-      </Text>
-      {props.dashboardLoading ? (
-        <>
-          <Skeleton height={38} width="62%" />
-          <View style={styles.skeletonTrendRow}>
-            <Skeleton height={12} radius={3} width={18} />
-            <Skeleton height={9} width={126} />
-          </View>
-        </>
-      ) : props.dashboardError || !data ? (
-        <AnimatedPressable
-          accessibilityRole="button"
-          onPress={props.onRetry}
-          style={styles.retry}
-        >
-          <Text color="primary" variant="label">
-            Tentar novamente
-          </Text>
-        </AnimatedPressable>
-      ) : (
-        <>
-          <AnimatedApprovedValue
-            approvedCents={data.approvedCents}
-            hidden={valuesHidden}
-          />
-          <View style={styles.trendPill}>
-            <MaterialCommunityIcons
-              color={
-                data.approvedCents >= data.previousApprovedCents
-                  ? HOME.teal
-                  : '#E5484D'
-              }
-              name={
-                data.approvedCents >= data.previousApprovedCents
-                  ? 'trending-up'
-                  : 'trending-down'
-              }
-              size={17}
-            />
-            <Text
-              style={[
-                styles.trendText,
-                {
-                  color:
-                    data.approvedCents >= data.previousApprovedCents
-                      ? HOME.teal
-                      : '#E5484D',
-                },
-              ]}
-              numberOfLines={1}
-              variant="status"
-            >
-              {trendText(data.approvedCents, data.previousApprovedCents)}
-            </Text>
-          </View>
-        </>
-      )}
-    </View>
-  );
-}
-
-// Isolated for the same reason as AnimatedApprovedValue: each count-up should
-// only re-render its own tiny value, not the whole metrics block (grid,
-// deltas, and the four OperationStat tiles below it).
-function AnimatedTicketValue({ ticket }: { ticket: number }) {
-  const animatedTicket = useAnimatedNumber(ticket);
-  return (
-    <Text style={styles.metricValue} variant="label">
-      {formatDashboardMoney(animatedTicket)}
-    </Text>
-  );
-}
-
-function AnimatedApprovalRateValue({ rate }: { rate: number }) {
-  const animatedApprovalRate = useAnimatedNumber(rate);
-  return (
-    <Text style={styles.metricValue} variant="label">
-      {animatedApprovalRate}%
-    </Text>
-  );
-}
-
-function OperationalMetrics({
-  data,
-  serviceCount,
-}: {
-  data?: HomeDashboardData;
-  serviceCount?: number;
-}) {
-  const approvalRate = data?.quoteCount
-    ? Math.round((data.approvedCount / data.quoteCount) * 100)
-    : 0;
-  const currentTicket = data?.approvedCount
-    ? Math.round(data.approvedCents / data.approvedCount)
-    : 0;
-  const previousTicket = data?.previousApprovedCount
-    ? Math.round(data.previousApprovedCents / data.previousApprovedCount)
-    : 0;
-  const ticketChange = previousTicket
-    ? Math.round(((currentTicket - previousTicket) / previousTicket) * 100)
-    : null;
-  const previousApprovalRate = data?.previousQuoteCount
-    ? Math.round((data.previousApprovedCount / data.previousQuoteCount) * 100)
-    : null;
-  const approvalChange =
-    previousApprovalRate === null ? null : approvalRate - previousApprovalRate;
-
-  const renderDelta = (value: number | null) => {
-    if (value === null)
-      return (
-        <Text style={styles.metricNoPeriod} variant="status">
-          Sem período anterior
+    <View style={styles.header}>
+      <BrandMark />
+      <View style={styles.brandCopy}>
+        <Text numberOfLines={1} style={styles.businessName}>
+          {businessName?.toUpperCase() ?? 'MEU NEGÓCIO'}
         </Text>
-      );
-    const positive = value >= 0;
-    const color = positive ? HOME.green : '#FF4D55';
-    return (
-      <View style={styles.metricDelta}>
-        <MaterialCommunityIcons
-          color={color}
-          name={positive ? 'trending-up' : 'trending-down'}
-          size={14}
-        />
-        <Text style={[styles.metricPercentage, { color }]} variant="status">
-          {positive ? '+' : '−'}
-          {Math.abs(value)}%
-        </Text>
+        <Text style={styles.brandName}>ResolveMEI</Text>
       </View>
-    );
-  };
-  return (
-    <View style={styles.operationalBlock}>
-      <View style={styles.metricGrid}>
-        <View
-          style={[
-            styles.metricCard,
-            { backgroundColor: HOME.card, borderColor: HOME.border },
-          ]}
-        >
-          <Text color="textMuted" style={styles.metricLabel} variant="caption">
-            Ticket médio
-          </Text>
-          <AnimatedTicketValue ticket={currentTicket} />
-          {renderDelta(ticketChange)}
-        </View>
-        <View
-          style={[
-            styles.metricCard,
-            { backgroundColor: HOME.card, borderColor: HOME.border },
-          ]}
-        >
-          <Text color="textMuted" style={styles.metricLabel} variant="caption">
-            Taxa de aprovação
-          </Text>
-          <AnimatedApprovalRateValue rate={approvalRate} />
-          {renderDelta(approvalChange)}
-        </View>
-      </View>
-      <View style={styles.operationStrip} testID="mockup-composition-card">
-        {[
-          {
-            color: '#45A8FF',
-            icon: 'account-outline',
-            label: 'Clientes',
-            value: data?.clients.total ?? 0,
-          },
-          {
-            color: '#2DD4BF',
-            icon: 'briefcase-outline',
-            label: 'Serviços',
-            value: serviceCount ?? data?.services.length ?? 0,
-          },
-          {
-            color: '#52D58A',
-            icon: 'check-circle-outline',
-            label: 'Aprovados',
-            value: data?.approvedCount ?? 0,
-          },
-          {
-            color: '#B48AF1',
-            icon: 'clock-outline',
-            label: 'Pendentes',
-            value: data?.openCount ?? 0,
-          },
-        ].map((item) => (
-          <OperationStat item={item} key={item.label} />
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function OperationStat({
-  item,
-}: {
-  item: { color: string; icon: string; label: string; value: number };
-}) {
-  const animatedValue = useAnimatedNumber(item.value, 600);
-  return (
-    <View
-      accessible
-      accessibilityLabel={`${item.label}: ${item.value}`}
-      style={styles.operationItem}
-    >
-      <View
-        style={[styles.operationIcon, { backgroundColor: `${item.color}1A` }]}
+      <AnimatedPressable
+        accessibilityLabel="Abrir perfil"
+        accessibilityRole="button"
+        hitSlop={6}
+        onPress={() => router.push('/profile')}
+        style={styles.profileButton}
       >
-        <MaterialCommunityIcons
-          color={item.color}
-          name={item.icon as never}
-          size={17}
-        />
-      </View>
-      <Text style={styles.operationValue} variant="label">
-        {animatedValue}
-      </Text>
-      <Text color="textMuted" style={styles.operationLabel} variant="caption">
-        {item.label}
-      </Text>
+        {avatarUrl ? (
+          <Image
+            source={{ uri: avatarUrl }}
+            style={styles.profileImage}
+            testID="profile-image"
+          />
+        ) : (
+          <Text style={styles.profileInitial} testID="profile-image-fallback">
+            {firstName?.charAt(0).toUpperCase() ?? 'U'}
+          </Text>
+        )}
+      </AnimatedPressable>
     </View>
   );
 }
 
-function RevenueCard({
+function SectionHeader({
+  action,
+  onPress,
+  title,
+}: {
+  action: string;
+  onPress: () => void;
+  title: string;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      <AnimatedPressable
+        accessibilityLabel={action}
+        accessibilityRole="button"
+        hitSlop={8}
+        onPress={onPress}
+        style={styles.sectionAction}
+      >
+        <Text style={styles.sectionActionText}>{action.toUpperCase()}</Text>
+      </AnimatedPressable>
+    </View>
+  );
+}
+
+function Panorama({
   data,
   period,
 }: {
-  data?: HomeDashboardData;
+  data: HomeDashboardData;
   period: DashboardPeriod;
 }) {
+  const animatedValue = useAnimatedNumber(data.negotiatingCents, true);
   return (
     <View
-      style={[
-        styles.dashboardCard,
-        { backgroundColor: HOME.card, borderColor: HOME.border },
-      ]}
+      accessibilityLabel={`Em negociação: ${formatMoney(data.negotiatingCents)}`}
+      style={styles.panorama}
     >
-      <View style={styles.dashboardCardHeader}>
-        <View>
-          <Text style={styles.dashboardTitle} variant="label">
-            Faturamento
-          </Text>
-          <Text
-            color="textMuted"
-            style={styles.dashboardEyebrow}
-            variant="caption"
-          >
-            ÚLTIMOS 6 MESES
-          </Text>
-        </View>
-        <Text style={styles.dashboardHeaderValue} variant="label">
-          {formatDashboardMoney(data?.approvedCents ?? 0)}
-        </Text>
+      <View style={styles.panoramaTop}>
+        <Text style={styles.overline}>EM NEGOCIAÇÃO</Text>
+        <Text style={styles.periodLabel}>{PERIOD_LABELS[period]}</Text>
       </View>
-      {data?.monthly.length ? (
-        <AreaChart monthly={data.monthly} period={period} />
-      ) : (
-        <Text color="textMuted" variant="caption">
-          O histórico aparecerá após o primeiro orçamento aprovado.
-        </Text>
-      )}
+      <Text style={styles.panoramaLabel}>Valor dos orçamentos enviados</Text>
+      <Text
+        adjustsFontSizeToFit
+        minimumFontScale={0.72}
+        numberOfLines={1}
+        style={styles.amount}
+      >
+        {formatMoney(animatedValue)}
+      </Text>
+      <Text style={styles.openCount}>
+        {data.openCount} {data.openCount === 1 ? 'aberto' : 'abertos'} no
+        período, incluindo rascunhos
+      </Text>
+      <View style={styles.panoramaDivider} />
+      <View style={styles.panoramaActions}>
+        <AnimatedPressable
+          accessibilityRole="button"
+          onPress={() => router.push('/quotes')}
+          style={[styles.button, styles.secondaryButton]}
+        >
+          <Text style={styles.secondaryButtonText}>Ver todos</Text>
+        </AnimatedPressable>
+        <AnimatedPressable
+          accessibilityRole="button"
+          onPress={() => router.push('/quotes/new')}
+          style={[styles.button, styles.primaryButton]}
+        >
+          <Text style={styles.primaryButtonText}>Novo orçamento</Text>
+        </AnimatedPressable>
+      </View>
     </View>
   );
 }
 
-function ServiceRevenue({
-  active,
-  data,
-}: {
-  active: boolean;
-  data?: HomeDashboardData;
-}) {
-  const services = data?.services.slice(0, 3) ?? [];
-  const total = services.reduce((sum, service) => sum + service.totalCents, 0);
-  const radius = 29;
-  const circumference = 2 * Math.PI * radius;
-  const palette = ['#2DD4BF', '#45A8FF', '#28D17C'];
+function daysUntil(value: string) {
+  const today = new Date();
+  const current = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+  const target = new Date(`${value}T12:00:00`);
+  return Math.ceil((target.getTime() - current.getTime()) / 86_400_000);
+}
+
+function attentionQuote(quotes: Quote[]) {
+  return quotes
+    .filter(
+      (quote) => quote.status === 'sent' && daysUntil(quote.valid_until) >= 0,
+    )
+    .sort((left, right) =>
+      left.valid_until.localeCompare(right.valid_until),
+    )[0];
+}
+
+function Attention({ quote }: { quote: Quote }) {
+  const days = daysUntil(quote.valid_until);
+  const reason =
+    days === 0
+      ? 'Enviado · vence hoje'
+      : `Enviado · vence em ${days} ${days === 1 ? 'dia' : 'dias'}`;
   return (
-    <View
-      style={[
-        styles.dashboardCard,
-        { backgroundColor: HOME.card, borderColor: HOME.border },
-      ]}
-    >
-      <View style={styles.dashboardCardHeader}>
-        <View>
-          <Text style={styles.dashboardTitle} variant="label">
-            Receita por serviço
-          </Text>
-          <Text
-            color="textMuted"
-            style={styles.dashboardEyebrow}
-            variant="caption"
-          >
-            DISTRIBUIÇÃO DO PERÍODO
+    <View style={styles.section}>
+      <SectionHeader
+        action="Abrir lista"
+        onPress={() => router.push('/quotes')}
+        title="Orçamento que pede atenção"
+      />
+      <View style={styles.focusCard}>
+        <View style={styles.attentionReasonRow}>
+          <View style={styles.attentionDot} />
+          <Text style={styles.attentionReason}>{reason}</Text>
+        </View>
+        <Text style={styles.quoteNumber}>
+          ORÇAMENTO #{formatQuoteNumber(quote.quote_number)}
+        </Text>
+        <View style={styles.focusMain}>
+          <View style={styles.focusCopy}>
+            <Text numberOfLines={1} style={styles.focusClient}>
+              {quote.client_name_snapshot}
+            </Text>
+            <Text numberOfLines={2} style={styles.focusService}>
+              Proposta enviada ao cliente
+            </Text>
+          </View>
+          <Text style={styles.focusValue}>
+            {formatMoney(quote.total_cents)}
           </Text>
         </View>
-        <Text style={styles.dashboardHeaderValue} variant="label">
-          {formatDashboardMoney(total)}
-        </Text>
+        <View style={styles.focusMeta}>
+          <Text style={styles.metaText}>
+            Emitido em{' '}
+            <Text style={styles.metaStrong}>
+              {formatShortDate(quote.issued_on)}
+            </Text>
+          </Text>
+          <Text style={styles.metaText}>
+            Válido até{' '}
+            <Text style={styles.metaStrong}>
+              {formatShortDate(quote.valid_until)}
+            </Text>
+          </Text>
+        </View>
+        <AnimatedPressable
+          accessibilityLabel={`Ver orçamento ${formatQuoteNumber(quote.quote_number)}`}
+          accessibilityRole="button"
+          onPress={() => router.push(`/quotes/${quote.id}`)}
+          style={styles.focusAction}
+        >
+          <Text style={styles.focusActionText}>Ver orçamento</Text>
+        </AnimatedPressable>
       </View>
-      {services.length ? (
-        <View style={styles.serviceRevenueBody}>
-          <View style={styles.serviceDonut}>
-            <Svg height={80} viewBox="0 0 80 80" width={80}>
-              <Circle
-                cx={40}
-                cy={40}
-                fill="none"
-                r={radius}
-                stroke="#30343A"
-                strokeWidth={14}
+    </View>
+  );
+}
+
+function formatShortDate(value: string) {
+  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
+    .format(new Date(`${value}T12:00:00`))
+    .replace('.', '');
+}
+
+const statusLabels: Record<Quote['status'], string> = {
+  approved: 'Aprovado',
+  canceled: 'Cancelado',
+  draft: 'Rascunho',
+  rejected: 'Recusado',
+  sent: 'Enviado',
+};
+
+function RecentQuotes({ quotes }: { quotes: Quote[] }) {
+  return (
+    <View style={styles.section}>
+      <SectionHeader
+        action="Ver todos"
+        onPress={() => router.push('/quotes')}
+        title="Orçamentos recentes"
+      />
+      <View>
+        {quotes.slice(0, 3).map((quote, index) => (
+          <AnimatedPressable
+            accessibilityLabel={`${statusLabels[quote.status]}, orçamento de ${quote.client_name_snapshot}, ${formatMoney(quote.total_cents)}`}
+            accessibilityRole="button"
+            key={quote.id}
+            onPress={() => router.push(`/quotes/${quote.id}`)}
+            style={[styles.quoteRow, index > 0 && styles.quoteRowBorder]}
+          >
+            <View
+              style={[
+                styles.statusDot,
+                quote.status === 'approved'
+                  ? styles.statusApproved
+                  : quote.status === 'sent'
+                    ? styles.statusSent
+                    : styles.statusNeutral,
+              ]}
+            />
+            <View style={styles.quoteCopy}>
+              <Text numberOfLines={1} style={styles.quoteClient}>
+                {quote.client_name_snapshot} · #
+                {formatQuoteNumber(quote.quote_number)}
+              </Text>
+              <Text numberOfLines={1} style={styles.quoteStatus}>
+                {statusLabels[quote.status]}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.quoteValue,
+                quote.status === 'approved' && styles.quoteValueApproved,
+                quote.status === 'sent' && styles.quoteValueSent,
+              ]}
+            >
+              {formatMoney(quote.total_cents)}
+            </Text>
+          </AnimatedPressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function Services({ services }: { services: HomeDashboardData['services'] }) {
+  const items = services.slice(0, 2);
+  const max = Math.max(...items.map((item) => item.quoteCount), 1);
+  return (
+    <View style={styles.section}>
+      <SectionHeader
+        action="Ver serviços"
+        onPress={() => router.push('/services')}
+        title="Serviços mais orçados"
+      />
+      <View style={styles.serviceSummary}>
+        <View style={styles.serviceSummaryHeader}>
+          <Text style={styles.serviceSummaryTitle}>
+            Distribuição no período
+          </Text>
+          <Text style={styles.serviceSummaryCaption}>por quantidade</Text>
+        </View>
+        {items.map((item) => (
+          <View
+            key={`${item.serviceId}:${item.name}`}
+            style={styles.serviceRow}
+          >
+            <Text numberOfLines={1} style={styles.serviceName}>
+              {item.name}
+            </Text>
+            <Text style={styles.serviceCount}>{item.quoteCount}</Text>
+            <View style={styles.track}>
+              <View
+                style={[
+                  styles.fill,
+                  { width: `${(item.quoteCount / max) * 100}%` },
+                ]}
               />
-              {services.map((service, index) => {
-                const length = total
-                  ? (service.totalCents / total) * circumference
-                  : 0;
-                const dashOffset = total
-                  ? -services
-                      .slice(0, index)
-                      .reduce(
-                        (sum, item) =>
-                          sum + (item.totalCents / total) * circumference,
-                        0,
-                      )
-                  : 0;
-                return (
-                  <AnimatedDonutSegment
-                    active={active}
-                    circumference={circumference}
-                    color={palette[index] ?? HOME.teal}
-                    dashOffset={dashOffset}
-                    delay={index * 190}
-                    key={`${service.serviceId}:${service.name}`}
-                    length={length}
-                    radius={radius}
-                  />
-                );
-              })}
-            </Svg>
+            </View>
           </View>
-          <View style={styles.serviceRevenueList}>
-            {services.map((service, index) => {
-              const percentage = total
-                ? Math.round((service.totalCents / total) * 100)
-                : 0;
-              return (
-                <ServiceRevenueStat
-                  active={active}
-                  color={palette[index] ?? HOME.teal}
-                  index={index}
-                  key={`${service.name}:revenue`}
-                  name={service.name}
-                  percentage={percentage}
-                  totalCents={service.totalCents}
-                />
-              );
-            })}
-          </View>
-        </View>
-      ) : (
-        <Text color="textMuted" variant="caption">
-          Os serviços aparecerão conforme forem adicionados aos orçamentos.
-        </Text>
-      )}
+        ))}
+      </View>
     </View>
   );
 }
 
-function AnimatedDonutSegment({
-  active,
-  circumference,
-  color,
-  dashOffset,
-  delay,
-  length,
-  radius,
-}: {
-  active: boolean;
-  circumference: number;
-  color: string;
-  dashOffset: number;
-  delay: number;
-  length: number;
-  radius: number;
-}) {
-  // BACKLOG(perf): strokeDasharray can't run on the native/UI thread via the
-  // classic Animated API - see the AreaChart drawProgress note above.
-  const progress = useRevealProgress(active, delay, 720);
+function LoadingState() {
   return (
-    <AnimatedCircle
-      cx={40}
-      cy={40}
-      fill="none"
-      origin="40, 40"
-      r={radius}
-      rotation={-90}
-      stroke={color}
-      strokeDasharray={
-        progress.interpolate({
-          inputRange: [0, 1],
-          outputRange: [
-            `0 ${circumference}`,
-            `${length} ${circumference - length}`,
-          ],
-        }) as never
-      }
-      strokeDashoffset={dashOffset}
-      strokeWidth={14}
-    />
+    <View
+      accessibilityLabel="Carregando visão do negócio"
+      accessibilityState={{ busy: true }}
+      style={styles.stateStack}
+    >
+      <View style={styles.skeletonPanorama}>
+        <Skeleton height={11} width="35%" />
+        <View style={styles.skeletonGap} />
+        <Skeleton height={11} width="58%" />
+        <Skeleton height={42} width="62%" />
+        <View style={styles.skeletonActions}>
+          <Skeleton height={52} radius={14} width="100%" />
+          <Skeleton height={52} radius={14} width="100%" />
+        </View>
+      </View>
+      <Skeleton height={18} width="58%" />
+      <Skeleton height={218} radius={22} width="100%" />
+    </View>
   );
 }
 
-function ServiceRevenueStat({
+function EmptyState() {
+  return (
+    <View style={styles.stateCard}>
+      <Text accessibilityElementsHidden style={styles.emptyMark}>
+        ＋
+      </Text>
+      <Text style={styles.stateTitle}>Seu primeiro orçamento começa aqui</Text>
+      <Text style={styles.stateCopy}>
+        Cadastre um cliente, escolha os serviços e envie uma proposta
+        profissional.
+      </Text>
+      <AnimatedPressable
+        accessibilityRole="button"
+        onPress={() => router.push('/quotes/new')}
+        style={[styles.button, styles.primaryButton, styles.stateButton]}
+      >
+        <Text style={styles.primaryButtonText}>Criar orçamento</Text>
+      </AnimatedPressable>
+    </View>
+  );
+}
+
+function ErrorState({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View accessibilityRole="alert" style={styles.stateCard}>
+      <Text accessibilityElementsHidden style={styles.errorMark}>
+        !
+      </Text>
+      <Text style={styles.stateTitle}>Não foi possível carregar sua visão</Text>
+      <Text style={styles.stateCopy}>
+        Confira sua conexão e tente novamente. Seus dados continuam seguros.
+      </Text>
+      <AnimatedPressable
+        accessibilityRole="button"
+        onPress={onRetry}
+        style={[styles.button, styles.secondaryButton, styles.stateButton]}
+      >
+        <Text style={styles.secondaryButtonText}>Tentar novamente</Text>
+      </AnimatedPressable>
+    </View>
+  );
+}
+
+function VisibilityTrigger({
+  children,
+  onVisible,
+  scrollY,
+  viewportHeight,
+}: {
+  children: ReactNode;
+  onVisible: () => void;
+  scrollY: Animated.Value;
+  viewportHeight: number;
+}) {
+  const top = useRef<number | undefined>(undefined);
+  const offset = useRef(0);
+  const revealed = useRef(false);
+  const check = useCallback(
+    (value: number) => {
+      if (
+        !revealed.current &&
+        top.current !== undefined &&
+        top.current <= value + viewportHeight * 0.82
+      ) {
+        revealed.current = true;
+        onVisible();
+      }
+    },
+    [onVisible, viewportHeight],
+  );
+  useEffect(() => {
+    const id = scrollY.addListener(({ value }) => {
+      offset.current = value;
+      check(value);
+    });
+    return () => scrollY.removeListener(id);
+  }, [check, scrollY]);
+  const onLayout = (event: LayoutChangeEvent) => {
+    top.current = event.nativeEvent.layout.y;
+    check(offset.current);
+  };
+  return <View onLayout={onLayout}>{children}</View>;
+}
+
+function Reveal({
   active,
-  color,
-  index,
-  name,
-  percentage,
-  totalCents,
+  children,
 }: {
   active: boolean;
-  color: string;
-  index: number;
-  name: string;
-  percentage: number;
-  totalCents: number;
+  children: ReactNode;
 }) {
-  const progress = useRevealProgress(active, 100 + index * 70, 480, true);
-  const animatedPercentage = useAnimatedNumber(percentage, 620, active);
-  const animatedCents = useAnimatedNumber(totalCents, 720, active);
+  const reduced = useReducedMotion();
+  const [progress] = useState(() => new Animated.Value(reduced ? 1 : 0));
+  useEffect(() => {
+    if (!active) return;
+    Animated.spring(progress, {
+      damping: 20,
+      mass: 0.7,
+      stiffness: 220,
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  }, [active, progress]);
   return (
     <Animated.View
-      style={[
-        styles.serviceRevenueRow,
-        {
-          opacity: progress,
-          transform: [
-            {
-              translateX: progress.interpolate({
-                inputRange: [0, 1],
-                outputRange: [12, 0],
-              }),
-            },
-          ],
-        },
-      ]}
+      style={{
+        opacity: progress,
+        transform: [
+          {
+            translateY: progress.interpolate({
+              inputRange: [0, 1],
+              outputRange: [reduced ? 0 : 14, 0],
+            }),
+          },
+        ],
+      }}
     >
-      <View style={[styles.serviceDot, { backgroundColor: color }]} />
-      <Text
-        numberOfLines={1}
-        style={styles.serviceRevenueName}
-        variant="caption"
-      >
-        {name}
-      </Text>
-      <Text
-        style={[styles.servicePercentage, { color }]}
-        testID={`service-percentage-${index}`}
-        variant="status"
-      >
-        {animatedPercentage}%
-      </Text>
-      <Text style={styles.serviceRevenueValue} variant="status">
-        {formatDashboardMoney(animatedCents)}
-      </Text>
+      {children}
     </Animated.View>
   );
 }
 
-function ServiceRanking({
-  active,
-  data,
-}: {
-  active: boolean;
-  data?: HomeDashboardData;
-}) {
-  const services = data?.services.slice(0, 4) ?? [];
-  const maximum = Math.max(...services.map((service) => service.quoteCount), 1);
-  const palette = ['#2DD4BF', '#45A8FF', '#28D17C', '#F0A742'];
-  return (
-    <View
-      style={[
-        styles.dashboardCard,
-        { backgroundColor: HOME.card, borderColor: HOME.border },
-      ]}
-    >
-      <Text style={styles.dashboardTitle} variant="label">
-        Serviços mais orçados
-      </Text>
-      <Text color="textMuted" style={styles.dashboardEyebrow} variant="caption">
-        POR QUANTIDADE
-      </Text>
-      <View style={styles.rankingList}>
-        {services.length ? (
-          services.map((service, index) => (
-            <ServiceRankingStat
-              active={active}
-              color={palette[index] ?? HOME.teal}
-              index={index}
-              key={`${service.name}:ranking`}
-              maximum={maximum}
-              name={service.name}
-              quoteCount={service.quoteCount}
-            />
-          ))
-        ) : (
-          <Text color="textMuted" variant="caption">
-            Nenhum serviço orçado neste período.
-          </Text>
-        )}
-      </View>
-    </View>
-  );
-}
-
-function ServiceRankingStat({
-  active,
-  color,
-  index,
-  maximum,
-  name,
-  quoteCount,
-}: {
-  active: boolean;
-  color: string;
-  index: number;
-  maximum: number;
-  name: string;
-  quoteCount: number;
-}) {
-  // BACKLOG(perf): width can't run on the native/UI thread via the classic
-  // Animated API - see the AreaChart drawProgress note above for the
-  // Reanimated migration this would need.
-  const progress = useRevealProgress(active, index * 110, 680);
-  const animatedCount = useAnimatedNumber(quoteCount, 650, active);
-  return (
-    <View style={styles.rankingRow}>
-      <View style={styles.rankingLabelRow}>
-        <Text numberOfLines={1} style={styles.rankingName} variant="caption">
-          {name}
-        </Text>
-        <Text variant="status">{animatedCount}</Text>
-      </View>
-      <View style={styles.rankingTrack}>
-        <Animated.View
-          style={[
-            styles.rankingFill,
-            {
-              backgroundColor: color,
-              width: progress.interpolate({
-                inputRange: [0, 1],
-                outputRange: ['0%', `${(quoteCount / maximum) * 100}%`],
-              }),
-            },
-          ]}
-        />
-      </View>
-    </View>
-  );
-}
-
-function QuickActions() {
-  const actions = [
-    {
-      color: HOME.teal,
-      label: 'Orçamento',
-      route: '/quotes/new',
-      icon: 'file-document-plus-outline',
-    },
-    {
-      color: HOME.blue,
-      label: 'Cliente',
-      route: '/clients/new',
-      icon: 'account-plus-outline',
-    },
-    {
-      color: HOME.purple,
-      label: 'Serviço',
-      route: '/services/new',
-      icon: 'briefcase-plus-outline',
-    },
-  ] as const;
-  return (
-    <View style={styles.section}>
-      <Text style={styles.sectionTitle} variant="label">
-        Ações rápidas
-      </Text>
-      <View style={styles.quickRow}>
-        {actions.map((action) => (
-          <AnimatedPressable
-            accessibilityLabel={action.label}
-            accessibilityRole="button"
-            containerStyle={styles.quickActionContainer}
-            key={action.route}
-            onPress={() => router.push(action.route)}
-            style={styles.quickAction}
-          >
-            <View style={[styles.quickBadge, { borderColor: action.color }]}>
-              <MaterialCommunityIcons
-                color={action.color}
-                name={action.icon}
-                size={24}
-                testID={`quick-action-icon-${action.route}`}
-              />
-            </View>
-            <Text
-              align="center"
-              color="textSecondary"
-              style={styles.quickLabel}
-              variant="status"
-            >
-              {action.label}
-            </Text>
-          </AnimatedPressable>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-function RecentQuotes({
-  quotes,
-  loading,
-}: {
-  quotes?: Quote[];
-  loading?: boolean;
-}) {
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionTitleRow}>
-        <Text style={styles.sectionTitle} variant="label">
-          Últimos orçamentos aprovados
-        </Text>
-      </View>
-      {loading ? (
-        [0, 1].map((item) => (
-          <View key={item} style={styles.timelineRow}>
-            <View style={styles.timelineRail}>
-              <View style={styles.timelineDot} />
-              <View style={styles.timelineLine} />
-            </View>
-            <View style={[styles.quoteRow, styles.quoteSkeleton]}>
-              <Skeleton height={14} width="58%" />
-              <Skeleton height={10} width="42%" />
-            </View>
-          </View>
-        ))
-      ) : quotes?.filter((quote) => quote.status === 'approved').length ? (
-        quotes
-          .filter((quote) => quote.status === 'approved')
-          .slice(0, 3)
-          .map((quote) => {
-            return (
-              <View key={quote.id} style={styles.timelineRow}>
-                <View style={styles.timelineRail}>
-                  <View style={styles.timelineDot} />
-                  <View style={styles.timelineLine} />
-                </View>
-                <AnimatedPressable
-                  accessibilityLabel={`${quote.client_name_snapshot}, orçamento ${formatQuoteNumber(quote.quote_number)}, aprovado, ${formatMoney(quote.total_cents)}`}
-                  accessibilityRole="button"
-                  containerStyle={styles.quoteContainer}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/quotes/[id]',
-                      params: { id: quote.id },
-                    } as unknown as Href)
-                  }
-                  style={[
-                    styles.quoteRow,
-                    {
-                      backgroundColor: HOME.card,
-                      borderColor: HOME.border,
-                    },
-                  ]}
-                >
-                  <View style={styles.quoteCopy}>
-                    <Text numberOfLines={1} variant="label">
-                      {quote.client_name_snapshot} · #
-                      {formatQuoteNumber(quote.quote_number)}
-                    </Text>
-                    <Text color="textMuted" variant="caption">
-                      {formatDateForDisplay(quote.issued_on)} · ORÇAMENTO
-                      APROVADO
-                    </Text>
-                  </View>
-                  <Text style={styles.quoteAmount} variant="label">
-                    +{formatDashboardMoney(quote.total_cents)}
-                  </Text>
-                </AnimatedPressable>
-              </View>
-            );
-          })
-      ) : (
-        <Text color="textSecondary" variant="caption">
-          Seus orçamentos aprovados aparecerão aqui.
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function HomeDashboardSkeleton() {
-  return (
-    <View
-      accessibilityLabel="Carregando indicadores do painel"
-      accessibilityLiveRegion="polite"
-      style={styles.dashboardLoading}
-    >
-      <View style={styles.skeletonMetricGrid}>
-        {[0, 1].map((item) => (
-          <View key={item} style={styles.skeletonMetricCard}>
-            <Skeleton height={9} width="56%" />
-            <Skeleton height={20} width="72%" />
-            <Skeleton height={8} width="38%" />
-          </View>
-        ))}
-      </View>
-      <View style={styles.skeletonOperationStrip}>
-        {[0, 1, 2, 3].map((item) => (
-          <View key={item} style={styles.skeletonOperationCard}>
-            <Skeleton height={28} radius={8} width={28} />
-            <Skeleton height={13} width={18} />
-            <Skeleton height={7} width="70%" />
-          </View>
-        ))}
-      </View>
-      {[158, 132, 142].map((height, index) => (
-        <View key={height} style={[styles.skeletonChartCard, { height }]}>
-          <View style={styles.skeletonCardHeader}>
-            <View style={styles.skeletonHeaderCopy}>
-              <Skeleton height={12} width="68%" />
-              <Skeleton height={7} width="48%" />
-            </View>
-            <Skeleton height={14} width={72} />
-          </View>
-          {index === 0 ? (
-            <View style={styles.skeletonChartLines}>
-              {[0, 1, 2].map((line) => (
-                <Skeleton height={1} key={line} />
-              ))}
-              <Skeleton height={3} radius={2} width="78%" />
-            </View>
-          ) : (
-            <View style={styles.skeletonChartBody}>
-              <Skeleton height={72} radius={36} width={72} />
-              <View style={styles.skeletonLegend}>
-                <Skeleton height={9} />
-                <Skeleton height={9} width="88%" />
-                <Skeleton height={9} width="70%" />
-              </View>
-            </View>
-          )}
-        </View>
-      ))}
-    </View>
-  );
-}
-
 export function HomeMockupScreen(props: HomeMockupScreenProps) {
-  const { height: viewportHeight } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const [scrollY] = useState(() => new Animated.Value(0));
-  const [serviceRevenueVisible, setServiceRevenueVisible] = useState(false);
-  const [serviceRankingVisible, setServiceRankingVisible] = useState(false);
-  const showServiceRevenue = useCallback(
-    () => setServiceRevenueVisible(true),
-    [],
-  );
-  const showServiceRanking = useCallback(
-    () => setServiceRankingVisible(true),
-    [],
-  );
+  const [visible, setVisible] = useState([false, false, false]);
+  const quotes = props.recentQuotes ?? [];
+  const attention = attentionQuote(quotes);
+  const empty =
+    !props.dashboardLoading &&
+    !props.dashboardError &&
+    props.dashboard?.quoteCount === 0 &&
+    quotes.length === 0;
+  const reveal = (index: number) =>
+    setVisible((current) =>
+      current[index]
+        ? current
+        : current.map((value, item) => (item === index ? true : value)),
+    );
+  const content =
+    props.dashboardLoading || props.recentQuotesLoading ? (
+      <LoadingState />
+    ) : props.dashboardError || props.recentQuotesError || !props.dashboard ? (
+      <ErrorState onRetry={props.onRetry ?? (() => undefined)} />
+    ) : empty ? (
+      <EmptyState />
+    ) : (
+      <>
+        <Panorama data={props.dashboard} period={props.period} />
+        {attention ? (
+          <VisibilityTrigger
+            onVisible={() => reveal(0)}
+            scrollY={scrollY}
+            viewportHeight={height}
+          >
+            <Reveal active={Boolean(visible[0])}>
+              <Attention quote={attention} />
+            </Reveal>
+          </VisibilityTrigger>
+        ) : null}
+        {quotes.length ? (
+          <VisibilityTrigger
+            onVisible={() => reveal(1)}
+            scrollY={scrollY}
+            viewportHeight={height}
+          >
+            <Reveal active={Boolean(visible[1])}>
+              <RecentQuotes quotes={quotes} />
+            </Reveal>
+          </VisibilityTrigger>
+        ) : null}
+        {props.dashboard.services.length ? (
+          <VisibilityTrigger
+            onVisible={() => reveal(2)}
+            scrollY={scrollY}
+            viewportHeight={height}
+          >
+            <Reveal active={Boolean(visible[2])}>
+              <Services services={props.dashboard.services} />
+            </Reveal>
+          </VisibilityTrigger>
+        ) : null}
+      </>
+    );
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
   return (
-    <SafeAreaView
-      edges={['top', 'bottom']}
-      style={[styles.safeArea, { backgroundColor: HOME.background }]}
-    >
+    <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+      <WelcomeAmbientBackground dark />
       <Animated.ScrollView
-        contentContainerStyle={styles.content}
-        onScroll={(event) =>
-          scrollY.setValue(event.nativeEvent.contentOffset.y)
-        }
+        contentContainerStyle={styles.scrollContent}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
         scrollEventThrottle={16}
         showsVerticalScrollIndicator={false}
-        testID="home-scroll"
       >
-        <FadeInView delay={0} distance={8}>
-          <Header avatarUrl={props.avatarUrl} firstName={props.firstName} />
-        </FadeInView>
-        <FadeInView delay={40} distance={10}>
-          <BalanceCard
-            dashboard={props.dashboard}
-            dashboardError={props.dashboardError}
-            dashboardLoading={props.dashboardLoading}
-            onPeriodChange={props.onPeriodChange}
-            onRetry={props.onRetry}
-            period={props.period}
+        <View style={styles.content}>
+          <Header
+            avatarUrl={props.avatarUrl}
+            businessName={props.businessName}
+            firstName={props.firstName}
           />
-        </FadeInView>
-        {props.dashboardLoading ? (
-          <HomeDashboardSkeleton />
-        ) : props.dashboard ? (
-          <>
-            <FadeInView delay={80} distance={10}>
-              <OperationalMetrics
-                data={props.dashboard}
-                serviceCount={props.serviceCount}
-              />
-            </FadeInView>
-            <FadeInView delay={130} distance={12}>
-              <RevenueCard data={props.dashboard} period={props.period} />
-            </FadeInView>
-            <VisibilityTrigger
-              onVisible={showServiceRevenue}
-              scrollY={scrollY}
-              testID="service-revenue-visibility"
-              viewportHeight={viewportHeight}
-            >
-              <FadeInView delay={180} distance={12}>
-                <ServiceRevenue
-                  active={serviceRevenueVisible}
-                  data={props.dashboard}
-                />
-              </FadeInView>
-            </VisibilityTrigger>
-            <VisibilityTrigger
-              onVisible={showServiceRanking}
-              scrollY={scrollY}
-              testID="service-ranking-visibility"
-              viewportHeight={viewportHeight}
-            >
-              <FadeInView delay={230} distance={12}>
-                <ServiceRanking
-                  active={serviceRankingVisible}
-                  data={props.dashboard}
-                />
-              </FadeInView>
-            </VisibilityTrigger>
-          </>
-        ) : null}
-        <FadeInView delay={280} distance={10}>
-          <QuickActions />
-        </FadeInView>
-        <FadeInView delay={330} distance={10}>
-          <RecentQuotes
-            loading={props.recentQuotesLoading}
-            quotes={props.recentQuotes}
-          />
-        </FadeInView>
+          <View style={styles.welcome}>
+            <Text numberOfLines={2} style={styles.welcomeTitle}>
+              {greeting}
+              {props.firstName ? `, ${props.firstName}.` : '.'}
+            </Text>
+            <Text style={styles.welcomeCopy}>
+              Veja o que pede sua decisão hoje.
+            </Text>
+          </View>
+          {content}
+        </View>
       </Animated.ScrollView>
       <ProtectedBottomNavigation selected="home" />
     </SafeAreaView>
@@ -1401,418 +645,343 @@ export function HomeMockupScreen(props: HomeMockupScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
+  safeArea: { backgroundColor: palette.background, flex: 1 },
+  scrollContent: { paddingBottom: 28 },
   content: {
     alignSelf: 'center',
-    gap: 12,
-    maxWidth: 560,
-    paddingBottom: 108,
-    paddingHorizontal: 18,
-    paddingTop: 8,
+    maxWidth: 430,
+    paddingHorizontal: 22,
     width: '100%',
   },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    paddingBottom: 18,
-    paddingHorizontal: 2,
-    paddingTop: 10,
-  },
-  avatar: {
-    alignItems: 'center',
-    borderRadius: 7,
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  avatarFallback: {
-    backgroundColor: '#172527',
-    borderColor: HOME.teal,
+  header: { alignItems: 'center', flexDirection: 'row', minHeight: 62 },
+  mark: {
+    backgroundColor: palette.raised,
+    borderColor: palette.borderStrong,
+    borderRadius: 11,
     borderWidth: 1,
+    height: 38,
+    position: 'relative',
+    width: 38,
   },
-  avatarInitial: {
-    color: HOME.teal,
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 14,
+  markPiece: {
+    backgroundColor: palette.primary,
+    height: 13,
+    position: 'absolute',
+    width: 14,
   },
-  greeting: { flex: 1, gap: 1, minWidth: 0, paddingHorizontal: 11 },
-  greetingTitle: {
-    fontFamily: 'Poppins_700Bold',
+  markTop: { borderBottomRightRadius: 8, left: 8, top: 7 },
+  markBottom: { borderTopLeftRadius: 8, bottom: 7, right: 8 },
+  markCore: {
+    backgroundColor: palette.background,
+    borderRadius: 4,
+    height: 7,
+    left: 16,
+    position: 'absolute',
+    top: 16,
+    transform: [{ rotate: '45deg' }],
+    width: 7,
+  },
+  brandCopy: { gap: 2, marginLeft: 10 },
+  businessName: {
+    color: palette.muted,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 10,
+    letterSpacing: 1.1,
+    lineHeight: 14,
+  },
+  brandName: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 16,
-    lineHeight: 21,
+    letterSpacing: -0.35,
+    lineHeight: 22,
   },
-  greetingSubtitle: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 11,
-    lineHeight: 16,
-  },
-  settings: {
+  profileButton: {
     alignItems: 'center',
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 36,
+    height: 48,
     justifyContent: 'center',
-    width: 36,
+    marginLeft: 'auto',
+    width: 48,
   },
-  balanceCard: {
-    ...ELEVATED_SHADOW,
-    borderRadius: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 2,
-    overflow: 'hidden',
-    padding: 16,
-    paddingTop: 16,
+  profileImage: { borderRadius: 12, height: 32, width: 32 },
+  profileInitial: {
+    color: palette.primary,
+    fontFamily: 'Inter_700Bold',
+    fontSize: 15,
   },
-  balanceTop: {
+  welcome: { marginBottom: 20, marginTop: 27 },
+  welcomeTitle: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 30,
+    letterSpacing: -1.2,
+    lineHeight: 36,
+  },
+  welcomeCopy: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 13,
+    lineHeight: 20,
+    marginTop: 7,
+  },
+  panorama: {
+    backgroundColor: '#0D110E',
+    borderColor: 'rgba(69,230,176,.13)',
+    borderRadius: 26,
+    borderWidth: 1,
+    elevation: 10,
+    padding: 19,
+  },
+  panoramaTop: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  balanceHeading: { gap: 2 },
-  balanceControls: { alignItems: 'center', flexDirection: 'row', gap: 8 },
-  eyeButton: {
-    alignItems: 'center',
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 32,
-    justifyContent: 'center',
-    width: 32,
-  },
-  periodChip: {
-    alignItems: 'center',
-    backgroundColor: '#2C3037',
-    borderColor: HOME.border,
-    borderRadius: 5,
-    borderWidth: StyleSheet.hairlineWidth,
-    height: 32,
-    justifyContent: 'center',
-    paddingHorizontal: 9,
-  },
-  periodChipText: { fontSize: 11 },
-  panelLabel: { fontFamily: 'Poppins_700Bold', fontSize: 12 },
-  approvedLabel: {
-    fontFamily: 'Poppins_600SemiBold',
+  overline: {
+    color: palette.primary,
+    fontFamily: 'Manrope_700Bold',
     fontSize: 11,
+    letterSpacing: 0.7,
+  },
+  periodLabel: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 11,
+  },
+  panoramaLabel: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 12,
+    marginTop: 28,
+  },
+  amount: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 40,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -2,
+    lineHeight: 48,
+    marginTop: 5,
+  },
+  openCount: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 11,
+    lineHeight: 17,
     marginTop: 6,
   },
-  heroValue: {
-    fontFamily: 'Poppins_800ExtraBold',
-    fontSize: 34,
-    fontVariant: ['tabular-nums'],
-    lineHeight: 43,
-    marginBottom: 4,
-    marginTop: 8,
+  panoramaDivider: {
+    backgroundColor: palette.border,
+    height: 1,
+    marginTop: 24,
   },
-  trendPill: {
+  panoramaActions: { flexDirection: 'row', gap: 10, marginTop: 15 },
+  button: {
     alignItems: 'center',
-    alignSelf: 'flex-start',
-    flexDirection: 'row',
-    gap: 4,
-    maxWidth: '100%',
-    marginBottom: 14,
-  },
-  trendText: {
-    flexShrink: 1,
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 11,
-  },
-  chartBlock: { marginTop: -2 },
-  retry: { alignItems: 'center', minHeight: 88, justifyContent: 'center' },
-  metricGrid: { flexDirection: 'row', gap: 8 },
-  metricCard: {
-    ...CARD_SHADOW,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 14,
     flex: 1,
-    gap: 3,
-    minHeight: 94,
-    padding: 13,
+    justifyContent: 'center',
+    minHeight: 52,
   },
-  metricLabel: { fontFamily: 'Poppins_700Bold', fontSize: 10 },
-  metricValue: {
-    fontFamily: 'Poppins_600SemiBold',
+  secondaryButton: { borderColor: palette.borderStrong, borderWidth: 1 },
+  primaryButton: { backgroundColor: palette.primary },
+  secondaryButtonText: { fontFamily: 'Manrope_700Bold', fontSize: 13 },
+  primaryButtonText: {
+    color: '#07110E',
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 13,
+  },
+  section: { marginTop: 30 },
+  sectionHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    minHeight: 44,
+  },
+  sectionTitle: {
+    fontFamily: 'Manrope_700Bold',
     fontSize: 17,
+    letterSpacing: -0.35,
     lineHeight: 23,
   },
-  metricDelta: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 3,
-    marginTop: 5,
-  },
-  metricPercentage: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 11,
-    lineHeight: 15,
-  },
-  metricNoPeriod: {
-    color: HOME.muted,
-    fontFamily: 'Poppins_500Medium',
-    fontSize: 9,
-    lineHeight: 14,
-    marginTop: 5,
-  },
-  operationalBlock: { gap: 12, width: '100%' },
-  operationStrip: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  operationItem: {
-    ...CARD_SHADOW,
-    alignItems: 'center',
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    flex: 1,
-    gap: 5,
-    minHeight: 91,
-    paddingVertical: 10,
-  },
-  operationIcon: {
-    alignItems: 'center',
-    borderRadius: 8,
-    height: 28,
+  sectionAction: {
     justifyContent: 'center',
-    width: 28,
+    minHeight: 44,
+    paddingHorizontal: 8,
   },
-  operationValue: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 13,
-    lineHeight: 18,
+  sectionActionText: {
+    color: palette.primary,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 10,
+    letterSpacing: 0.55,
   },
-  operationLabel: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 9,
-    lineHeight: 12,
-  },
-  dashboardCard: {
-    ...CARD_SHADOW,
-    borderRadius: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 10,
-    overflow: 'hidden',
-    padding: 16,
-  },
-  dashboardLoading: { gap: 12, width: '100%' },
-  skeletonTrendRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 14,
-    marginTop: 8,
-  },
-  skeletonMetricGrid: { flexDirection: 'row', gap: 8 },
-  skeletonMetricCard: {
-    ...CARD_SHADOW,
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    flex: 1,
-    gap: 8,
-    minHeight: 94,
-    padding: 13,
-  },
-  skeletonOperationStrip: { flexDirection: 'row', gap: 8 },
-  skeletonOperationCard: {
-    ...CARD_SHADOW,
-    alignItems: 'center',
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    flex: 1,
-    gap: 7,
-    minHeight: 91,
-    paddingVertical: 10,
-  },
-  skeletonChartCard: {
-    ...CARD_SHADOW,
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    gap: 16,
-    overflow: 'hidden',
-    padding: 16,
-  },
-  skeletonCardHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  skeletonHeaderCopy: { flex: 1, gap: 7, maxWidth: 170 },
-  skeletonChartLines: {
-    flex: 1,
-    gap: 19,
-    justifyContent: 'center',
-  },
-  skeletonChartBody: {
-    alignItems: 'center',
-    flex: 1,
-    flexDirection: 'row',
-    gap: 18,
-  },
-  skeletonLegend: { flex: 1, gap: 12 },
-  dashboardCardHeader: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  dashboardEyebrow: {
-    fontFamily: 'Poppins_400Regular',
-    fontSize: 9.5,
-    letterSpacing: 0,
-    lineHeight: 13,
-  },
-  dashboardHeaderValue: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 15,
-    lineHeight: 20,
-  },
-  dashboardTitle: { fontFamily: 'Poppins_700Bold', fontSize: 13 },
-  serviceRevenueBody: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 16,
-    minHeight: 80,
-  },
-  serviceDonut: { alignItems: 'center', justifyContent: 'center' },
-  serviceRevenueList: {
-    flex: 1,
-    gap: 8,
-    justifyContent: 'center',
-    minWidth: 0,
-  },
-  serviceRevenueRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 7,
-    minHeight: 22,
-  },
-  serviceDot: { borderRadius: 4, height: 7, width: 7 },
-  servicePercentage: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 8.5,
-    lineHeight: 13,
-  },
-  serviceRevenueName: {
-    flex: 1,
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 10.5,
-    lineHeight: 14,
-    minWidth: 0,
-  },
-  serviceRevenueValue: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 11,
-  },
-  rankingList: { gap: 10 },
-  rankingRow: { gap: 4 },
-  rankingLabelRow: { flexDirection: 'row', gap: 8 },
-  rankingName: {
-    flex: 1,
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 11,
-    minWidth: 0,
-  },
-  rankingTrack: {
-    backgroundColor: '#30343A',
-    borderRadius: 2,
-    height: 9,
-    overflow: 'hidden',
-  },
-  rankingFill: { borderRadius: 2, height: '100%' },
-  section: { gap: 10, paddingTop: 6, width: '100%' },
-  sectionTitle: { fontFamily: 'Poppins_700Bold', fontSize: 13 },
-  sectionTitleRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  quickAction: {
-    ...CARD_SHADOW,
-    alignItems: 'center',
-    backgroundColor: HOME.card,
-    borderColor: HOME.border,
-    borderRadius: 7,
-    borderWidth: StyleSheet.hairlineWidth,
-    flex: 1,
-    gap: 10,
-    justifyContent: 'center',
-    minHeight: 123,
-    paddingHorizontal: 6,
-    paddingVertical: 16,
-  },
-  quickActionContainer: { flex: 1 },
-  quickBadge: {
-    alignItems: 'center',
-    borderRadius: 6,
+  focusCard: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 22,
     borderWidth: 1,
-    height: 40,
-    justifyContent: 'center',
-    position: 'relative',
-    width: 40,
+    elevation: 8,
+    padding: 18,
   },
-  quickLabel: {
-    fontFamily: 'Poppins_700Bold',
-    fontSize: 10.5,
-    lineHeight: 15,
+  attentionReasonRow: { alignItems: 'center', flexDirection: 'row', gap: 7 },
+  attentionDot: {
+    backgroundColor: palette.warning,
+    borderRadius: 3,
+    height: 5,
+    width: 5,
   },
-  timelineRow: { flexDirection: 'row', gap: 10 },
-  timelineRail: { alignItems: 'center', width: 14 },
-  timelineDot: {
-    borderColor: HOME.teal,
-    borderRadius: 8,
-    borderWidth: 2,
-    height: 16,
-    marginTop: 5,
-    width: 16,
+  attentionReason: {
+    color: palette.warning,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 11,
   },
-  timelineLine: {
-    backgroundColor: HOME.border,
-    flex: 1,
-    marginTop: 3,
-    width: 1,
+  quoteNumber: {
+    color: palette.muted,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 10,
+    letterSpacing: 0.7,
+    marginTop: 14,
   },
-  quoteRow: {
-    ...CARD_SHADOW,
+  focusMain: {
     alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
-    gap: 10,
-    flex: 1,
-    minHeight: 74,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 12,
+    marginTop: 14,
   },
-  quoteContainer: { flex: 1, minWidth: 0 },
+  focusCopy: { flex: 1, minWidth: 0 },
+  focusClient: { fontFamily: 'Manrope_700Bold', fontSize: 15, lineHeight: 21 },
+  focusService: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 12,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  focusValue: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 16,
+    fontVariant: ['tabular-nums'],
+  },
+  focusMeta: {
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 17,
+    paddingTop: 14,
+  },
+  metaText: {
+    color: palette.muted,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 11,
+  },
+  metaStrong: { color: palette.secondary, fontFamily: 'Manrope_600SemiBold' },
+  focusAction: {
+    alignItems: 'center',
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    justifyContent: 'center',
+    marginBottom: -10,
+    marginTop: 14,
+    minHeight: 48,
+  },
+  focusActionText: { fontFamily: 'Manrope_700Bold', fontSize: 12 },
+  quoteRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 12,
+    minHeight: 76,
+    paddingVertical: 10,
+  },
+  quoteRowBorder: { borderTopColor: palette.border, borderTopWidth: 1 },
+  statusDot: { borderRadius: 5, borderWidth: 2, height: 9, width: 9 },
+  statusApproved: { borderColor: palette.primary },
+  statusSent: { borderColor: palette.warning },
+  statusNeutral: { borderColor: palette.muted },
   quoteCopy: { flex: 1, minWidth: 0 },
-  quoteSkeleton: { alignItems: 'flex-start', flexDirection: 'column' },
-  quoteAmount: { color: HOME.green, fontSize: 14 },
-  backdrop: { flex: 1, justifyContent: 'center', padding: 20 },
-  periodMenu: {
-    alignSelf: 'center',
-    backgroundColor: '#24272D',
-    borderColor: HOME.border,
-    borderRadius: 9,
-    borderWidth: StyleSheet.hairlineWidth,
-    maxWidth: 360,
-    padding: 8,
+  quoteClient: { fontFamily: 'Manrope_700Bold', fontSize: 13, lineHeight: 19 },
+  quoteStatus: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 11,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  quoteValue: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 12,
+    fontVariant: ['tabular-nums'],
+  },
+  quoteValueApproved: { color: palette.primary },
+  quoteValueSent: { color: palette.warning },
+  serviceSummary: { paddingBottom: 8 },
+  serviceSummaryHeader: {
+    borderBottomColor: palette.border,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingBottom: 12,
+  },
+  serviceSummaryTitle: { fontFamily: 'Manrope_700Bold', fontSize: 12 },
+  serviceSummaryCaption: {
+    color: palette.muted,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 10,
+  },
+  serviceRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 9, marginTop: 17 },
+  serviceName: { flex: 1, fontFamily: 'Manrope_700Bold', fontSize: 12 },
+  serviceCount: { fontFamily: 'Manrope_700Bold', fontSize: 12 },
+  track: {
+    backgroundColor: 'rgba(255,255,255,.08)',
+    borderRadius: 2,
+    height: 3,
+    overflow: 'hidden',
     width: '100%',
   },
-  periodOption: {
-    justifyContent: 'center',
-    minHeight: 48,
-    paddingHorizontal: 16,
+  fill: { backgroundColor: palette.primary, height: '100%' },
+  stateStack: { gap: 16 },
+  skeletonPanorama: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 26,
+    borderWidth: 1,
+    height: 241,
+    padding: 19,
   },
-  periodOptionActive: { color: HOME.teal },
+  skeletonGap: { height: 28 },
+  skeletonActions: { flexDirection: 'row', gap: 10, marginTop: 52 },
+  stateCard: {
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 22,
+    borderWidth: 1,
+    marginTop: 10,
+    padding: 22,
+  },
+  emptyMark: {
+    color: palette.primary,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 26,
+    marginBottom: 12,
+  },
+  errorMark: {
+    color: palette.warning,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 22,
+    marginBottom: 12,
+  },
+  stateTitle: {
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 17,
+    letterSpacing: -0.3,
+    textAlign: 'center',
+  },
+  stateCopy: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_400Regular',
+    fontSize: 12,
+    lineHeight: 19,
+    marginTop: 8,
+    maxWidth: 270,
+    textAlign: 'center',
+  },
+  stateButton: { flexGrow: 0, marginTop: 18, maxWidth: 190, width: '100%' },
 });

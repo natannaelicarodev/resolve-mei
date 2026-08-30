@@ -38,7 +38,7 @@ function NavigationItem({
 }) {
   const { colors } = useTheme();
   const color = selected
-    ? '#2DD4BF'
+    ? '#45E6B0'
     : disabled
       ? colors.disabledText
       : colors.textSecondary;
@@ -99,7 +99,10 @@ export function ProtectedBottomNavigation({
       accessibilityRole="tablist"
       style={[
         styles.bottomNavigation,
-        { backgroundColor: '#191B20', borderTopColor: '#2C3037' },
+        {
+          backgroundColor: '#0A0A0A',
+          borderTopColor: 'rgba(255,255,255,0.07)',
+        },
       ]}
     >
       <NavigationItem
@@ -220,36 +223,36 @@ export function ProtectedPageHeader({
 const styles = StyleSheet.create({
   bottomNavigation: {
     alignSelf: 'stretch',
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 1,
     flexDirection: 'row',
-    minHeight: 68,
+    minHeight: 72,
     paddingHorizontal: spacing.xs,
-    paddingBottom: 6,
-    paddingTop: 7,
+    paddingBottom: 7,
+    paddingTop: 8,
   },
   navigationSlot: { flex: 1, minWidth: 0 },
   navigationItem: {
     alignItems: 'center',
-    gap: 3,
+    gap: 4,
     justifyContent: 'center',
     minHeight: sizes.touchTarget,
     width: '100%',
   },
   navMark: {
     alignItems: 'center',
-    borderRadius: 6,
-    height: 25,
+    borderRadius: 11,
+    height: 30,
     justifyContent: 'center',
-    width: 38,
+    width: 42,
   },
-  navMarkSelected: { backgroundColor: 'rgba(45, 212, 191, 0.14)' },
+  navMarkSelected: { backgroundColor: 'rgba(69,230,176,0.13)' },
   navigationLabel: {
-    fontFamily: 'Poppins_600SemiBold',
-    fontSize: 9,
-    lineHeight: 12,
+    fontFamily: 'Manrope_600SemiBold',
+    fontSize: 10,
+    lineHeight: 13,
     maxWidth: '100%',
   },
-  selectedLabel: { color: '#2DD4BF' },
+  selectedLabel: { color: '#45E6B0' },
   pageHeader: {
     alignItems: 'center',
     flexDirection: 'row',

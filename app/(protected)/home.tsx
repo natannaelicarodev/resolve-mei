@@ -14,7 +14,7 @@ export default function HomeRoute() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const { data } = useMyBusiness(userId);
-  const [period, setPeriod] = useState<DashboardPeriod>('6months');
+  const [period, setPeriod] = useState<DashboardPeriod>('month');
   const profile = useQuery({
     queryKey: profileQueryKey(userId),
     queryFn: ({ signal }) => getMyProfile(userId, signal),
@@ -44,13 +44,18 @@ export default function HomeRoute() {
       dashboard={dashboard.data}
       dashboardError={dashboard.isError}
       dashboardLoading={dashboard.isLoading}
+      businessName={data?.business_name}
       onPeriodChange={setPeriod}
-      onRetry={() => void dashboard.refetch()}
+      onRetry={() => {
+        void dashboard.refetch();
+        void recentQuotes.refetch();
+      }}
       period={period}
       firstName={firstName}
       avatarUrl={avatarUrl}
       recentQuotes={recentQuotes.data?.pages[0]?.items.slice(0, 12)}
       recentQuotesLoading={recentQuotes.isLoading}
+      recentQuotesError={recentQuotes.isError}
       serviceCount={services.data?.pages[0]?.totalCount}
     />
   );

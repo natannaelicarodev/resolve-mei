@@ -1,10 +1,12 @@
 import { forwardRef, useId, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, TextInput, View } from 'react-native';
+import { Animated, StyleSheet, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
 import { radii, sizes, spacing, typography, useTheme } from '@/theme';
 import { Text } from './Text';
+
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 export interface InputProps extends TextInputProps {
   label: string;
@@ -37,16 +39,25 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
 ) {
   const { colors } = useTheme();
   const id = useId();
-  const [focused, setFocused] = useState(false);
+  const [focusProgress] = useState(() => new Animated.Value(0));
   const isEditable = editable && !readOnly;
   const message = error ?? helperText;
+  const animateFocus = (toValue: 0 | 1) => {
+    focusProgress.stopAnimation();
+    Animated.timing(focusProgress, {
+      duration: 140,
+      toValue,
+      useNativeDriver: false,
+    }).start();
+  };
+
   return (
     <View style={styles.wrapper}>
       <Text nativeID={id} variant="label">
         {label}
       </Text>
       <View style={styles.inputContainer}>
-        <TextInput
+        <AnimatedTextInput
           ref={ref}
           accessibilityLabel={label}
           accessibilityLabelledBy={id}
@@ -55,11 +66,11 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
           editable={isEditable}
           maxLength={maxLength}
           onBlur={(event) => {
-            setFocused(false);
+            animateFocus(0);
             onBlur?.(event);
           }}
           onFocus={(event) => {
-            setFocused(true);
+            animateFocus(1);
             onFocus?.(event);
           }}
           placeholderTextColor={colors.textMuted}
@@ -67,11 +78,15 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
             styles.input,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: focusProgress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [
+                  Boolean(value) ? colors.borderStrong : colors.border,
+                  colors.focusRing,
+                ],
+              }),
               color: colors.textPrimary,
             },
-            Boolean(value) && { borderColor: colors.borderStrong },
-            focused && { borderColor: colors.focusRing, borderWidth: 2 },
             !isEditable && {
               backgroundColor: colors.disabled,
               color: colors.disabledText,
