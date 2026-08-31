@@ -1,19 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Button,
-  Card,
   ConfirmationDialog,
+  Icon,
   InlineFeedback,
   Screen,
   Text,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { duplicateQuote, transitionQuote } from './api';
 import {
   allowedQuoteTransitions,
@@ -26,6 +26,58 @@ import {
 import type { QuoteStatus } from './domain';
 import { formatDateForDisplay } from './date';
 import { quotesQueryKey, useQuote } from './hooks';
+import { QuoteClientLinkSection } from './QuoteClientLinkSection';
+import {
+  loadQuoteDocumentForExport,
+  previewQuoteDocument,
+  shareQuoteDocument,
+} from './pdf';
+
+type PdfAction = 'preview' | 'share';
+
+function isPrintCancellation(error: unknown) {
+  return (
+    error instanceof Error &&
+    /cancel|closed without starting|printer picker/i.test(error.message)
+  );
+}
+
+function pdfErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : '';
+  const nativeCause = error instanceof Error ? error.cause : null;
+  const nativeMessage =
+    nativeCause instanceof Error
+      ? nativeCause.message
+      : typeof nativeCause === 'object' && nativeCause !== null
+        ? String('message' in nativeCause ? nativeCause.message : '')
+        : '';
+  const nativeCode =
+    typeof nativeCause === 'object' &&
+    nativeCause !== null &&
+    'code' in nativeCause &&
+    typeof nativeCause.code === 'string'
+      ? nativeCause.code.replace(/[^A-Z0-9_-]/gi, '').slice(0, 48)
+      : '';
+  if (/SESSION_CHANGED|IDENTITY_MISMATCH/.test(message))
+    return 'Sua sessão mudou. Abra o orçamento novamente antes de exportar.';
+  if (/TOTALS_MISMATCH|ITEM_TOTAL_MISMATCH/.test(message))
+    return 'Os valores salvos estão inconsistentes. Revise o orçamento antes de gerar o PDF.';
+  if (/SHARING_UNAVAILABLE/.test(message))
+    return 'O compartilhamento não está disponível neste dispositivo.';
+  if (/SHARING_MODULE_FAILED/.test(message))
+    return 'O módulo de compartilhamento não foi carregado. Reinicie ou atualize o aplicativo. [PDF-MÓDULO]';
+  if (/GENERATION_FAILED/.test(message))
+    return 'O Android não conseguiu gerar o arquivo. Tente visualizar o PDF primeiro. [PDF-GERAÇÃO]';
+  if (/SHARE_SHEET_FAILED/.test(message))
+    return /another share request|share.*progress/i.test(nativeMessage)
+      ? 'Existe um compartilhamento anterior preso no Android. Feche totalmente o app e abra novamente. [PDF-EM-ANDAMENTO]'
+      : /not allowed to read|only local file|file url/i.test(nativeMessage)
+        ? 'O Android bloqueou o acesso ao arquivo temporário. [PDF-ARQUIVO]'
+        : /activity|intent|resolve/i.test(nativeMessage)
+          ? 'O Android não encontrou um aplicativo compatível para receber o PDF. [PDF-INTENT]'
+          : `O arquivo foi gerado, mas o Android não abriu o menu de compartilhamento. [PDF-MENU${nativeCode ? `:${nativeCode}` : ''}]`;
+  return 'Não foi possível preparar o PDF. Tente novamente.';
+}
 
 const actionLabels: Partial<Record<QuoteStatus, string>> = {
   sent: 'Marcar como enviado',
@@ -43,18 +95,33 @@ export function QuoteDetailsScreen({
   businessId: string;
   quoteId: string;
 }) {
+  const { colors } = useTheme();
   const query = useQuote(userId, businessId, quoteId);
+  const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
+  const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
+  const [pdfAction, setPdfAction] = useState<PdfAction | null>(null);
+  const [lastFailedPdfAction, setLastFailedPdfAction] =
+    useState<PdfAction | null>(null);
+  const [pdfFeedback, setPdfFeedback] = useState<{
+    message: string;
+    variant: 'error' | 'info' | 'success';
+  } | null>(null);
   const queryClient = useQueryClient();
   const mounted = useRef(true);
-  const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
-  const [confirmDuplicate, setConfirmDuplicate] = useState(false);
+  const pdfLocked = useRef(false);
+  const pdfAbort = useRef<AbortController | null>(null);
   const identity = `${userId}:${businessId}:${quoteId}`;
-  useEffect(
-    () => () => {
+  const currentIdentity = useRef(identity);
+  useEffect(() => {
+    currentIdentity.current = identity;
+  }, [identity]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+      pdfAbort.current?.abort();
+    };
+  }, []);
   const invalidate = () =>
     queryClient.invalidateQueries({
       queryKey: quotesQueryKey(userId, businessId),
@@ -102,6 +169,66 @@ export function QuoteDetailsScreen({
       });
     },
   });
+  const runPdfAction = async (action: PdfAction) => {
+    if (pdfLocked.current) return;
+    const expectedIdentity = identity;
+    const controller = new AbortController();
+    pdfLocked.current = true;
+    pdfAbort.current?.abort();
+    pdfAbort.current = controller;
+    setPdfAction(action);
+    setPdfFeedback(null);
+    setLastFailedPdfAction(null);
+    try {
+      const document = await loadQuoteDocumentForExport(
+        { businessId, quoteId, userId },
+        controller.signal,
+      );
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        currentIdentity.current !== expectedIdentity
+      )
+        return;
+      if (action === 'preview') {
+        await previewQuoteDocument(document, userId);
+        if (mounted.current && currentIdentity.current === expectedIdentity)
+          setPdfFeedback({
+            message:
+              Platform.OS === 'web'
+                ? 'Use o diálogo do navegador para visualizar ou salvar o PDF.'
+                : 'Prévia do orçamento aberta.',
+            variant: 'info',
+          });
+      } else {
+        const result = await shareQuoteDocument(document, userId);
+        if (mounted.current && currentIdentity.current === expectedIdentity)
+          setPdfFeedback({
+            message:
+              result === 'web-print-fallback'
+                ? 'Use o diálogo do navegador para salvar o orçamento como PDF.'
+                : 'PDF pronto para compartilhar.',
+            variant: result === 'web-print-fallback' ? 'info' : 'success',
+          });
+      }
+    } catch (error) {
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        currentIdentity.current !== expectedIdentity ||
+        isPrintCancellation(error)
+      )
+        return;
+      console.error('Quote PDF action failed', { action, error });
+      setLastFailedPdfAction(action);
+      setPdfFeedback({ message: pdfErrorMessage(error), variant: 'error' });
+    } finally {
+      if (pdfAbort.current === controller) pdfAbort.current = null;
+      pdfLocked.current = false;
+      if (mounted.current && currentIdentity.current === expectedIdentity)
+        setPdfAction(null);
+    }
+  };
   const header = (
     <ProtectedPageHeader
       alwaysUseBackFallback
@@ -135,13 +262,25 @@ export function QuoteDetailsScreen({
     );
   const quote = query.data;
   const displayStatus = getDisplayQuoteStatus(quote.status, quote.valid_until);
-  const confirmTransition = (next: QuoteStatus) => setPendingStatus(next);
+  const destructiveTransition =
+    pendingStatus === 'canceled' || pendingStatus === 'rejected';
   return (
-    <Screen safeAreaEdges={['top', 'bottom']}>
+    <Screen
+      contentContainerStyle={styles.screenContent}
+      safeAreaEdges={['top', 'bottom']}
+    >
       {header}
-      <View style={styles.heading}>
+      <View
+        style={[
+          styles.hero,
+          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+        ]}
+      >
         <View style={styles.copy}>
-          <Text variant="sectionTitle">
+          <Text color="textSecondary" variant="caption">
+            ORÇAMENTO
+          </Text>
+          <Text variant="cardTitle">
             Orçamento #{formatQuoteNumber(quote.quote_number)}
           </Text>
           <Text color="textSecondary">{quote.client_name_snapshot}</Text>
@@ -156,27 +295,75 @@ export function QuoteDetailsScreen({
                 : 'neutral'
           }
         />
+        <Text style={styles.heroTotal} variant="sectionTitle">
+          {formatMoney(quote.total_cents)}
+        </Text>
       </View>
-      <Card>
-        <Text variant="cardTitle">Cliente</Text>
-        <Text>{quote.client_name_snapshot}</Text>
-        {quote.client_phone_snapshot ? (
-          <Text color="textSecondary">{quote.client_phone_snapshot}</Text>
-        ) : null}
-        {quote.client_email_snapshot ? (
-          <Text color="textSecondary">{quote.client_email_snapshot}</Text>
-        ) : null}
-        <Text color="textSecondary">
-          Emissão: {formatDateForDisplay(quote.issued_on)}
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          CLIENTE E VALIDADE
         </Text>
-        <Text color="textSecondary">
-          Validade: {formatDateForDisplay(quote.valid_until)}
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+          ]}
+        >
+          <View style={styles.clientRow}>
+            <View
+              style={[
+                styles.iconTile,
+                { backgroundColor: colors.primarySubtle },
+              ]}
+            >
+              <Icon color="primary" name="client" size="small" />
+            </View>
+            <View style={styles.copy}>
+              <Text variant="label">{quote.client_name_snapshot}</Text>
+              {quote.client_phone_snapshot ? (
+                <Text color="textSecondary" variant="caption">
+                  {quote.client_phone_snapshot}
+                </Text>
+              ) : null}
+              {quote.client_email_snapshot ? (
+                <Text color="textSecondary" variant="caption">
+                  {quote.client_email_snapshot}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+          <View style={[styles.dateRow, { borderTopColor: colors.borderSubtle }]}>
+            <View>
+              <Text color="textMuted" variant="caption">
+                Emissão
+              </Text>
+              <Text variant="label">
+                {formatDateForDisplay(quote.issued_on)}
+              </Text>
+            </View>
+            <View>
+              <Text color="textMuted" variant="caption">
+                Validade
+              </Text>
+              <Text variant="label">
+                {formatDateForDisplay(quote.valid_until)}
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          ITENS DO ORÇAMENTO
         </Text>
-      </Card>
-      <Card>
-        <Text variant="cardTitle">Itens</Text>
         {quote.items.map((item) => (
-          <View key={item.id} style={styles.item}>
+          <View
+            key={item.id}
+            style={[
+              styles.item,
+              { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+            ]}
+          >
             <View style={styles.copy}>
               <Text variant="label">{item.name_snapshot}</Text>
               {item.description_snapshot ? (
@@ -191,107 +378,262 @@ export function QuoteDetailsScreen({
             <Text>{formatMoney(item.item_total_cents)}</Text>
           </View>
         ))}
-      </Card>
-      <Card>
-        <Text>Subtotal: {formatMoney(quote.subtotal_cents)}</Text>
-        <Text>Desconto: {formatMoney(quote.discount_cents)}</Text>
-        <Text variant="sectionTitle">
-          Total: {formatMoney(quote.total_cents)}
+      </View>
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          RESUMO FINANCEIRO
         </Text>
-        {quote.notes ? <Text color="textSecondary">{quote.notes}</Text> : null}
-      </Card>
+        <View
+          style={[
+            styles.totalCard,
+            {
+              backgroundColor: colors.surfaceElevated,
+              borderColor: colors.borderSubtle,
+            },
+          ]}
+        >
+          <View style={styles.summaryRow}>
+            <Text color="textSecondary">Subtotal</Text>
+            <Text>{formatMoney(quote.subtotal_cents)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text color="textSecondary">Desconto</Text>
+            <Text>{formatMoney(quote.discount_cents)}</Text>
+          </View>
+          <View
+            style={[styles.summaryTotal, { borderTopColor: colors.borderSubtle }]}
+          >
+            <Text variant="label">Total do orçamento</Text>
+            <Text color="primary" variant="sectionTitle">
+              {formatMoney(quote.total_cents)}
+            </Text>
+          </View>
+        </View>
+      </View>
+      {quote.notes ? (
+        <View style={styles.section}>
+          <Text color="primary" style={styles.sectionTitle} variant="caption">
+            OBSERVAÇÕES
+          </Text>
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+            ]}
+          >
+            <Text color="textSecondary">{quote.notes}</Text>
+          </View>
+        </View>
+      ) : null}
       {statusMutation.isError || duplicateMutation.isError ? (
         <InlineFeedback
           message="Não foi possível concluir a operação."
           variant="error"
         />
       ) : null}
-      {canEditQuote(quote.status) ? (
-        <Button
-          label="Editar orçamento"
-          onPress={() =>
-            router.push({
-              pathname: '/quotes/[id]/edit',
-              params: { id: quote.id },
-            })
-          }
-        />
-      ) : null}
-      {(displayStatus === 'expired'
-        ? []
-        : allowedQuoteTransitions[quote.status]
-      ).map((next) => (
-        <Button
-          key={next}
-          disabled={statusMutation.isPending}
-          label={actionLabels[next] ?? quoteStatusLabels[next]}
-          onPress={() => confirmTransition(next)}
-          variant={
-            next === 'canceled' || next === 'rejected' ? 'danger' : 'secondary'
-          }
-        />
-      ))}
-      <Button
-        disabled={duplicateMutation.isPending}
-        loading={duplicateMutation.isPending}
-        label="Duplicar orçamento"
-        onPress={() => setConfirmDuplicate(true)}
-        variant="secondary"
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          PDF DO ORÇAMENTO
+        </Text>
+        <Text color="textSecondary" variant="caption">
+          O documento inclui os dados do cliente, os serviços e os valores
+          salvos neste orçamento.
+        </Text>
+        {pdfFeedback ? (
+          <InlineFeedback
+            message={pdfFeedback.message}
+            variant={pdfFeedback.variant}
+          />
+        ) : null}
+        <View style={styles.pdfActions}>
+          <Button
+            disabled={pdfAction !== null}
+            icon={<Icon color="primary" name="preview" size="small" />}
+            label="Visualizar PDF"
+            loading={pdfAction === 'preview'}
+            onPress={() => void runPdfAction('preview')}
+            style={styles.pdfAction}
+            variant="secondary"
+          />
+          <Button
+            disabled={pdfAction !== null}
+            icon={
+              <Icon
+                color="textInverse"
+                name={Platform.OS === 'web' ? 'download' : 'share'}
+                size="small"
+              />
+            }
+            label={
+              Platform.OS === 'web'
+                ? 'Salvar ou imprimir PDF'
+                : 'Compartilhar PDF'
+            }
+            loading={pdfAction === 'share'}
+            onPress={() => void runPdfAction('share')}
+            style={styles.pdfAction}
+          />
+        </View>
+        {lastFailedPdfAction ? (
+          <Button
+            label="Tentar novamente"
+            onPress={() => void runPdfAction(lastFailedPdfAction)}
+            variant="ghost"
+          />
+        ) : null}
+      </View>
+      <QuoteClientLinkSection
+        businessId={businessId}
+        key={`${userId}:${businessId}:${quoteId}`}
+        quoteId={quoteId}
+        quoteStatus={quote.status}
+        userId={userId}
       />
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          AÇÕES DO ORÇAMENTO
+        </Text>
+        {canEditQuote(quote.status) ? (
+          <Button
+            label="Editar orçamento"
+            onPress={() =>
+              router.push({
+                pathname: '/quotes/[id]/edit',
+                params: { id: quote.id },
+              })
+            }
+          />
+        ) : null}
+        {(displayStatus === 'expired'
+          ? []
+          : allowedQuoteTransitions[quote.status]
+        ).map((next) => (
+          <Button
+            key={next}
+            disabled={statusMutation.isPending}
+            label={actionLabels[next] ?? quoteStatusLabels[next]}
+            onPress={() => setPendingStatus(next)}
+            variant={
+              next === 'canceled' || next === 'rejected'
+                ? 'danger'
+                : 'secondary'
+            }
+          />
+        ))}
+        <Button
+          disabled={duplicateMutation.isPending}
+          loading={duplicateMutation.isPending}
+          label="Duplicar orçamento"
+          onPress={() => setConfirmingDuplicate(true)}
+          variant="secondary"
+        />
+      </View>
       <ConfirmationDialog
         cancelLabel="Voltar"
         confirmLabel={
           pendingStatus
-            ? (actionLabels[pendingStatus] ?? 'Confirmar')
-            : 'Confirmar'
+            ? (actionLabels[pendingStatus] ?? quoteStatusLabels[pendingStatus])
+            : ''
         }
-        destructive={
-          pendingStatus === 'canceled' || pendingStatus === 'rejected'
-        }
-        loading={statusMutation.isPending}
         description={
           pendingStatus
             ? `Confirma a alteração para ${quoteStatusLabels[pendingStatus]}?`
             : ''
         }
+        destructive={destructiveTransition}
+        loading={statusMutation.isPending}
         onCancel={() => setPendingStatus(null)}
         onConfirm={() => {
           if (!pendingStatus) return;
+          setPendingStatus(null);
           statusMutation.mutate({
             status: pendingStatus,
             expectedIdentity: identity,
           });
-          setPendingStatus(null);
         }}
         title={
-          pendingStatus ? (actionLabels[pendingStatus] ?? 'Alterar status') : ''
+          pendingStatus
+            ? (actionLabels[pendingStatus] ?? 'Alterar status')
+            : 'Alterar status'
         }
         visible={pendingStatus !== null}
       />
       <ConfirmationDialog
         cancelLabel="Voltar"
-        confirmLabel="Duplicar"
-        loading={duplicateMutation.isPending}
+        confirmLabel="Duplicar orçamento"
         description="Uma nova cópia será criada como rascunho para revisão."
-        onCancel={() => setConfirmDuplicate(false)}
+        loading={duplicateMutation.isPending}
+        onCancel={() => setConfirmingDuplicate(false)}
         onConfirm={() => {
+          setConfirmingDuplicate(false);
           duplicateMutation.mutate(identity);
-          setConfirmDuplicate(false);
         }}
         title="Duplicar orçamento"
-        visible={confirmDuplicate}
+        visible={confirmingDuplicate}
       />
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  screenContent: { paddingHorizontal: spacing.lg },
+  hero: {
+    alignItems: 'center',
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+    padding: spacing.md,
+  },
+  heroTotal: { width: '100%' },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  section: { gap: spacing.sm },
+  sectionTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    letterSpacing: 0.4,
+    lineHeight: 14,
+  },
+  pdfActions: { gap: spacing.sm },
+  pdfAction: { width: '100%' },
+  card: { borderRadius: radii.medium, borderWidth: 1, padding: spacing.md },
+  clientRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  iconTile: {
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 40,
+    justifyContent: 'center',
+    width: 40,
+  },
+  dateRow: {
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: spacing.xl,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+  },
   item: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
+  totalCard: {
+    borderRadius: radii.medium,
+    borderWidth: 1,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  summaryTotal: {
+    alignItems: 'center',
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing.xs,
+    paddingTop: spacing.md,
   },
 });

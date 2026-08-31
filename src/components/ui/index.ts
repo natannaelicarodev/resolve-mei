@@ -11,6 +11,8 @@ export { InlineFeedback } from './InlineFeedback';
 export type { FeedbackVariant } from './InlineFeedback';
 export { Input } from './Input';
 export type { InputProps } from './Input';
+export { Icon } from './Icon';
+export type { IconName } from './Icon';
 export { Screen } from './Screen';
 export { SegmentedControl } from './SegmentedControl';
 export type { SegmentOption } from './SegmentedControl';

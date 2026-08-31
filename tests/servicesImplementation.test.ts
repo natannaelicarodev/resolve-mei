@@ -44,14 +44,14 @@ describe('services implementation invariants', () => {
     expect(form).toContain('mutation.isPending || showSuccess');
   });
 
-  it('keeps Services and Quotes enabled in navigation', () => {
+  it('keeps creation routes available in the global navigation', () => {
     const navigation = source(
       'src/features/navigation/ProtectedNavigation.tsx',
     );
-    expect(navigation).toContain('label="Serviços"');
-    expect(navigation).toContain("router.replace('/services')");
-    expect(navigation).toContain('label="Orçamentos"');
-    expect(navigation).toContain("router.replace('/quotes' as Href)");
+    expect(navigation).toContain("href: '/services/new'");
+    expect(navigation).toContain("href: '/clients/new'");
+    expect(navigation).toContain("href: '/quotes/new'");
+    expect(navigation).toContain('accessibilityLabel="Criar"');
   });
 
   it('uses stable responsive cards for the home overview', () => {

@@ -14,6 +14,13 @@ const publicEnvSchema = z.object({
     .string()
     .trim()
     .min(20, 'A chave publica do Supabase e obrigatoria.'),
+  EXPO_PUBLIC_CLIENT_QUOTE_BASE_URL: z
+    .url()
+    .refine(
+      (value) => value.startsWith('https://'),
+      'A página pública deve usar HTTPS.',
+    )
+    .optional(),
 });
 
 export type PublicEnv = z.infer<typeof publicEnvSchema>;
@@ -29,4 +36,6 @@ export const env = parsePublicEnv({
   EXPO_PUBLIC_SUPABASE_URL: process.env.EXPO_PUBLIC_SUPABASE_URL,
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY:
     process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  EXPO_PUBLIC_CLIENT_QUOTE_BASE_URL:
+    process.env.EXPO_PUBLIC_CLIENT_QUOTE_BASE_URL,
 });
