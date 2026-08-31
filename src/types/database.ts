@@ -155,6 +155,7 @@ export interface Database {
           client_email_snapshot: string | null;
           created_at: string;
           updated_at: string;
+          shared_version?: number;
         };
         Insert: never;
         Update: never;
@@ -204,6 +205,31 @@ export interface Database {
       };
       duplicate_quote: {
         Args: { p_business_id: string; p_quote_id: string };
+        Returns: Json;
+      };
+      issue_quote_public_link: {
+        Args: { p_quote_id: string };
+        Returns: Json;
+      };
+      revoke_quote_public_link: {
+        Args: { p_quote_id: string };
+        Returns: Json;
+      };
+      get_quote_public_link_state: {
+        Args: { p_quote_id: string };
+        Returns: Json;
+      };
+      resolve_public_quote: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+      respond_public_quote: {
+        Args: {
+          p_token: string;
+          p_decision: string;
+          p_responder_name: string;
+          p_reason?: string | null;
+        };
         Returns: Json;
       };
     };

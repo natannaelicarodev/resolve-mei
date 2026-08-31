@@ -13,26 +13,21 @@ import type { LayoutChangeEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AnimatedPressable, useReducedMotion } from '@/components/motion';
-import { Skeleton, Text } from '@/components/ui';
+import { Icon, Skeleton, Text } from '@/components/ui';
 import { WelcomeAmbientBackground } from '@/features/auth/WelcomeScreen';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import type { Quote } from '@/features/quotes/api';
-import { formatMoney, formatQuoteNumber } from '@/features/quotes/domain';
+import { formatMoney } from '@/features/quotes/domain';
 import type { DashboardPeriod, HomeDashboardData } from './api';
-
-const palette = {
-  background: '#000000',
-  surface: '#0A0A0A',
-  raised: '#121212',
-  border: 'rgba(255,255,255,0.07)',
-  borderStrong: 'rgba(255,255,255,0.12)',
-  primary: '#45E6B0',
-  primarySoft: 'rgba(69,230,176,0.13)',
-  text: '#FFFFFF',
-  secondary: '#A1A1A7',
-  muted: '#85878E',
-  warning: '#F2B84B',
-} as const;
+import { homePalette as palette } from './palette';
+import { buildPipeline, summarizePipeline } from './pipeline';
+import type { PipelineStage } from './pipeline';
+import {
+  PipelineRow,
+  ProposedStageNotice,
+  RailEmpty,
+  StageStrip,
+} from './PipelineRail';
 
 const PERIOD_LABELS: Record<DashboardPeriod, string> = {
   month: 'este mês',
@@ -210,150 +205,80 @@ function Panorama({
   );
 }
 
-function daysUntil(value: string) {
-  const today = new Date();
-  const current = new Date(
-    today.getFullYear(),
-    today.getMonth(),
-    today.getDate(),
-  );
-  const target = new Date(`${value}T12:00:00`);
-  return Math.ceil((target.getTime() - current.getTime()) / 86_400_000);
-}
+/**
+ * The rail: every service that is stuck, ordered by what it costs to leave
+ * alone. This is the spine of the Home — the owner reads down one column and
+ * sees where the money stopped moving, instead of scanning a grid of cards.
+ */
+function Rail({
+  quotes,
+  selected,
+  onSelectStage,
+}: {
+  quotes: Quote[];
+  selected: PipelineStage | null;
+  onSelectStage: (stage: PipelineStage | null) => void;
+}) {
+  const entries = buildPipeline(quotes);
+  const summary = summarizePipeline(entries);
+  const visible = selected
+    ? entries.filter((entry) =>
+        entry.displayStatus === 'expired'
+          ? selected === 'sent'
+          : entry.stage === selected,
+      )
+    : entries;
+  const shown = visible.slice(0, 4);
+  const blocked = entries.filter((entry) => entry.reason !== 'closed');
+  const hasExpired = entries.some((entry) => entry.reason === 'expired');
 
-function attentionQuote(quotes: Quote[]) {
-  return quotes
-    .filter(
-      (quote) => quote.status === 'sent' && daysUntil(quote.valid_until) >= 0,
-    )
-    .sort((left, right) =>
-      left.valid_until.localeCompare(right.valid_until),
-    )[0];
-}
-
-function Attention({ quote }: { quote: Quote }) {
-  const days = daysUntil(quote.valid_until);
-  const reason =
-    days === 0
-      ? 'Enviado · vence hoje'
-      : `Enviado · vence em ${days} ${days === 1 ? 'dia' : 'dias'}`;
   return (
     <View style={styles.section}>
-      <SectionHeader
-        action="Abrir lista"
-        onPress={() => router.push('/quotes')}
-        title="Orçamento que pede atenção"
+      <StageStrip
+        onSelect={onSelectStage}
+        selected={selected}
+        summary={summary}
       />
-      <View style={styles.focusCard}>
-        <View style={styles.attentionReasonRow}>
-          <View style={styles.attentionDot} />
-          <Text style={styles.attentionReason}>{reason}</Text>
-        </View>
-        <Text style={styles.quoteNumber}>
-          ORÇAMENTO #{formatQuoteNumber(quote.quote_number)}
+      <View style={styles.railHeader}>
+        <Text style={styles.sectionTitle}>
+          {selected ? 'Filtrado por etapa' : 'Onde o dinheiro parou'}
         </Text>
-        <View style={styles.focusMain}>
-          <View style={styles.focusCopy}>
-            <Text numberOfLines={1} style={styles.focusClient}>
-              {quote.client_name_snapshot}
-            </Text>
-            <Text numberOfLines={2} style={styles.focusService}>
-              Proposta enviada ao cliente
-            </Text>
-          </View>
-          <Text style={styles.focusValue}>
-            {formatMoney(quote.total_cents)}
-          </Text>
-        </View>
-        <View style={styles.focusMeta}>
-          <Text style={styles.metaText}>
-            Emitido em{' '}
-            <Text style={styles.metaStrong}>
-              {formatShortDate(quote.issued_on)}
-            </Text>
-          </Text>
-          <Text style={styles.metaText}>
-            Válido até{' '}
-            <Text style={styles.metaStrong}>
-              {formatShortDate(quote.valid_until)}
-            </Text>
-          </Text>
-        </View>
-        <AnimatedPressable
-          accessibilityLabel={`Ver orçamento ${formatQuoteNumber(quote.quote_number)}`}
-          accessibilityRole="button"
-          onPress={() => router.push(`/quotes/${quote.id}`)}
-          style={styles.focusAction}
-        >
-          <Text style={styles.focusActionText}>Ver orçamento</Text>
-        </AnimatedPressable>
-      </View>
-    </View>
-  );
-}
-
-function formatShortDate(value: string) {
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' })
-    .format(new Date(`${value}T12:00:00`))
-    .replace('.', '');
-}
-
-const statusLabels: Record<Quote['status'], string> = {
-  approved: 'Aprovado',
-  canceled: 'Cancelado',
-  draft: 'Rascunho',
-  rejected: 'Recusado',
-  sent: 'Enviado',
-};
-
-function RecentQuotes({ quotes }: { quotes: Quote[] }) {
-  return (
-    <View style={styles.section}>
-      <SectionHeader
-        action="Ver todos"
-        onPress={() => router.push('/quotes')}
-        title="Orçamentos recentes"
-      />
-      <View>
-        {quotes.slice(0, 3).map((quote, index) => (
-          <AnimatedPressable
-            accessibilityLabel={`${statusLabels[quote.status]}, orçamento de ${quote.client_name_snapshot}, ${formatMoney(quote.total_cents)}`}
-            accessibilityRole="button"
-            key={quote.id}
-            onPress={() => router.push(`/quotes/${quote.id}`)}
-            style={[styles.quoteRow, index > 0 && styles.quoteRowBorder]}
+        {blocked.length > 0 ? (
+          <Text
+            accessibilityLabel={`Total parado: ${formatMoney(summary.blockedCents)}`}
+            style={[styles.railTotal, hasExpired && styles.railTotalUrgent]}
           >
-            <View
-              style={[
-                styles.statusDot,
-                quote.status === 'approved'
-                  ? styles.statusApproved
-                  : quote.status === 'sent'
-                    ? styles.statusSent
-                    : styles.statusNeutral,
-              ]}
-            />
-            <View style={styles.quoteCopy}>
-              <Text numberOfLines={1} style={styles.quoteClient}>
-                {quote.client_name_snapshot} · #
-                {formatQuoteNumber(quote.quote_number)}
-              </Text>
-              <Text numberOfLines={1} style={styles.quoteStatus}>
-                {statusLabels[quote.status]}
-              </Text>
-            </View>
-            <Text
-              style={[
-                styles.quoteValue,
-                quote.status === 'approved' && styles.quoteValueApproved,
-                quote.status === 'sent' && styles.quoteValueSent,
-              ]}
-            >
-              {formatMoney(quote.total_cents)}
-            </Text>
-          </AnimatedPressable>
-        ))}
+            {formatMoney(summary.blockedCents)}
+          </Text>
+        ) : null}
       </View>
+      {shown.length ? (
+        <View style={styles.rail}>
+          {shown.map((entry, index) => (
+            <PipelineRow
+              entry={entry}
+              first={index === 0}
+              key={entry.quote.id}
+            />
+          ))}
+          {visible.length > shown.length ? (
+            <AnimatedPressable
+              accessibilityRole="button"
+              accessibilityLabel={`Ver os outros ${visible.length - shown.length} orçamentos`}
+              onPress={() => router.push('/quotes')}
+              style={styles.railMore}
+            >
+              <Text style={styles.railMoreText}>
+                Ver mais {visible.length - shown.length}
+              </Text>
+              <Icon name="forward" rawColor={palette.primary} size="small" />
+            </AnimatedPressable>
+          ) : null}
+          <ProposedStageNotice />
+        </View>
+      ) : (
+        <RailEmpty hasQuotes={quotes.length > 0} />
+      )}
     </View>
   );
 }
@@ -547,9 +472,9 @@ function Reveal({
 export function HomeMockupScreen(props: HomeMockupScreenProps) {
   const { height } = useWindowDimensions();
   const [scrollY] = useState(() => new Animated.Value(0));
-  const [visible, setVisible] = useState([false, false, false]);
+  const [visible, setVisible] = useState([false, false]);
+  const [stage, setStage] = useState<PipelineStage | null>(null);
   const quotes = props.recentQuotes ?? [];
-  const attention = attentionQuote(quotes);
   const empty =
     !props.dashboardLoading &&
     !props.dashboardError &&
@@ -571,35 +496,22 @@ export function HomeMockupScreen(props: HomeMockupScreenProps) {
     ) : (
       <>
         <Panorama data={props.dashboard} period={props.period} />
-        {attention ? (
-          <VisibilityTrigger
-            onVisible={() => reveal(0)}
-            scrollY={scrollY}
-            viewportHeight={height}
-          >
-            <Reveal active={Boolean(visible[0])}>
-              <Attention quote={attention} />
-            </Reveal>
-          </VisibilityTrigger>
-        ) : null}
-        {quotes.length ? (
+        <VisibilityTrigger
+          onVisible={() => reveal(0)}
+          scrollY={scrollY}
+          viewportHeight={height}
+        >
+          <Reveal active={Boolean(visible[0])}>
+            <Rail onSelectStage={setStage} quotes={quotes} selected={stage} />
+          </Reveal>
+        </VisibilityTrigger>
+        {props.dashboard.services.length ? (
           <VisibilityTrigger
             onVisible={() => reveal(1)}
             scrollY={scrollY}
             viewportHeight={height}
           >
             <Reveal active={Boolean(visible[1])}>
-              <RecentQuotes quotes={quotes} />
-            </Reveal>
-          </VisibilityTrigger>
-        ) : null}
-        {props.dashboard.services.length ? (
-          <VisibilityTrigger
-            onVisible={() => reveal(2)}
-            scrollY={scrollY}
-            viewportHeight={height}
-          >
-            <Reveal active={Boolean(visible[2])}>
               <Services services={props.dashboard.services} />
             </Reveal>
           </VisibilityTrigger>
@@ -779,6 +691,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     minHeight: 52,
+    paddingHorizontal: 12,
   },
   secondaryButton: { borderColor: palette.borderStrong, borderWidth: 1 },
   primaryButton: { backgroundColor: palette.primary },
@@ -789,6 +702,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   section: { marginTop: 30 },
+  railHeader: {
+    alignItems: 'baseline',
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    marginTop: 26,
+  },
+  railTotal: {
+    color: palette.secondary,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 14,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  // Only when something has actually expired does the total earn urgency
+  // colour; otherwise it stays quiet so the panorama keeps the eye.
+  railTotalUrgent: { color: palette.warning },
+  rail: {
+    backgroundColor: palette.surface,
+    borderColor: palette.border,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginTop: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+  },
+  railMore: {
+    alignItems: 'center',
+    borderTopColor: palette.border,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    gap: 6,
+    justifyContent: 'center',
+    minHeight: 48,
+  },
+  railMoreText: {
+    color: palette.primary,
+    fontFamily: 'Manrope_700Bold',
+    fontSize: 12.5,
+  },
   sectionHeader: {
     alignItems: 'center',
     flexDirection: 'row',

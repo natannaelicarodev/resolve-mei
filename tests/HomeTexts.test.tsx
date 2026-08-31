@@ -4,17 +4,16 @@ import type { ReactElement } from 'react';
 
 import HomeRoute from '@app/(protected)/home';
 import { useMyBusiness } from '@/features/business/hooks';
-import { useHomeDashboard } from '@/features/home/hooks';
-import { useQuotes } from '@/features/quotes/hooks';
+import { useActiveClientCount } from '@/features/clients/hooks';
 import { useServices } from '@/features/services/hooks';
 import { createAvatarSignedUrl } from '@/features/profile/avatar';
 import { getMyProfile } from '@/features/profile/api';
 import { useAuth } from '@/providers/AuthProvider';
-import type { HomeDashboardData } from '@/features/home/api';
 
 jest.mock('@/features/business/hooks', () => ({ useMyBusiness: jest.fn() }));
-jest.mock('@/features/home/hooks', () => ({ useHomeDashboard: jest.fn() }));
-jest.mock('@/features/quotes/hooks', () => ({ useQuotes: jest.fn() }));
+jest.mock('@/features/clients/hooks', () => ({
+  useActiveClientCount: jest.fn(),
+}));
 jest.mock('@/features/services/hooks', () => ({ useServices: jest.fn() }));
 jest.mock('@/features/profile/avatar', () => ({
   ...jest.requireActual('@/features/profile/avatar'),
@@ -42,23 +41,28 @@ const profile = {
   created_at: '2026-08-25T00:00:00Z',
   updated_at: '2026-08-25T00:00:00Z',
 };
-const dashboardFixture: HomeDashboardData = {
-  businessId: 'business-1',
-  period: 'month',
-  periodStart: '2026-08-01',
-  periodEnd: '2026-09-01',
-  approvedCents: 150000,
-  previousApprovedCents: 100000,
-  previousApprovedCount: 1,
-  previousQuoteCount: 1,
-  negotiatingCents: 50000,
-  approvedCount: 2,
-  openCount: 1,
-  quoteCount: 3,
-  monthly: [{ month: '2026-08-01', approvedCents: 150000 }],
-  clients: { total: 3, active: 2, inactive: 1 },
-  services: [],
-};
+
+/** A business with everything set up, so no suggestion is offered. */
+function settledBusiness() {
+  jest.mocked(useMyBusiness).mockReturnValue({
+    data: {
+      id: 'business-1',
+      business_name: 'Elétrica Meireles',
+      onboarding_completed: true,
+      email: 'ana@example.com',
+      logo_path: 'business-1/logo.webp',
+    },
+    isLoading: false,
+  } as unknown as ReturnType<typeof useMyBusiness>);
+  jest.mocked(useServices).mockReturnValue({
+    data: { pages: [{ items: [], totalCount: 12 }] },
+    isLoading: false,
+  } as unknown as ReturnType<typeof useServices>);
+  jest.mocked(useActiveClientCount).mockReturnValue({
+    data: 28,
+    isLoading: false,
+  } as unknown as ReturnType<typeof useActiveClientCount>);
+}
 
 beforeEach(() => {
   jest.clearAllMocks();
@@ -66,30 +70,7 @@ beforeEach(() => {
     .mocked(useAuth)
     .mockReturnValue({ user: { id: 'user-1' } } as ReturnType<typeof useAuth>);
   jest.mocked(getMyProfile).mockResolvedValue(profile);
-  jest.mocked(useMyBusiness).mockReturnValue({
-    data: {
-      id: 'business-1',
-      onboarding_completed: true,
-      email: 'ana@example.com',
-    },
-  } as ReturnType<typeof useMyBusiness>);
-  jest.mocked(useHomeDashboard).mockReturnValue({
-    data: dashboardFixture,
-    isLoading: false,
-    isError: false,
-    refetch: jest.fn(),
-  } as unknown as ReturnType<typeof useHomeDashboard>);
-  jest.mocked(useQuotes).mockReturnValue({
-    data: { pages: [{ items: [], totalCount: 0 }] },
-    isLoading: false,
-    isError: false,
-    refetch: jest.fn(),
-  } as unknown as ReturnType<typeof useQuotes>);
-  jest.mocked(useServices).mockReturnValue({
-    data: { pages: [{ items: [], totalCount: 0 }] },
-    isLoading: false,
-    isError: false,
-  } as unknown as ReturnType<typeof useServices>);
+  settledBusiness();
 });
 
 async function renderWithClient(element: ReactElement) {
@@ -102,14 +83,95 @@ async function renderWithClient(element: ReactElement) {
   return { queryClient, screen };
 }
 
-it('shows the personalized CRM dashboard with real sections', async () => {
+it('greets the owner and names their business', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
-  expect(await screen.findByText(/Ana\.$/)).toBeTruthy();
-  expect(screen.getByText('ResolveMEI')).toBeTruthy();
-  expect(screen.getByText('EM NEGOCIAÇÃO')).toBeTruthy();
-  expect(screen.getByText('Valor dos orçamentos enviados')).toBeTruthy();
-  expect(screen.getByText('Novo orçamento')).toBeTruthy();
-  expect(screen.queryByText('Ver perfil')).toBeNull();
+  expect(await screen.findByText(/Ana$/)).toBeTruthy();
+  expect(screen.getByText('Elétrica Meireles')).toBeTruthy();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('leads with starting a quote', async () => {
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  expect(screen.getByText('Comece um orçamento')).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Novo orçamento' })).toBeTruthy();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('offers a shortcut into every area of the business', async () => {
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  expect(screen.getByText('Gerencie seu negócio')).toBeTruthy();
+  for (const label of ['Orçamentos', 'Clientes', 'Serviços', 'Meu negócio'])
+    expect(screen.getByRole('button', { name: label })).toBeTruthy();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('keeps money and totals off the hub', async () => {
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  // Balances belong to their own screen; a figure the owner cannot act on
+  // from here is decoration.
+  expect(screen.queryByText(/R\$/)).toBeNull();
+  expect(screen.queryByText(/Aprovado no período/)).toBeNull();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('suggests cataloguing a service when there are none', async () => {
+  jest.mocked(useServices).mockReturnValue({
+    data: { pages: [{ items: [], totalCount: 0 }] },
+    isLoading: false,
+  } as unknown as ReturnType<typeof useServices>);
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  expect(screen.getByText('Cadastre seu primeiro serviço')).toBeTruthy();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('moves on to clients once services exist', async () => {
+  jest.mocked(useActiveClientCount).mockReturnValue({
+    data: 0,
+    isLoading: false,
+  } as unknown as ReturnType<typeof useActiveClientCount>);
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  // Services are catalogued, so the next real gap is a client to quote.
+  expect(screen.getByText('Adicione seu primeiro cliente')).toBeTruthy();
+  expect(screen.queryByText('Cadastre seu primeiro serviço')).toBeNull();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('suggests a logo once the essentials are done', async () => {
+  jest.mocked(useMyBusiness).mockReturnValue({
+    data: {
+      id: 'business-1',
+      business_name: 'Elétrica Meireles',
+      onboarding_completed: true,
+      email: 'ana@example.com',
+      logo_path: null,
+    },
+    isLoading: false,
+  } as unknown as ReturnType<typeof useMyBusiness>);
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  expect(screen.getByText('Coloque sua marca nos orçamentos')).toBeTruthy();
+  await screen.unmount();
+  queryClient.clear();
+});
+
+it('offers nothing to set up when the business is complete', async () => {
+  const { queryClient, screen } = await renderWithClient(<HomeRoute />);
+  await screen.findByText(/Ana$/);
+  // An empty space beats an invented task.
+  expect(screen.queryByText(/Cadastre seu primeiro/)).toBeNull();
+  expect(screen.queryByText(/Adicione seu primeiro/)).toBeNull();
+  expect(screen.queryByText(/Coloque sua marca/)).toBeNull();
   await screen.unmount();
   queryClient.clear();
 });

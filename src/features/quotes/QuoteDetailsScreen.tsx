@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
@@ -26,6 +26,58 @@ import {
 import type { QuoteStatus } from './domain';
 import { formatDateForDisplay } from './date';
 import { quotesQueryKey, useQuote } from './hooks';
+import { QuoteClientLinkSection } from './QuoteClientLinkSection';
+import {
+  loadQuoteDocumentForExport,
+  previewQuoteDocument,
+  shareQuoteDocument,
+} from './pdf';
+
+type PdfAction = 'preview' | 'share';
+
+function isPrintCancellation(error: unknown) {
+  return (
+    error instanceof Error &&
+    /cancel|closed without starting|printer picker/i.test(error.message)
+  );
+}
+
+function pdfErrorMessage(error: unknown) {
+  const message = error instanceof Error ? error.message : '';
+  const nativeCause = error instanceof Error ? error.cause : null;
+  const nativeMessage =
+    nativeCause instanceof Error
+      ? nativeCause.message
+      : typeof nativeCause === 'object' && nativeCause !== null
+        ? String('message' in nativeCause ? nativeCause.message : '')
+        : '';
+  const nativeCode =
+    typeof nativeCause === 'object' &&
+    nativeCause !== null &&
+    'code' in nativeCause &&
+    typeof nativeCause.code === 'string'
+      ? nativeCause.code.replace(/[^A-Z0-9_-]/gi, '').slice(0, 48)
+      : '';
+  if (/SESSION_CHANGED|IDENTITY_MISMATCH/.test(message))
+    return 'Sua sessão mudou. Abra o orçamento novamente antes de exportar.';
+  if (/TOTALS_MISMATCH|ITEM_TOTAL_MISMATCH/.test(message))
+    return 'Os valores salvos estão inconsistentes. Revise o orçamento antes de gerar o PDF.';
+  if (/SHARING_UNAVAILABLE/.test(message))
+    return 'O compartilhamento não está disponível neste dispositivo.';
+  if (/SHARING_MODULE_FAILED/.test(message))
+    return 'O módulo de compartilhamento não foi carregado. Reinicie ou atualize o aplicativo. [PDF-MÓDULO]';
+  if (/GENERATION_FAILED/.test(message))
+    return 'O Android não conseguiu gerar o arquivo. Tente visualizar o PDF primeiro. [PDF-GERAÇÃO]';
+  if (/SHARE_SHEET_FAILED/.test(message))
+    return /another share request|share.*progress/i.test(nativeMessage)
+      ? 'Existe um compartilhamento anterior preso no Android. Feche totalmente o app e abra novamente. [PDF-EM-ANDAMENTO]'
+      : /not allowed to read|only local file|file url/i.test(nativeMessage)
+        ? 'O Android bloqueou o acesso ao arquivo temporário. [PDF-ARQUIVO]'
+        : /activity|intent|resolve/i.test(nativeMessage)
+          ? 'O Android não encontrou um aplicativo compatível para receber o PDF. [PDF-INTENT]'
+          : `O arquivo foi gerado, mas o Android não abriu o menu de compartilhamento. [PDF-MENU${nativeCode ? `:${nativeCode}` : ''}]`;
+  return 'Não foi possível preparar o PDF. Tente novamente.';
+}
 
 const actionLabels: Partial<Record<QuoteStatus, string>> = {
   sent: 'Marcar como enviado',
@@ -47,15 +99,29 @@ export function QuoteDetailsScreen({
   const query = useQuote(userId, businessId, quoteId);
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
+  const [pdfAction, setPdfAction] = useState<PdfAction | null>(null);
+  const [lastFailedPdfAction, setLastFailedPdfAction] =
+    useState<PdfAction | null>(null);
+  const [pdfFeedback, setPdfFeedback] = useState<{
+    message: string;
+    variant: 'error' | 'info' | 'success';
+  } | null>(null);
   const queryClient = useQueryClient();
   const mounted = useRef(true);
+  const pdfLocked = useRef(false);
+  const pdfAbort = useRef<AbortController | null>(null);
   const identity = `${userId}:${businessId}:${quoteId}`;
-  useEffect(
-    () => () => {
+  const currentIdentity = useRef(identity);
+  useEffect(() => {
+    currentIdentity.current = identity;
+  }, [identity]);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
       mounted.current = false;
-    },
-    [],
-  );
+      pdfAbort.current?.abort();
+    };
+  }, []);
   const invalidate = () =>
     queryClient.invalidateQueries({
       queryKey: quotesQueryKey(userId, businessId),
@@ -103,6 +169,66 @@ export function QuoteDetailsScreen({
       });
     },
   });
+  const runPdfAction = async (action: PdfAction) => {
+    if (pdfLocked.current) return;
+    const expectedIdentity = identity;
+    const controller = new AbortController();
+    pdfLocked.current = true;
+    pdfAbort.current?.abort();
+    pdfAbort.current = controller;
+    setPdfAction(action);
+    setPdfFeedback(null);
+    setLastFailedPdfAction(null);
+    try {
+      const document = await loadQuoteDocumentForExport(
+        { businessId, quoteId, userId },
+        controller.signal,
+      );
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        currentIdentity.current !== expectedIdentity
+      )
+        return;
+      if (action === 'preview') {
+        await previewQuoteDocument(document, userId);
+        if (mounted.current && currentIdentity.current === expectedIdentity)
+          setPdfFeedback({
+            message:
+              Platform.OS === 'web'
+                ? 'Use o diálogo do navegador para visualizar ou salvar o PDF.'
+                : 'Prévia do orçamento aberta.',
+            variant: 'info',
+          });
+      } else {
+        const result = await shareQuoteDocument(document, userId);
+        if (mounted.current && currentIdentity.current === expectedIdentity)
+          setPdfFeedback({
+            message:
+              result === 'web-print-fallback'
+                ? 'Use o diálogo do navegador para salvar o orçamento como PDF.'
+                : 'PDF pronto para compartilhar.',
+            variant: result === 'web-print-fallback' ? 'info' : 'success',
+          });
+      }
+    } catch (error) {
+      if (
+        controller.signal.aborted ||
+        !mounted.current ||
+        currentIdentity.current !== expectedIdentity ||
+        isPrintCancellation(error)
+      )
+        return;
+      console.error('Quote PDF action failed', { action, error });
+      setLastFailedPdfAction(action);
+      setPdfFeedback({ message: pdfErrorMessage(error), variant: 'error' });
+    } finally {
+      if (pdfAbort.current === controller) pdfAbort.current = null;
+      pdfLocked.current = false;
+      if (mounted.current && currentIdentity.current === expectedIdentity)
+        setPdfAction(null);
+    }
+  };
   const header = (
     <ProtectedPageHeader
       alwaysUseBackFallback
@@ -307,7 +433,65 @@ export function QuoteDetailsScreen({
       ) : null}
       <View style={styles.section}>
         <Text color="primary" style={styles.sectionTitle} variant="caption">
-          AÇÕES
+          PDF DO ORÇAMENTO
+        </Text>
+        <Text color="textSecondary" variant="caption">
+          O documento inclui os dados do cliente, os serviços e os valores
+          salvos neste orçamento.
+        </Text>
+        {pdfFeedback ? (
+          <InlineFeedback
+            message={pdfFeedback.message}
+            variant={pdfFeedback.variant}
+          />
+        ) : null}
+        <View style={styles.pdfActions}>
+          <Button
+            disabled={pdfAction !== null}
+            icon={<Icon color="primary" name="preview" size="small" />}
+            label="Visualizar PDF"
+            loading={pdfAction === 'preview'}
+            onPress={() => void runPdfAction('preview')}
+            style={styles.pdfAction}
+            variant="secondary"
+          />
+          <Button
+            disabled={pdfAction !== null}
+            icon={
+              <Icon
+                color="textOnPrimary"
+                name={Platform.OS === 'web' ? 'download' : 'share'}
+                size="small"
+              />
+            }
+            label={
+              Platform.OS === 'web'
+                ? 'Salvar ou imprimir PDF'
+                : 'Compartilhar PDF'
+            }
+            loading={pdfAction === 'share'}
+            onPress={() => void runPdfAction('share')}
+            style={styles.pdfAction}
+          />
+        </View>
+        {lastFailedPdfAction ? (
+          <Button
+            label="Tentar novamente"
+            onPress={() => void runPdfAction(lastFailedPdfAction)}
+            variant="ghost"
+          />
+        ) : null}
+      </View>
+      <QuoteClientLinkSection
+        businessId={businessId}
+        key={`${userId}:${businessId}:${quoteId}`}
+        quoteId={quoteId}
+        quoteStatus={quote.status}
+        userId={userId}
+      />
+      <View style={styles.section}>
+        <Text color="primary" style={styles.sectionTitle} variant="caption">
+          AÇÕES DO ORÇAMENTO
         </Text>
         {canEditQuote(quote.status) ? (
           <Button
@@ -411,6 +595,8 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     lineHeight: 14,
   },
+  pdfActions: { gap: spacing.sm },
+  pdfAction: { width: '100%' },
   card: { borderRadius: radii.medium, borderWidth: 1, padding: spacing.md },
   clientRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   iconTile: {

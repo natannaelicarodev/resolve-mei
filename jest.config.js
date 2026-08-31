@@ -10,6 +10,10 @@ module.exports = {
     // transformIgnorePatterns, so point at the CommonJS build directly.
     '^lucide-react-native$':
       '<rootDir>/node_modules/lucide-react-native/dist/cjs/lucide-react-native.js',
+    // Gesture handler binds to Reanimated's native internals at import time.
+    // Mapping the module outright is more reliable than jest.mock, which the
+    // package's own re-exports can sidestep.
+    '^react-native-gesture-handler$': '<rootDir>/tests/mocks/gestureHandler.js',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|expo-router|@react-navigation/.*|react-navigation|react-native-safe-area-context|react-native-screens|react-native-svg|lucide-react-native))',
