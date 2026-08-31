@@ -33,7 +33,7 @@ const issuedLinkSchema = z.object({
 });
 
 const publicItemSchema = z.object({
-  description: z.string().nullable(),
+  description: z.string().nullable().optional(),
   name: z.string(),
   quantity: z.number().int().positive(),
   totalCents: z.number().int().nonnegative(),

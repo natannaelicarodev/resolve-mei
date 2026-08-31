@@ -75,4 +75,33 @@ describe('public quote client contract', () => {
       state: 'unavailable',
     });
   });
+
+  it('accepts an item whose null description was stripped by PostgreSQL', () => {
+    expect(
+      publicQuoteResultSchema.parse({
+        state: 'available',
+        expiresAt: '2026-09-07T12:00:00Z',
+        quote: {
+          provider: { businessName: 'MEI' },
+          client: { name: 'Cliente' },
+          quoteNumber: 3,
+          version: 1,
+          issuedOn: '2026-08-31',
+          validUntil: '2026-09-07',
+          status: 'sent',
+          items: [
+            {
+              name: 'Serviço sem descrição',
+              quantity: 1,
+              unitPriceCents: 5000,
+              totalCents: 5000,
+            },
+          ],
+          subtotalCents: 5000,
+          discountCents: 0,
+          totalCents: 5000,
+        },
+      }).quote?.items[0]?.description,
+    ).toBeUndefined();
+  });
 });
