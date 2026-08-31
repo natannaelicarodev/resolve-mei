@@ -75,6 +75,19 @@ const responseResultSchema = z.object({
 export type OwnerLinkState = z.infer<typeof ownerLinkStateSchema>;
 export type PublicQuoteResult = z.infer<typeof publicQuoteResultSchema>;
 
+export class PublicQuoteRequestError extends Error {
+  constructor(readonly safeCode: string) {
+    super(safeCode);
+    this.name = 'PublicQuoteRequestError';
+  }
+}
+
+export function getPublicQuoteErrorCode(error: unknown) {
+  return error instanceof PublicQuoteRequestError
+    ? error.safeCode
+    : 'PUBLIC-NETWORK';
+}
+
 export async function getOwnerLinkState(quoteId: string) {
   const { data, error } = await supabase.rpc('get_quote_public_link_state', {
     p_quote_id: quoteId,
@@ -132,8 +145,19 @@ export async function resolvePublicQuote(token: string) {
   const { data, error } = await publicSupabase.rpc('resolve_public_quote', {
     p_token: token,
   });
-  if (error) throw error;
-  return publicQuoteResultSchema.parse(data);
+  if (error)
+    throw new PublicQuoteRequestError(
+      `PUBLIC-RPC-${error.code || 'UNKNOWN'}`,
+    );
+  const parsed = publicQuoteResultSchema.safeParse(data);
+  if (!parsed.success) {
+    const issue = parsed.error.issues[0];
+    const path = issue?.path.join('.') || 'root';
+    throw new PublicQuoteRequestError(
+      `PUBLIC-DTO-${path}-${issue?.code || 'UNKNOWN'}`,
+    );
+  }
+  return parsed.data;
 }
 
 export async function respondPublicQuote(input: {

@@ -8,6 +8,7 @@ import {
 import { ThemeProvider } from '@/theme';
 
 jest.mock('@/features/quotes/publicLink', () => ({
+  getPublicQuoteErrorCode: jest.fn(() => 'PUBLIC-NETWORK'),
   resolvePublicQuote: jest.fn(),
   respondPublicQuote: jest.fn(),
 }));

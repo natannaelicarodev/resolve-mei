@@ -12,7 +12,11 @@ import {
 } from '@/components/ui';
 import { formatMoney, formatQuoteNumber } from './domain';
 import { formatDateForDisplay } from './date';
-import { resolvePublicQuote, respondPublicQuote } from './publicLink';
+import {
+  getPublicQuoteErrorCode,
+  resolvePublicQuote,
+  respondPublicQuote,
+} from './publicLink';
 import type { PublicQuoteResult } from './publicLink';
 import { radii, sizes, spacing, useTheme } from '@/theme';
 
@@ -32,6 +36,7 @@ export function PublicQuoteScreen() {
   const [result, setResult] = useState<PublicQuoteResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [networkError, setNetworkError] = useState(false);
+  const [errorCode, setErrorCode] = useState('PUBLIC-NETWORK');
   const [decision, setDecision] = useState<Decision>('approved');
   const [name, setName] = useState('');
   const [reason, setReason] = useState('');
@@ -47,7 +52,8 @@ export function PublicQuoteScreen() {
       setResult(
         token ? await resolvePublicQuote(token) : { state: 'unavailable' },
       );
-    } catch {
+    } catch (error) {
+      setErrorCode(getPublicQuoteErrorCode(error));
       setNetworkError(true);
     } finally {
       setLoading(false);
@@ -77,8 +83,11 @@ export function PublicQuoteScreen() {
       .then((next) => {
         if (active) setResult(next);
       })
-      .catch(() => {
-        if (active) setNetworkError(true);
+      .catch((error: unknown) => {
+        if (active) {
+          setErrorCode(getPublicQuoteErrorCode(error));
+          setNetworkError(true);
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -154,7 +163,7 @@ export function PublicQuoteScreen() {
         {networkError ? (
           <View style={styles.state}>
             <InlineFeedback
-              message="Não foi possível consultar agora. Verifique sua conexão."
+              message={`Não foi possível consultar agora. Código: ${errorCode}.`}
               variant="error"
             />
             <Button label="Tentar novamente" onPress={() => void load()} />
