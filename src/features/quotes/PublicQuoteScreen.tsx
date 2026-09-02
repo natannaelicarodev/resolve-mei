@@ -4,9 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Button,
+  Card,
   ConfirmationDialog,
   Icon,
   InlineFeedback,
+  InlineLoading,
   Input,
   Text,
 } from '@/components/ui';
@@ -159,7 +161,7 @@ export function PublicQuoteScreen() {
           </View>
         </View>
 
-        {loading ? <Text>Carregando orçamento...</Text> : null}
+        {loading ? <InlineLoading label="Carregando orçamento" /> : null}
         {networkError ? (
           <View style={styles.state}>
             <InlineFeedback
@@ -178,15 +180,7 @@ export function PublicQuoteScreen() {
 
         {quote ? (
           <>
-            <View
-              style={[
-                styles.hero,
-                {
-                  backgroundColor: colors.primarySubtle,
-                  borderColor: colors.borderSubtle,
-                },
-              ]}
-            >
+            <Card style={styles.hero}>
               <Text color="primary" variant="caption">
                 ORÇAMENTO #{formatQuoteNumber(quote.quoteNumber)} · VERSÃO{' '}
                 {quote.version}
@@ -201,14 +195,17 @@ export function PublicQuoteScreen() {
                   Validade {formatDateForDisplay(quote.validUntil)}
                 </Text>
               </View>
-            </View>
+            </Card>
 
             <View style={styles.section}>
               <Text variant="cardTitle">Itens</Text>
               {quote.items.map((item, index) => (
                 <View
                   key={`${item.name}-${index}`}
-                  style={[styles.item, { borderBottomColor: colors.borderSubtle }]}
+                  style={[
+                    styles.item,
+                    { borderBottomColor: colors.borderSubtle },
+                  ]}
                 >
                   <View style={styles.copy}>
                     <Text variant="label">{item.name}</Text>
@@ -226,12 +223,7 @@ export function PublicQuoteScreen() {
               ))}
             </View>
 
-            <View
-              style={[
-                styles.summary,
-                { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-              ]}
-            >
+            <Card style={styles.summary}>
               <View style={styles.row}>
                 <Text color="textSecondary">Subtotal</Text>
                 <Text>{formatMoney(quote.subtotalCents)}</Text>
@@ -242,13 +234,15 @@ export function PublicQuoteScreen() {
                   <Text>- {formatMoney(quote.discountCents)}</Text>
                 </View>
               ) : null}
-              <View style={[styles.total, { borderTopColor: colors.borderSubtle }]}>
+              <View
+                style={[styles.total, { borderTopColor: colors.borderSubtle }]}
+              >
                 <Text variant="label">Total</Text>
                 <Text color="primary" variant="sectionTitle">
                   {formatMoney(quote.totalCents)}
                 </Text>
               </View>
-            </View>
+            </Card>
 
             {result.state === 'responded' && result.decision ? (
               <View style={styles.state}>
@@ -340,11 +334,7 @@ export function PublicQuoteScreen() {
                       ]}
                     >
                       {confirmedTerms ? (
-                        <Icon
-                          color="textInverse"
-                          name="success"
-                          size="small"
-                        />
+                        <Icon color="textInverse" name="success" size="small" />
                       ) : null}
                     </View>
                     <Text style={styles.copy}>
@@ -421,10 +411,7 @@ const styles = StyleSheet.create({
     width: 44,
   },
   hero: {
-    borderRadius: radii.large,
-    borderWidth: 1,
     gap: spacing.xs,
-    padding: spacing.lg,
   },
   dates: {
     flexDirection: 'row',
@@ -442,16 +429,20 @@ const styles = StyleSheet.create({
   },
   copy: { flex: 1, minWidth: 0 },
   summary: {
-    borderRadius: radii.large,
-    borderWidth: 1,
     gap: spacing.sm,
-    padding: spacing.lg,
   },
-  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
   total: {
     alignItems: 'center',
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     marginTop: spacing.sm,
     paddingTop: spacing.md,

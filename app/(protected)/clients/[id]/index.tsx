@@ -13,5 +13,5 @@ export default function ClientDetailsRoute() {
     return <LoadingScreen label="Carregando cliente..." />;
   if (!business.data || !id)
     return <ErrorFallback onRetry={() => void business.refetch()} />;
-  return <ClientDetailsScreen businessId={business.data.id} clientId={id} />;
+  return <ClientDetailsScreen businessId={business.data.id} businessName={business.data.business_name} clientId={id} />;
 }

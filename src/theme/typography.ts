@@ -1,72 +1,72 @@
 import type { TextStyle } from 'react-native';
 
+/**
+ * Poppins é a família única do app. A rampa abaixo vem da Home — a tela mais
+ * madura do produto — e passou a valer para todas as telas: escala compacta,
+ * adequada a telas densas, com `letterSpacing` negativo nos títulos, que é o
+ * refinamento que a rampa anterior não tinha.
+ */
 export const fontFamilies = {
-  regular: 'Manrope_400Regular',
-  medium: 'Manrope_500Medium',
-  semibold: 'Manrope_600SemiBold',
-  bold: 'Manrope_700Bold',
+  regular: 'Poppins_400Regular',
+  medium: 'Poppins_500Medium',
+  semibold: 'Poppins_600SemiBold',
+  bold: 'Poppins_700Bold',
   fallback: undefined,
 } as const;
 
 export const typography = {
   display: {
     fontFamily: fontFamilies.bold,
-    fontSize: 36,
-    lineHeight: 44,
-    letterSpacing: 0,
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   pageTitle: {
     fontFamily: fontFamilies.bold,
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: 0,
+    fontSize: 24,
+    lineHeight: 32,
+    letterSpacing: -0.4,
   },
   sectionTitle: {
-    fontFamily: fontFamilies.bold,
-    fontSize: 22,
-    lineHeight: 30,
-    letterSpacing: 0,
+    fontFamily: fontFamilies.semibold,
+    fontSize: 17,
+    lineHeight: 24,
+    letterSpacing: -0.2,
   },
   cardTitle: {
     fontFamily: fontFamilies.semibold,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 21,
     letterSpacing: 0,
   },
   body: {
     fontFamily: fontFamilies.regular,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: 0,
   },
   bodyMedium: {
     fontFamily: fontFamilies.medium,
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     letterSpacing: 0,
   },
   bodySmall: {
     fontFamily: fontFamilies.regular,
-    fontSize: 14,
-    lineHeight: 22,
-    letterSpacing: 0,
-  },
-  bodySecondary: {
-    fontFamily: fontFamilies.regular,
-    fontSize: 14,
-    lineHeight: 22,
+    fontSize: 13,
+    lineHeight: 19,
     letterSpacing: 0,
   },
   label: {
-    fontFamily: fontFamilies.semibold,
-    fontSize: 14,
-    lineHeight: 20,
+    fontFamily: fontFamilies.medium,
+    fontSize: 12,
+    lineHeight: 16,
     letterSpacing: 0,
   },
   caption: {
     fontFamily: fontFamilies.regular,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 16,
     letterSpacing: 0,
   },
   button: {
@@ -75,24 +75,25 @@ export const typography = {
     lineHeight: 20,
     letterSpacing: 0,
   },
+  /** Dinheiro em destaque. Tabular para alinhar colunas de valores. */
   financial: {
     fontFamily: fontFamilies.bold,
-    fontSize: 24,
-    lineHeight: 32,
-    letterSpacing: 0,
+    fontSize: 26,
+    lineHeight: 34,
+    letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
   },
   monetaryHero: {
     fontFamily: fontFamilies.bold,
-    fontSize: 32,
-    lineHeight: 40,
-    letterSpacing: -0.3,
+    fontSize: 30,
+    lineHeight: 38,
+    letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
   },
   monetaryValue: {
     fontFamily: fontFamilies.semibold,
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 15,
+    lineHeight: 20,
     letterSpacing: 0,
     fontVariant: ['tabular-nums'],
   },
@@ -103,7 +104,7 @@ export const typography = {
     letterSpacing: 0.2,
   },
   navigation: {
-    fontFamily: fontFamilies.semibold,
+    fontFamily: fontFamilies.medium,
     fontSize: 11,
     lineHeight: 16,
     letterSpacing: 0.1,
@@ -112,12 +113,6 @@ export const typography = {
     fontFamily: fontFamilies.semibold,
     fontSize: 12,
     lineHeight: 16,
-    letterSpacing: 0,
-  },
-  title: {
-    fontFamily: fontFamilies.bold,
-    fontSize: 24,
-    lineHeight: 32,
     letterSpacing: 0,
   },
 } satisfies Record<string, TextStyle>;

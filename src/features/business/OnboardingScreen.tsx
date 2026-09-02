@@ -6,11 +6,19 @@ import type { FieldPath } from 'react-hook-form';
 import { Keyboard, StyleSheet, View } from 'react-native';
 
 import { StepTransition } from '@/components/motion';
-import { Button, Card, InlineFeedback, Screen, Text } from '@/components/ui';
+import {
+  Button,
+  Card,
+  ConfirmationDialog,
+  InlineFeedback,
+  Screen,
+  Text,
+} from '@/components/ui';
 import { triggerHaptic } from '@/lib/haptics';
 import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
 import { radii, spacing, useTheme } from '@/theme';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { completeOnboarding } from './api';
 import { BusinessFormFields } from './BusinessFormFields';
 import type { BusinessFormSection } from './BusinessFormFields';
@@ -69,7 +77,7 @@ export function OnboardingScreen() {
     setError,
     setValue,
     trigger,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<BusinessFormData>({
     resolver: zodResolver(businessSchema),
     defaultValues: {
@@ -88,12 +96,14 @@ export function OnboardingScreen() {
       pixKey: '',
     },
   });
+  const discard = useUnsavedChangesGuard(isDirty);
   const mutation = useMutation({
     mutationFn: (data: BusinessFormData) => {
       if (!user) throw new Error('Missing user');
       return completeOnboarding(user.id, data);
     },
     onSuccess: async () => {
+      discard.allowNextNavigation();
       void triggerHaptic('success');
       if (user)
         await queryClient.invalidateQueries({
@@ -117,6 +127,10 @@ export function OnboardingScreen() {
     Keyboard.dismiss();
   };
   const values = useWatch({ control });
+  const editSection = (target: number) => {
+    setDirection(target < step ? 'back' : 'forward');
+    setStep(target);
+  };
 
   return (
     <Screen keyboardAvoiding safeAreaEdges={['bottom']}>
@@ -156,17 +170,52 @@ export function OnboardingScreen() {
             setValue={setValue}
           />
         ) : (
-          <Card variant="highlighted">
-            <Text variant="cardTitle">{values.businessName}</Text>
-            <Text>{values.email}</Text>
-            <Text>
-              {values.city} - {values.state}
-            </Text>
-            <Text color="textSecondary" variant="bodySecondary">
-              O perfil será salvo somente quando você tocar em “Concluir
-              perfil”.
-            </Text>
-          </Card>
+          <View style={styles.review}>
+            <ReviewSection
+              onEdit={() => editSection(0)}
+              rows={[
+                ['Nome do negócio', values.businessName],
+                ['Tipo de documento', values.documentType?.toUpperCase()],
+                [
+                  values.documentType?.toUpperCase() || 'Documento',
+                  values.documentNumber,
+                ],
+              ]}
+              title="Negócio"
+            />
+            <ReviewSection
+              onEdit={() => editSection(1)}
+              rows={[
+                ['Telefone profissional', values.professionalPhone],
+                ['E-mail profissional', values.email],
+              ]}
+              title="Contato"
+            />
+            <ReviewSection
+              onEdit={() => editSection(2)}
+              rows={[
+                ['Rua', values.street],
+                ['Número', values.number],
+                ['Complemento', values.complement || 'Não informado'],
+                ['Bairro', values.neighborhood],
+                ['Cidade', values.city],
+                ['Estado', values.state],
+                ['CEP', values.postalCode],
+              ]}
+              title="Endereço"
+            />
+            <ReviewSection
+              onEdit={() => editSection(3)}
+              rows={[['Chave Pix', values.pixKey || 'Não informada']]}
+              title="Pagamento"
+            />
+            <Card variant="highlighted">
+              <Text color="textSecondary" variant="bodySmall">
+                O perfil será salvo somente quando você tocar em “Concluir
+                perfil”.
+              </Text>
+            </Card>
+          </View>
         )}
       </StepTransition>
 
@@ -193,7 +242,54 @@ export function OnboardingScreen() {
           />
         )}
       </View>
+      <ConfirmationDialog
+        cancelLabel="Continuar preenchendo"
+        confirmLabel="Descartar alterações"
+        description="Os dados deste perfil ainda não foram salvos."
+        destructive
+        onCancel={discard.cancelDiscard}
+        onConfirm={discard.confirmDiscard}
+        title="Sair do cadastro?"
+        visible={discard.visible}
+      />
     </Screen>
+  );
+}
+
+function ReviewSection({
+  title,
+  rows,
+  onEdit,
+}: {
+  title: string;
+  rows: readonly (readonly [string, string | undefined])[];
+  onEdit: () => void;
+}) {
+  return (
+    <Card
+      headerTrailing={
+        <Button
+          label={`Editar ${title}`}
+          onPress={onEdit}
+          size="small"
+          variant="ghost"
+        />
+      }
+      title={title}
+    >
+      <View style={styles.reviewRows}>
+        {rows.map(([label, value]) => (
+          <View key={label} style={styles.reviewRow}>
+            <Text color="textMuted" variant="caption">
+              {label}
+            </Text>
+            <Text selectable variant="bodyMedium">
+              {value || 'Não informado'}
+            </Text>
+          </View>
+        ))}
+      </View>
+    </Card>
   );
 }
 
@@ -209,4 +305,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   actions: { gap: spacing.sm },
+  review: { gap: spacing.md },
+  reviewRows: { gap: spacing.md },
+  reviewRow: { gap: spacing.xs },
 });

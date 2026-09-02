@@ -96,7 +96,11 @@ jest.mock('react-native-reanimated', () => {
     withSequence: (...values: unknown[]) => values[values.length - 1],
     interpolate: (value: number, input: number[], output: number[]) =>
       output[0] ?? value,
+    interpolateColor: (value: number, input: number[], output: string[]) =>
+      (value >= 1 ? output[output.length - 1] : output[0]) ?? 'transparent',
+    Easing: { bezier: () => (value: number) => value },
     Extrapolation: { CLAMP: 'clamp' },
+    ReduceMotion: { System: 'system', Always: 'always', Never: 'never' },
     runOnJS:
       (fn: (...args: unknown[]) => unknown) =>
       (...args: unknown[]) =>
@@ -138,4 +142,10 @@ jest.mock('expo-router', () => ({
   Stack: Object.assign('Stack', { Screen: 'Screen' }),
   useLocalSearchParams: jest.fn(() => ({})),
   usePathname: jest.fn(),
+  // `useUnsavedChangesGuard` intercepta o pop por aqui: sem este stub, toda
+  // tela protegida por descarte quebra ao montar.
+  useNavigation: jest.fn(() => ({
+    addListener: jest.fn(() => jest.fn()),
+    dispatch: jest.fn(),
+  })),
 }));

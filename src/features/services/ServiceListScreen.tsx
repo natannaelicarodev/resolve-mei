@@ -43,10 +43,11 @@ function ServiceRow({ service }: { service: Service }) {
           <Text numberOfLines={1} style={styles.price} variant="monetaryValue">
             {formatPriceCents(service.price_cents)}
           </Text>
-          <Badge
-            label={service.status === 'active' ? 'Ativo' : 'Inativo'}
-            variant={service.status === 'active' ? 'success' : 'neutral'}
-          />
+          {/* Só a exceção ganha selo: marcar "Ativo" em toda linha gasta a
+              coluna com o estado normal e deixa o inativo menos visível. */}
+          {service.status === 'active' ? null : (
+            <Badge label="Inativo" variant="neutral" />
+          )}
         </View>
       }
     />
@@ -87,7 +88,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
         action={
           <CompactCreateButton
             accessibilityHint="Abre o formulário para adicionar um serviço."
-            icon="briefcase-plus-outline"
+            icon="service"
             label="Novo serviço"
             onPress={() => router.push('/services/new')}
           />
@@ -175,7 +176,7 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
                   ? 'Revise a busca ou altere o filtro.'
                   : 'Seus serviços aparecerão aqui conforme você cadastrá-los.'
               }
-              icon="briefcase-search-outline"
+              icon="search"
               title={
                 search || status !== 'all'
                   ? 'Nenhum serviço encontrado'

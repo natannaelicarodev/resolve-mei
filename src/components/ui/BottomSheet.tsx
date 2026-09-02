@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import type { PropsWithChildren, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   BottomSheetBackdrop,
   BottomSheetModal,
@@ -16,6 +15,7 @@ import { useReducedMotion } from '@/components/motion';
 import { spacing, useTheme } from '@/theme';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 export type BottomSheetProps = PropsWithChildren<{
   visible: boolean;
@@ -81,13 +81,7 @@ export function BottomSheet({
           </View>
           <IconButton
             accessibilityLabel="Fechar"
-            icon={
-              <MaterialCommunityIcons
-                color={colors.textPrimary}
-                name="close"
-                size={22}
-              />
-            }
+            icon={<Icon color="textPrimary" name="close" size="medium" />}
             onPress={onClose}
           />
         </View>

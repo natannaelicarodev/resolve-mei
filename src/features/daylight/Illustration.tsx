@@ -3,7 +3,8 @@ import type { ImageSourcePropType } from 'react-native';
 
 import { Icon } from '@/components/ui';
 import type { IconName } from '@/components/ui';
-import { day, dayRadii, daySizes } from './theme';
+import { dayRadii, daySizes, useDayTheme } from './theme';
+import type { DayPalette } from './theme';
 
 /**
  * Every illustrated slot in the product, named by what it means rather than by
@@ -33,21 +34,21 @@ interface Slot {
   soft: string;
 }
 
-const SLOTS: Record<IllustrationName, Slot> = {
+const slotsFor = (day: DayPalette): Record<IllustrationName, Slot> => ({
   income: { icon: 'trendUp', tint: day.income, soft: day.incomeSoft },
   expense: { icon: 'trendDown', tint: day.expense, soft: day.expenseSoft },
   pending: { icon: 'alert', tint: day.pending, soft: day.pendingSoft },
   approved: { icon: 'success', tint: day.income, soft: day.incomeSoft },
   client: { icon: 'client', tint: day.info, soft: day.infoSoft },
-  service: { icon: 'service', tint: '#4054D6', soft: '#E8EBFF' },
+  service: { icon: 'service', tint: day.brand, soft: day.brandSoft },
   quote: { icon: 'quote', tint: day.brand, soft: day.brandSoft },
   quoteHero: { icon: 'quote', tint: day.brand, soft: day.brandSoft },
   quoteHeroDraft: { icon: 'edit', tint: day.brand, soft: day.brandSoft },
   catalog: { icon: 'money', tint: day.brand, soft: day.brandSoft },
-  business: { icon: 'service', tint: '#4054D6', soft: '#E8EBFF' },
+  business: { icon: 'service', tint: day.brand, soft: day.brandSoft },
   stats: { icon: 'trendUp', tint: day.info, soft: day.infoSoft },
   empty: { icon: 'success', tint: day.income, soft: day.incomeSoft },
-};
+});
 
 /**
  * Artwork registry.
@@ -62,12 +63,12 @@ const SLOTS: Record<IllustrationName, Slot> = {
  */
 const ARTWORK: Partial<Record<IllustrationName, ImageSourcePropType>> = {
   income: require('../../../assets/illustrations/money.png'),
-  expense: require('../../../assets/illustrations/card.png'),
+  expense: require('../../../assets/illustrations/expense-wallet-teal.png'),
   pending: require('../../../assets/illustrations/clock.png'),
   approved: require('../../../assets/illustrations/tick.png'),
   client: require('../../../assets/illustrations/client-person-anil.png'),
-  service: require('../../../assets/illustrations/service-briefcase-cropped.png'),
-  quote: require('../../../assets/illustrations/quote-clipboard-anil.png'),
+  service: require('../../../assets/illustrations/service-briefcase-teal.png'),
+  quote: require('../../../assets/illustrations/quote-clipboard-teal.png'),
   quoteHero: require('../../../assets/illustrations/quote-catalog-hero-padded-alpha.png'),
   quoteHeroDraft: require('../../../assets/illustrations/quote-continue-hero-2d.png'),
   catalog: require('../../../assets/illustrations/bag.png'),
@@ -93,7 +94,8 @@ export function Illustration({
   name,
   size = daySizes.illustration,
 }: IllustrationProps) {
-  const slot = SLOTS[name];
+  const day = useDayTheme();
+  const slot = slotsFor(day)[name];
   const art = ARTWORK[name];
 
   return (
@@ -130,7 +132,7 @@ export function hasArtwork(name: IllustrationName): boolean {
 }
 
 /** Every slot the product declares. Used by the coverage test. */
-export const illustrationNames = Object.keys(SLOTS) as IllustrationName[];
+export const illustrationNames = Object.keys(ARTWORK) as IllustrationName[];
 
 const styles = StyleSheet.create({
   frame: {

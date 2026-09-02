@@ -15,11 +15,11 @@ import Animated, {
 
 import { useReducedMotion } from '@/components/motion';
 import { Text } from '@/components/ui';
+import { getThemeShadows, motion, useTheme } from '@/theme';
 import { triggerHaptic } from '@/lib/haptics';
 import { Illustration } from './Illustration';
 import type { IllustrationName } from './Illustration';
 import {
-  PRESS_SCALE,
   day,
   dayMotion,
   dayRadii,
@@ -27,6 +27,7 @@ import {
   daySpace,
   daySpring,
   dayType,
+  useDayTheme,
 } from './theme';
 
 /**
@@ -63,16 +64,18 @@ export function Tappable({
     .enabled(!disabled)
     .onBegin(() => {
       'worklet';
-      scale.set(reduced ? 1 : withSpring(PRESS_SCALE, daySpring.press));
+      scale.set(
+        reduced ? 1 : withSpring(motion.pressScale, motion.spring.press),
+      );
     })
     .onEnd((_event, success) => {
       'worklet';
-      scale.set(reduced ? 1 : withSpring(1, daySpring.gentle));
+      scale.set(reduced ? 1 : withSpring(1, motion.spring.gentle));
       if (success) runOnJS(fire)();
     })
     .onFinalize(() => {
       'worklet';
-      scale.set(reduced ? 1 : withSpring(1, daySpring.gentle));
+      scale.set(reduced ? 1 : withSpring(1, motion.spring.gentle));
     });
 
   const animated = useAnimatedStyle(() => ({
@@ -187,12 +190,27 @@ export function Card({
   children: ReactNode;
   style?: object;
 }) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const palette = useDayTheme();
+  const { resolvedTheme } = useTheme();
+  return (
+    <View
+      style={[
+        styles.card,
+        getThemeShadows(resolvedTheme).card,
+        { backgroundColor: palette.surface },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 export interface Shortcut {
   id: string;
   art: IllustrationName;
+  /** Compensates transparent padding so different artwork reads at one optical size. */
+  artSize?: number;
   label: string;
   /** One line saying what the area is for. */
   hint: string;
@@ -209,6 +227,8 @@ export function ShortcutTile({
   index: number;
   shortcut: Shortcut;
 }) {
+  const palette = useDayTheme();
+  const { resolvedTheme } = useTheme();
   return (
     <Enter
       index={index}
@@ -218,10 +238,23 @@ export function ShortcutTile({
         accessibilityHint={shortcut.hint}
         accessibilityLabel={shortcut.label}
         onPress={() => router.push(shortcut.route as never)}
-        style={styles.shortcut}
+        style={[
+          styles.shortcut,
+          getThemeShadows(resolvedTheme).card,
+          { backgroundColor: palette.surface },
+        ]}
       >
-        <Illustration name={shortcut.art} bare size={32} />
-        <Text numberOfLines={2} style={styles.shortcutLabel}>
+        <View style={styles.shortcutArtFrame}>
+          <Illustration
+            name={shortcut.art}
+            bare
+            size={shortcut.artSize ?? 32}
+          />
+        </View>
+        <Text
+          numberOfLines={2}
+          style={[styles.shortcutLabel, { color: palette.textSecondary }]}
+        >
           {shortcut.label}
         </Text>
       </Tappable>
@@ -252,6 +285,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: daySpace.xs,
     paddingVertical: daySpace.sm,
     ...dayShadow,
+  },
+  shortcutArtFrame: {
+    alignItems: 'center',
+    height: 32,
+    justifyContent: 'center',
+    width: 32,
   },
   shortcutLabel: {
     ...dayType.label,

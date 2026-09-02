@@ -1,11 +1,11 @@
 import type { PropsWithChildren, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type { PressableProps, ViewProps } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { AnimatedPressable } from '@/components/motion';
 import { getThemeShadows, radii, sizes, spacing, useTheme } from '@/theme';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 export type CardVariant =
   | 'default'
@@ -47,15 +47,14 @@ export function Card({
 }: CardProps) {
   const { colors, resolvedTheme } = useTheme();
   const shadows = getThemeShadows(resolvedTheme);
+  // Um card tem um padding e um raio. Variantes mudam cor e elevação — não
+  // geometria; variar geometria por variante era o que fazia dois cards
+  // vizinhos nunca alinharem.
   const paddingByVariant: Partial<Record<CardVariant, number>> = {
     subtle: spacing[4],
     success: spacing[4],
     warning: spacing[4],
     danger: spacing[4],
-  };
-  const radiusByVariant: Partial<Record<CardVariant, number>> = {
-    subtle: radii.medium,
-    elevated: radii.largeCard,
   };
   const variants: Record<CardVariant, ViewProps['style']> = {
     default: {},
@@ -64,7 +63,7 @@ export function Card({
       borderColor: 'transparent',
     },
     elevated: {
-      ...shadows.elevated,
+      ...shadows.raised,
       backgroundColor: colors.surfaceElevated,
       borderColor: 'transparent',
     },
@@ -78,7 +77,7 @@ export function Card({
       paddingLeft: spacing[5] + 4,
     },
     summary: {
-      ...shadows.subtle,
+      ...shadows.rest,
       backgroundColor: colors.surfaceElevated,
       borderColor: 'transparent',
     },
@@ -102,10 +101,10 @@ export function Card({
   const resolvedTrailing =
     trailing ??
     (variant === 'interactive' && onPress ? (
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={sizes.iconMedium}
+      <Icon
+        color="textMuted"
+        name="forward"
+        size="medium"
         testID="card-trailing-chevron"
       />
     ) : null);
@@ -127,8 +126,8 @@ export function Card({
         {
           backgroundColor: colors.surface,
           borderColor: colors.borderSubtle,
-          borderRadius: radiusByVariant[variant] ?? radii.card,
-          padding: paddingByVariant[variant] ?? spacing[5],
+          borderRadius: radii.card,
+          padding: paddingByVariant[variant] ?? sizes.cardPadding,
         },
         variants[variant],
         style,
@@ -158,6 +157,7 @@ export function Card({
     <AnimatedPressable
       accessibilityLabel={accessibilityLabel}
       accessibilityRole="button"
+      haptic="selection"
       onPress={onPress}
       style={styles.pressable}
     >

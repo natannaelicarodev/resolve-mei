@@ -48,3 +48,8 @@ yarn-error.*
 # local assistant settings
 .claude/
 .agents/
+.mcp.json
+
+# investigation screenshots and other tools' local config
+artifacts/
+.codex/

@@ -7,7 +7,14 @@ import { StyleSheet } from 'react-native';
 import type { TextInput, View } from 'react-native';
 
 import { SuccessTransition } from '@/components/motion';
-import { Button, Card, InlineFeedback, Skeleton, Text } from '@/components/ui';
+import {
+  Button,
+  Card,
+  ConfirmationDialog,
+  InlineFeedback,
+  Skeleton,
+  Text,
+} from '@/components/ui';
 import { updateExistingBusiness } from '@/features/business/api';
 import type { Business } from '@/features/business/api';
 import { BusinessFormFields } from '@/features/business/BusinessFormFields';
@@ -19,6 +26,7 @@ import { normalizeError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
 import { spacing } from '@/theme';
 import { formatDocument } from '@/utils/documents';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { scheduleProfileRedirect } from './navigation';
 
 export function businessToFormData(business: Business): BusinessFormData {
@@ -152,11 +160,12 @@ function ProfessionalBusinessForm({
     clearErrors,
     setError,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<BusinessFormData>({
     resolver: zodResolver(businessSchema),
     defaultValues: businessToFormData(business),
   });
+  const discard = useUnsavedChangesGuard(isDirty && !showSuccess);
   const identity = `${userId}:${business.id}`;
   const focusField: BusinessFocusField | undefined =
     focus === 'first-required'
@@ -198,6 +207,7 @@ function ProfessionalBusinessForm({
         businessQueryKey(variables.expectedUserId),
         updatedBusiness,
       );
+      discard.allowNextNavigation();
       void queryClient.invalidateQueries({
         queryKey: businessQueryKey(variables.expectedUserId),
       });
@@ -246,6 +256,16 @@ function ProfessionalBusinessForm({
         label="Salvar dados profissionais"
         loading={mutation.isPending}
         onPress={() => void handleSubmit(submit)()}
+      />
+      <ConfirmationDialog
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar alterações"
+        description="As alterações feitas nos dados profissionais ainda não foram salvas."
+        destructive
+        onCancel={discard.cancelDiscard}
+        onConfirm={discard.confirmDiscard}
+        title="Descartar alterações?"
+        visible={discard.visible}
       />
     </>
   );

@@ -1,13 +1,15 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useEffect, useState } from 'react';
-import type { ComponentProps, ReactNode, RefObject } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import {
   Animated,
+  type ColorValue,
   Image,
   Modal,
+  Platform,
   Pressable,
   StyleSheet,
   useWindowDimensions,
@@ -17,26 +19,59 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
+import Reanimated, {
+  Easing as ReanimatedEasing,
+  interpolate,
+  ReduceMotion,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
 import { AnimatedPressable } from '@/components/motion';
-import { IconButton, Text } from '@/components/ui';
-import { sizes, spacing, useTheme } from '@/theme';
-
-type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+import { Icon, IconButton, Text } from '@/components/ui';
+import type { IconName } from '@/components/ui';
+import { sizes, spacing, typography, useTheme } from '@/theme';
 type ProtectedDestination =
-  'home' | 'clients' | 'services' | 'quotes' | 'profile';
+  'home' | 'agenda' | 'clients' | 'services' | 'quotes' | 'profile';
 
-function CreateGlyph() {
+const CREATE_GLYPH_DURATION_MS = 220;
+
+function CreateGlyph({ active = false }: { active?: boolean }) {
+  const morph = useSharedValue(0);
+
+  useEffect(() => {
+    morph.value = withTiming(active ? 1 : 0, {
+      duration: CREATE_GLYPH_DURATION_MS,
+      easing: ReanimatedEasing.bezier(0.2, 0, 0, 1),
+      reduceMotion: ReduceMotion.System,
+    });
+  }, [active, morph]);
+
+  const glyphStyle = useAnimatedStyle(() => ({
+    transform: [{ rotateZ: `${interpolate(morph.value, [0, 1], [0, 45])}deg` }],
+  }));
+  const horizontalStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleX: interpolate(morph.value, [0, 1], [1, 0.9]) }],
+  }));
+  const verticalStyle = useAnimatedStyle(() => ({
+    transform: [{ scaleY: interpolate(morph.value, [0, 1], [1, 0.9]) }],
+  }));
+
   return (
-    <View
+    <Reanimated.View
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
-      style={styles.createGlyph}
+      style={[styles.createGlyph, glyphStyle]}
     >
-      <View style={styles.createGlyphPlusHorizontal} />
-      <View style={styles.createGlyphPlusVertical} />
-    </View>
+      <Reanimated.View
+        style={[styles.createGlyphPlusHorizontal, horizontalStyle]}
+      />
+      <Reanimated.View
+        style={[styles.createGlyphPlusVertical, verticalStyle]}
+      />
+    </Reanimated.View>
   );
 }
 
@@ -99,9 +134,21 @@ function NavigationItem({
         {emphasis ? (
           <CreateGlyph />
         ) : (
-          <MaterialCommunityIcons color={color} name={icon} size={22} />
+          <Icon name={icon} rawColor={color} size="large" />
         )}
       </View>
+      {!emphasis ? (
+        <Text
+          numberOfLines={1}
+          style={[
+            styles.navigationLabel,
+            { color },
+            selected && styles.navigationLabelSelected,
+          ]}
+        >
+          {label}
+        </Text>
+      ) : null}
     </>
   );
 
@@ -128,6 +175,7 @@ function NavigationItem({
           accessibilityRole={role}
           accessibilityState={{ disabled: false, selected }}
           disableScale
+          haptic="selection"
           onPress={onPress}
           style={[
             styles.navigationItem,
@@ -145,17 +193,26 @@ function QuickCreateMenu({
   accentColor,
   blurTarget,
   onClose,
+  onWarmComplete,
   visible,
+  warming = false,
 }: {
   accentColor?: string;
   blurTarget?: RefObject<View | null>;
   onClose: () => void;
+  onWarmComplete?: () => void;
   visible: boolean;
+  warming?: boolean;
 }) {
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  const [closing, setClosing] = useState(false);
   const [progress] = useState(() => new Animated.Value(0));
+  const loadedWarmImages = useRef(new Set<number>());
+  const warmCompletionTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const primary = accentColor ?? colors.primary;
   const actionWidth = Math.min(156, (width - 32) / 2);
   const center = width / 2;
@@ -194,6 +251,39 @@ function QuickCreateMenu({
       source: require('../../../assets/illustrations/quick-create-service-anil.png'),
     },
   ];
+  const preparing = warming && !visible;
+
+  const finishWarmup = useCallback(() => {
+    if (warmCompletionTimer.current) return;
+    // Keep the native menu tree alive for a few frames after the image
+    // decoders finish before completing the silent warm-up.
+    warmCompletionTimer.current = setTimeout(() => {
+      warmCompletionTimer.current = null;
+      onWarmComplete?.();
+    }, 64);
+  }, [onWarmComplete]);
+
+  const markWarmImageLoaded = useCallback(
+    (source: number) => {
+      if (!warming) return;
+      loadedWarmImages.current.add(source);
+      if (loadedWarmImages.current.size === actions.length) finishWarmup();
+    },
+    [actions.length, finishWarmup, warming],
+  );
+
+  useEffect(() => {
+    if (!warming) return;
+    loadedWarmImages.current.clear();
+    const fallback = setTimeout(finishWarmup, 1200);
+    return () => {
+      clearTimeout(fallback);
+      if (warmCompletionTimer.current) {
+        clearTimeout(warmCompletionTimer.current);
+        warmCompletionTimer.current = null;
+      }
+    };
+  }, [finishWarmup, warming]);
 
   useEffect(() => {
     if (!visible) return;
@@ -208,12 +298,14 @@ function QuickCreateMenu({
   }, [progress, visible]);
 
   const dismiss = (afterClose?: () => void) => {
+    setClosing(true);
     Animated.timing(progress, {
-      duration: 150,
+      duration: CREATE_GLYPH_DURATION_MS,
       toValue: 0,
       useNativeDriver: true,
     }).start(() => {
       onClose();
+      setClosing(false);
       afterClose?.();
     });
   };
@@ -227,17 +319,29 @@ function QuickCreateMenu({
       onRequestClose={() => dismiss()}
       statusBarTranslucent
       transparent
-      visible={visible}
+      visible={visible || warming}
     >
-      <View style={styles.quickMenu}>
-        <BlurView
-          blurMethod={blurTarget ? 'dimezisBlurViewSdk31Plus' : 'none'}
-          blurTarget={blurTarget}
-          intensity={72}
-          pointerEvents="none"
-          style={StyleSheet.absoluteFill}
-          tint="light"
-        />
+      <View
+        accessibilityElementsHidden={preparing}
+        importantForAccessibility={preparing ? 'no-hide-descendants' : 'auto'}
+        pointerEvents={preparing ? 'none' : 'auto'}
+        style={[styles.quickMenu, preparing && styles.quickMenuPreparing]}
+      >
+        {Platform.OS === 'android' ? (
+          <View
+            pointerEvents="none"
+            style={[StyleSheet.absoluteFill, styles.quickMenuAndroidBackdrop]}
+          />
+        ) : (
+          <BlurView
+            blurMethod="none"
+            blurTarget={blurTarget}
+            intensity={72}
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+            tint={resolvedTheme}
+          />
+        )}
         <Pressable
           accessibilityLabel="Fechar menu de criação"
           accessibilityRole="button"
@@ -283,6 +387,7 @@ function QuickCreateMenu({
               <AnimatedPressable
                 accessibilityLabel={action.label}
                 accessibilityRole="button"
+                haptic="selection"
                 onPress={() => choose(action.href)}
                 style={[
                   styles.quickAction,
@@ -291,6 +396,7 @@ function QuickCreateMenu({
               >
                 <Image
                   accessibilityIgnoresInvertColors
+                  onLoadEnd={() => markWarmImageLoaded(action.source)}
                   resizeMode="contain"
                   source={action.source}
                   style={[
@@ -316,11 +422,7 @@ function QuickCreateMenu({
           onPress={() => dismiss()}
           style={[styles.quickCloseButton, { backgroundColor: primary }]}
         >
-          <MaterialCommunityIcons
-            color={colors.textInverse}
-            name="close"
-            size={30}
-          />
+          <CreateGlyph active={visible && !closing} />
         </AnimatedPressable>
       </View>
     </Modal>
@@ -330,17 +432,27 @@ function QuickCreateMenu({
 export function ProtectedBottomNavigation({
   accentColor,
   accentSoftColor,
+  backgroundColor,
   blurTarget,
+  floating = false,
   selected,
+  surfaceColor,
+  warmQuickCreate = false,
 }: {
   accentColor?: string;
   accentSoftColor?: string;
+  backgroundColor?: ColorValue;
   blurTarget?: RefObject<View | null>;
+  floating?: boolean;
   selected: ProtectedDestination;
+  surfaceColor?: ColorValue;
+  warmQuickCreate?: boolean;
 }) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const [createOpen, setCreateOpen] = useState(false);
+  const [quickCreatePrepared, setQuickCreatePrepared] = useState(false);
+  const [quickCreateWarming, setQuickCreateWarming] = useState(false);
   const barWidth = Math.max(280, width - 24);
   const center = barWidth / 2;
   const barPath = [
@@ -353,6 +465,25 @@ export function ProtectedBottomNavigation({
     `V 76 Q ${barWidth} 84 ${barWidth - 16} 84`,
     'H 16 Q 0 84 0 76 V 38 Q 0 14 24 14 Z',
   ].join(' ');
+
+  useEffect(() => {
+    if (!warmQuickCreate || quickCreatePrepared) return;
+    if (typeof requestIdleCallback === 'function') {
+      const idleCallback = requestIdleCallback(
+        () => setQuickCreateWarming(true),
+        { timeout: 1200 },
+      );
+      return () => cancelIdleCallback(idleCallback);
+    }
+    const fallback = setTimeout(() => setQuickCreateWarming(true), 0);
+    return () => clearTimeout(fallback);
+  }, [quickCreatePrepared, warmQuickCreate]);
+
+  const finishQuickCreateWarmup = useCallback(() => {
+    setQuickCreatePrepared(true);
+    setQuickCreateWarming(false);
+  }, []);
+
   return (
     <>
       <SafeAreaView
@@ -361,9 +492,26 @@ export function ProtectedBottomNavigation({
         pointerEvents="box-none"
         style={[
           styles.bottomNavigationArea,
-          { backgroundColor: colors.background },
+          floating ? styles.bottomNavigationFloating : null,
+          {
+            backgroundColor: floating
+              ? 'transparent'
+              : (backgroundColor ?? colors.background),
+          },
         ]}
       >
+        {floating ? (
+          <LinearGradient
+            colors={[
+              'transparent',
+              backgroundColor ?? colors.background,
+              backgroundColor ?? colors.background,
+            ]}
+            locations={[0, 0.42, 1]}
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+        ) : null}
         <View style={[styles.bottomNavigation, { width: barWidth }]}>
           <Svg
             height={84}
@@ -372,27 +520,51 @@ export function ProtectedBottomNavigation({
             viewBox={`0 0 ${barWidth} 84`}
             width={barWidth}
           >
-            <Path d={barPath} fill={colors.surface} />
+            <Path d={barPath} fill={surfaceColor ?? colors.surface} />
           </Svg>
           <View style={styles.navigationItems}>
             <NavigationItem
-              icon="home-variant-outline"
+              icon="home"
               label="Início"
               onPress={
-                selected === 'home' ? undefined : () => router.replace('/home')
+                selected === 'home' ? undefined : () => router.navigate('/home')
               }
               selected={selected === 'home'}
               selectedColor={accentColor}
               selectedSoftColor={accentSoftColor}
             />
+            <NavigationItem
+              icon="date"
+              label="Agenda"
+              onPress={
+                selected === 'agenda'
+                  ? undefined
+                  : () => router.navigate('/agenda')
+              }
+              selected={selected === 'agenda'}
+              selectedColor={accentColor}
+              selectedSoftColor={accentSoftColor}
+            />
             <View style={styles.navigationSlot} />
             <NavigationItem
-              icon="account-circle-outline"
+              icon="client"
+              label="Clientes"
+              onPress={
+                selected === 'clients'
+                  ? undefined
+                  : () => router.navigate('/clients')
+              }
+              selected={selected === 'clients'}
+              selectedColor={accentColor}
+              selectedSoftColor={accentSoftColor}
+            />
+            <NavigationItem
+              icon="profile"
               label="Perfil"
               onPress={
                 selected === 'profile'
                   ? undefined
-                  : () => router.replace('/profile')
+                  : () => router.navigate('/profile')
               }
               selected={selected === 'profile'}
               selectedColor={accentColor}
@@ -402,6 +574,7 @@ export function ProtectedBottomNavigation({
           <AnimatedPressable
             accessibilityLabel="Criar"
             accessibilityRole="button"
+            haptic="selection"
             containerStyle={[
               styles.centralActionContainer,
               { left: center - 31 },
@@ -423,7 +596,9 @@ export function ProtectedBottomNavigation({
         accentColor={accentColor}
         blurTarget={blurTarget}
         onClose={() => setCreateOpen(false)}
+        onWarmComplete={finishQuickCreateWarmup}
         visible={createOpen}
+        warming={quickCreateWarming}
       />
     </>
   );
@@ -444,11 +619,15 @@ export function ProtectedPageHeader({
   dismissToBackFallback?: boolean;
   settings?: boolean;
 }) {
-  const { colors } = useTheme();
-  const [backRequested, setBackRequested] = useState(false);
+  const backRequested = useRef(false);
+  const [backRequestId, setBackRequestId] = useState(0);
 
   useEffect(() => {
-    if (!backRequested) return;
+    if (!backRequested.current) return;
+    // Consume the press before dispatching navigation. An unsaved-changes
+    // guard may prevent that dispatch and rerender this header when its dialog
+    // closes; keeping the flag set would dispatch the same back action again.
+    backRequested.current = false;
     navigateBackOrFallback(
       backFallback,
       alwaysUseBackFallback,
@@ -457,7 +636,7 @@ export function ProtectedPageHeader({
   }, [
     alwaysUseBackFallback,
     backFallback,
-    backRequested,
+    backRequestId,
     dismissToBackFallback,
   ]);
 
@@ -466,14 +645,11 @@ export function ProtectedPageHeader({
       {back ? (
         <IconButton
           accessibilityLabel="Voltar"
-          icon={
-            <MaterialCommunityIcons
-              color={colors.textPrimary}
-              name="arrow-left"
-              size={22}
-            />
-          }
-          onPress={() => setBackRequested(true)}
+          icon={<Icon color="textPrimary" name="back" size="large" />}
+          onPress={() => {
+            backRequested.current = true;
+            setBackRequestId((current) => current + 1);
+          }}
         />
       ) : null}
       <Text numberOfLines={1} style={styles.pageTitle} variant="sectionTitle">
@@ -482,13 +658,7 @@ export function ProtectedPageHeader({
       {settings ? (
         <IconButton
           accessibilityLabel="Abrir configurações"
-          icon={
-            <MaterialCommunityIcons
-              color={colors.textPrimary}
-              name="cog-outline"
-              size={22}
-            />
-          }
+          icon={<Icon color="textPrimary" name="settings" size="large" />}
           onPress={() => router.push('/settings')}
         />
       ) : null}
@@ -501,6 +671,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: spacing.xs,
     paddingTop: 22,
+  },
+  bottomNavigationFloating: {
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    zIndex: 10,
   },
   bottomNavigation: {
     height: 84,
@@ -534,6 +711,7 @@ const styles = StyleSheet.create({
   createNavigationSlot: { zIndex: 2 },
   navigationItem: {
     alignItems: 'center',
+    gap: spacing.xs,
     justifyContent: 'center',
     minHeight: 84,
     paddingTop: 14,
@@ -551,6 +729,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 42,
   },
+  navigationLabel: {
+    fontFamily: 'Poppins_500Medium',
+    fontSize: 12,
+    lineHeight: 16,
+    maxWidth: '100%',
+    textAlign: 'center',
+  },
+  navigationLabelSelected: { fontFamily: 'Poppins_600SemiBold' },
   createGlyph: {
     alignItems: 'center',
     height: 28,
@@ -572,6 +758,8 @@ const styles = StyleSheet.create({
     width: 3,
   },
   quickMenu: { flex: 1 },
+  quickMenuAndroidBackdrop: { backgroundColor: 'rgba(16, 24, 32, 0.52)' },
+  quickMenuPreparing: { opacity: 0 },
   quickMenuBackdrop: {
     backgroundColor: 'rgba(24, 28, 48, 0.16)',
     bottom: 0,
@@ -596,9 +784,7 @@ const styles = StyleSheet.create({
   quickActionImage: { height: 46, width: 46 },
   quickActionLabel: {
     flex: 1,
-    fontFamily: 'Manrope_600SemiBold',
-    fontSize: 12.5,
-    lineHeight: 16,
+    ...typography.label,
     minWidth: 0,
   },
   quickCloseContainer: {

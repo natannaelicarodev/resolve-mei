@@ -1,13 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
+import { useMemo } from 'react';
 
 import { useMyBusiness } from '@/features/business/hooks';
 import { useActiveClientCount } from '@/features/clients/hooks';
 import { DaylightHomeScreen } from '@/features/daylight/DaylightHomeScreen';
 import { createAvatarSignedUrl } from '@/features/profile/avatar';
+import { useAgendaOverview } from '@/features/agenda/hooks';
 import { getMyProfile, profileQueryKey } from '@/features/profile/api';
 import { useQuotes } from '@/features/quotes/hooks';
 import { useServices } from '@/features/services/hooks';
 import { useAuth } from '@/providers/AuthProvider';
+import { useReconnectClients } from '@/features/relationships/hooks';
+import { markRender } from '@/lib/renderDiagnostics';
 
 /**
  * The Home is a hub, so it fetches only what its shortcuts and compact pending
@@ -15,6 +19,7 @@ import { useAuth } from '@/providers/AuthProvider';
  * draft and sent quotes. Financial totals stay on their dedicated screens.
  */
 export default function HomeRoute() {
+  markRender('HomeRoute');
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const business = useMyBusiness(userId);
@@ -43,11 +48,46 @@ export default function HomeRoute() {
   const draftQuotes = useQuotes(userId, businessId, '', 'draft');
   const sentQuotes = useQuotes(userId, businessId, '', 'sent');
   const recentQuotes = useQuotes(userId, businessId, '', 'all');
+  const agenda = useAgendaOverview(userId, businessId);
+  const reconnect = useReconnectClients(userId, businessId);
+  const agendaActionCount = agenda.data
+    ? agenda.data.appointments.filter(
+        (item) => item.overdue || item.scheduledOn === agenda.data?.today,
+      ).length + agenda.data.financialDueToday.length
+    : undefined;
 
   const fullName = profile.data?.full_name?.trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : undefined;
-  const highlightedQuote =
+  const highlightedQuoteSource =
     draftQuotes.data?.pages[0]?.items[0] ?? sentQuotes.data?.pages[0]?.items[0];
+  const highlightQuote = useMemo(
+    () =>
+      highlightedQuoteSource
+        ? {
+            clientName: highlightedQuoteSource.client_name_snapshot,
+            id: highlightedQuoteSource.id,
+            quoteNumber: highlightedQuoteSource.quote_number,
+            status: highlightedQuoteSource.status,
+            updatedAt: highlightedQuoteSource.updated_at,
+          }
+        : undefined,
+    [highlightedQuoteSource],
+  );
+  const recentQuoteItems = recentQuotes.data?.pages[0]?.items;
+  const homeRecentQuotes = useMemo(
+    () =>
+      (recentQuoteItems ?? [])
+        .filter((quote) => quote.id !== highlightedQuoteSource?.id)
+        .slice(0, 2)
+        .map((quote) => ({
+          clientName: quote.client_name_snapshot,
+          id: quote.id,
+          quoteNumber: quote.quote_number,
+          status: quote.status,
+          updatedAt: quote.updated_at,
+        })),
+    [highlightedQuoteSource?.id, recentQuoteItems],
+  );
 
   return (
     <DaylightHomeScreen
@@ -57,32 +97,17 @@ export default function HomeRoute() {
       draftQuoteCount={draftQuotes.data?.pages[0]?.totalCount}
       firstName={firstName}
       hasLogo={Boolean(business.data?.logo_path)}
-      highlightQuote={
-        highlightedQuote
-          ? {
-              clientName: highlightedQuote.client_name_snapshot,
-              id: highlightedQuote.id,
-              quoteNumber: highlightedQuote.quote_number,
-              status: highlightedQuote.status,
-              updatedAt: highlightedQuote.updated_at,
-            }
-          : undefined
-      }
+      highlightQuote={highlightQuote}
       loading={business.isLoading}
       serviceCount={services.data?.pages[0]?.totalCount}
       sentQuoteCount={sentQuotes.data?.pages[0]?.totalCount}
       pendingLoading={draftQuotes.isLoading || sentQuotes.isLoading}
       recentLoading={recentQuotes.isLoading}
-      recentQuotes={(recentQuotes.data?.pages[0]?.items ?? [])
-        .filter((quote) => quote.id !== highlightedQuote?.id)
-        .slice(0, 2)
-        .map((quote) => ({
-          clientName: quote.client_name_snapshot,
-          id: quote.id,
-          quoteNumber: quote.quote_number,
-          status: quote.status,
-          updatedAt: quote.updated_at,
-        }))}
+      agendaActionCount={agendaActionCount}
+      agendaLoading={agenda.isLoading}
+      reconnectCount={reconnect.data?.clients.length}
+      reconnectLoading={reconnect.isLoading}
+      recentQuotes={homeRecentQuotes}
     />
   );
 }

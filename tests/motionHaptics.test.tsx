@@ -54,6 +54,21 @@ describe('motion and haptics', () => {
     expect(onPress).toHaveBeenCalledTimes(1);
   });
 
+  it('centralizes optional semantic haptics in the shared pressable', async () => {
+    const screen = await render(
+      <AnimatedPressable
+        accessibilityLabel="Selecionar"
+        accessibilityRole="button"
+        haptic="selection"
+        onPress={jest.fn()}
+      >
+        <Text>Selecionar</Text>
+      </AnimatedPressable>,
+    );
+    await fireEvent.press(screen.getByRole('button', { name: 'Selecionar' }));
+    expect(Haptics.selectionAsync).toHaveBeenCalledTimes(1);
+  });
+
   it('keeps step content available with reduced motion enabled', async () => {
     jest
       .spyOn(AccessibilityInfo, 'isReduceMotionEnabled')

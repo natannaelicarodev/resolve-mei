@@ -75,7 +75,7 @@ export function PersonalImageField({
           style={[styles.fallback, { backgroundColor: colors.primarySubtle }]}
           testID="personal-image-fallback"
         >
-          <Text color="primary" variant="title">
+          <Text color="primary" variant="pageTitle">
             {fallbackInitial ?? 'U'}
           </Text>
         </View>

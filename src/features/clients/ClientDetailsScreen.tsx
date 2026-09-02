@@ -9,16 +9,22 @@ import {
   ConfirmationDialog,
   InlineFeedback,
   Screen,
+  SkeletonBlock,
   Text,
   Badge,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { FadeInView } from '@/components/motion';
+import { formatBigIntMoney } from '@/features/receivables/domain';
+import { useRelationshipOverview } from '@/features/relationships/hooks';
+import { motion, spacing } from '@/theme';
 import { setClientStatus } from './api';
 import { openClientContact } from './contact';
 import { formatClientDocument, formatPhone } from './format';
+import { elapsedLabel } from './listFilter';
 import { clientsQueryKey, useClient } from './hooks';
 import { useAuth } from '@/providers/AuthProvider';
+import { ClientRelationshipSection } from '@/features/relationships/ClientRelationshipSection';
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -34,14 +40,19 @@ function Detail({ label, value }: { label: string; value?: string | null }) {
 
 export function ClientDetailsScreen({
   businessId,
+  businessName,
   clientId,
 }: {
   businessId: string;
+  businessName?: string;
   clientId: string;
 }) {
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const query = useClient(userId, businessId, clientId);
+  // Mesma chave da seção de relacionamento mais abaixo: o react-query serve as
+  // duas com uma requisição só.
+  const relationship = useRelationshipOverview(userId, businessId, clientId);
   const queryClient = useQueryClient();
   const [contactError, setContactError] = useState(false);
   const [statusConfirmationVisible, setStatusConfirmationVisible] =
@@ -69,7 +80,7 @@ export function ClientDetailsScreen({
           dismissToBackFallback
           title="Cliente"
         />
-        <Text>Carregando cliente...</Text>
+        <SkeletonBlock label="Carregando cliente" />
       </Screen>
     );
   if (query.isError || !query.data)
@@ -111,18 +122,50 @@ export function ClientDetailsScreen({
         dismissToBackFallback
         title="Detalhes do cliente"
       />
-      <View style={styles.heading}>
-        <View style={styles.headingCopy}>
-          <Text variant="sectionTitle">{client.name}</Text>
-          <Text color="textSecondary">
-            {client.type === 'person' ? 'Pessoa' : 'Empresa'}
-          </Text>
-        </View>
-        <Badge
-          label={client.status === 'active' ? 'Ativo' : 'Inativo'}
-          variant={client.status === 'active' ? 'success' : 'neutral'}
-        />
-      </View>
+      {/* O resumo vem antes do cadastro porque a pergunta ao abrir um cliente
+          é "quando foi a última vez e quanto já rendeu", não "qual o CPF".
+          Consome a mesma consulta da seção de relacionamento abaixo, que o
+          react-query deduplica — não há requisição a mais por isso. */}
+      <FadeInView
+        distance={motion.distance.medium}
+        scaleFrom={motion.enterScale}
+      >
+        <Card style={styles.summary} variant="summary">
+          <View style={styles.heading}>
+            <View style={styles.headingCopy}>
+              <Text color="textSecondary" variant="caption">
+                {client.type === 'person' ? 'PESSOA' : 'EMPRESA'}
+              </Text>
+              <Text variant="sectionTitle">{client.name}</Text>
+            </View>
+            {client.status === 'active' ? null : (
+              <Badge label="Inativo" variant="neutral" />
+            )}
+          </View>
+          <View style={styles.summaryStats}>
+            <View style={styles.summaryStat}>
+              <Text color="textSecondary" variant="caption">
+                Último atendimento
+              </Text>
+              <Text variant="label">
+                {relationship.data
+                  ? elapsedLabel(relationship.data.daysSince ?? undefined)
+                  : '—'}
+              </Text>
+            </View>
+            <View style={styles.summaryStat}>
+              <Text color="textSecondary" variant="caption">
+                Recebido
+              </Text>
+              <Text color="success" variant="label">
+                {relationship.data
+                  ? formatBigIntMoney(relationship.data.receivedCents)
+                  : '—'}
+              </Text>
+            </View>
+          </View>
+        </Card>
+      </FadeInView>
       <View style={styles.actions}>
         {client.phone ? (
           <>
@@ -175,6 +218,12 @@ export function ClientDetailsScreen({
           <Text color="textSecondary">Nenhuma informação adicional.</Text>
         ) : null}
       </Card>
+      <ClientRelationshipSection
+        businessId={businessId}
+        businessName={businessName ?? 'seu negócio'}
+        client={{ id: client.id, name: client.name, phone: client.phone }}
+        userId={userId}
+      />
       {status.isError ? (
         <InlineFeedback
           variant="error"
@@ -216,6 +265,9 @@ export function ClientDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  summary: { gap: spacing.md },
+  summaryStats: { flexDirection: 'row', gap: spacing.md },
+  summaryStat: { flex: 1, gap: 2, minWidth: 0 },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

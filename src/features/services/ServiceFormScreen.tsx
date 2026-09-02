@@ -9,6 +9,7 @@ import { SuccessTransition } from '@/components/motion';
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Input,
   Screen,
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { spacing } from '@/theme';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import type { Service } from './api';
 import { createService, updateService } from './api';
 import { formatPriceCents, formatPriceInput } from './format';
@@ -59,12 +61,16 @@ export function ServiceFormScreen({
     resolver: zodResolver(serviceSchema),
     defaultValues: service ? serviceToFormData(service) : emptyServiceForm,
   });
+  const discard = useUnsavedChangesGuard(
+    form.formState.isDirty && !showSuccess,
+  );
   const mutation = useMutation({
     mutationFn: (input: ServiceFormData) =>
       service
         ? updateService(businessId, service.id, input)
         : createService(businessId, input),
     onSuccess: (saved) => {
+      discard.allowNextNavigation();
       queryClient.setQueryData(
         [...servicesQueryKey(userId, businessId), 'detail', saved.id],
         saved,
@@ -212,6 +218,16 @@ export function ServiceFormScreen({
         label="Salvar serviço"
         loading={mutation.isPending}
         onPress={() => void form.handleSubmit(submit)()}
+      />
+      <ConfirmationDialog
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar alterações"
+        description="As alterações feitas neste serviço ainda não foram salvas."
+        destructive
+        onCancel={discard.cancelDiscard}
+        onConfirm={discard.confirmDiscard}
+        title="Descartar alterações?"
+        visible={discard.visible}
       />
     </Screen>
   );

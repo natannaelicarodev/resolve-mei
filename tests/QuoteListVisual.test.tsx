@@ -80,11 +80,13 @@ it('renders accessible single-line filters and a compact quote card', async () =
     screen.getByRole('radio', { name: 'Todos' }).props.accessibilityState,
   ).toMatchObject({ checked: true, selected: true });
   expect(screen.getByText('R$ 1.250.000,00')).toBeTruthy();
-  expect(screen.getByText('26/08/2026 · validade 26/09/2026')).toBeTruthy();
+  // A linha de tempo substitui "emissão · validade": num orçamento já
+  // decidido, o selo ao lado anuncia o desfecho, então ela mostra a emissão.
+  expect(screen.getByText('Emitido em 26/08/2026')).toBeTruthy();
   expect(screen.getByText('Aprovado')).toBeTruthy();
 
   const quoteCard = screen.getByRole('button', {
-    name: /000042, Cliente com um nome profissional muito longo.*Aprovado.*26\/08\/2026.*26\/09\/2026.*1\.250\.000,00/,
+    name: /000042, Cliente com um nome profissional muito longo.*Aprovado.*Emitido em 26\/08\/2026.*1\.250\.000,00/,
   });
   expect(quoteCard).toBeTruthy();
   fireEvent.press(quoteCard);

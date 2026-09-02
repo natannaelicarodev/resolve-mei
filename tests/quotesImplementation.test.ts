@@ -48,12 +48,3 @@ it('remounts forms and ignores mutations after identity changes', () => {
   expect(form).toContain('Descartar alterações?');
   expect(form).not.toContain('getValues()');
 });
-
-it('keeps quote metrics private and does not invent loading values', () => {
-  const hooks = source('src/features/home/hooks.ts');
-  const home = source('src/features/home/HomeDashboard.tsx');
-  expect(hooks).toContain("'dashboard'");
-  expect(home).toContain('dashboardLoading');
-  expect(home).toContain('Indisponível');
-  expect(home).toContain('Balanço estimado');
-});

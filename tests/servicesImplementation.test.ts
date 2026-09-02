@@ -53,12 +53,4 @@ describe('services implementation invariants', () => {
     expect(navigation).toContain("href: '/quotes/new'");
     expect(navigation).toContain('accessibilityLabel="Criar"');
   });
-
-  it('uses stable responsive cards for the home overview', () => {
-    const home = source('src/features/home/HomeDashboard.tsx');
-    expect(home).toContain('const wide = width >= 760');
-    expect(home).toContain('overviewGridWide');
-    expect(home).toMatch(/chartCard: \{[\s\S]*?flex: 2/);
-    expect(home).toMatch(/clientsCard: \{[\s\S]*?flex: 1/);
-  });
 });

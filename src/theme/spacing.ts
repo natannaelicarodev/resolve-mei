@@ -1,3 +1,8 @@
+/**
+ * Escala única, em grid de 4 px. Os degraus de 12 e 20 vêm da Home: sem eles,
+ * separar blocos dentro de um card obriga a escolher entre 8 (apertado) e
+ * 16 (largo), que era a origem do ritmo irregular nas telas operacionais.
+ */
 export const spacing = {
   0: 0,
   1: 4,
@@ -10,6 +15,9 @@ export const spacing = {
   10: 40,
   12: 48,
   16: 64,
+  // Apelidos herdados. Mantidos nos valores originais: 259 usos dependem
+  // deles, e redefini-los moveria o layout de todas as telas de uma vez.
+  // Código novo usa a escala numérica acima.
   xs: 4,
   sm: 8,
   md: 16,
@@ -17,19 +25,26 @@ export const spacing = {
   xl: 32,
 } as const;
 
+/**
+ * Três raios, não onze. Controle para tudo que se toca, card para superfície
+ * de conteúdo, folha para o que sobe do rodapé. `pill` é o caso circular.
+ */
 export const radii = {
-  small: 8,
-  input: 14,
-  button: 14,
-  medium: 14,
-  large: 18,
-  card: 24,
-  largeCard: 28,
+  control: 12,
+  card: 16,
+  sheet: 24,
   pill: 999,
-  modal: 28,
+  // Aliases mantidos enquanto as telas migram para os três nomes acima.
+  small: 12,
+  input: 12,
+  button: 12,
+  medium: 12,
+  large: 16,
+  largeCard: 16,
+  modal: 24,
   circular: 999,
-  sm: 8,
-  md: 14,
+  sm: 12,
+  md: 12,
 } as const;
 
 export const sizes = {
@@ -42,6 +57,7 @@ export const sizes = {
   screenGutter: 16,
   screenGutterLarge: 24,
   sectionGap: 24,
+  /** Único token de padding de card. O `Card` consome só este. */
   cardPadding: 20,
   bottomNavigationHeight: 76,
   iconSmall: 16,

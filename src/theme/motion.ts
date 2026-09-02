@@ -16,5 +16,11 @@ export const motion = {
   },
   distance: { small: 8, medium: 12, step: 20 },
   pressScale: 0.98,
+  /**
+   * Escala inicial do bloco de resumo ao abrir uma tela de detalhe. Sugere que
+   * o card tocado na lista se expandiu até virar o cabeçalho, sem trocar a
+   * transição nativa do Stack por uma dirigida em JS.
+   */
+  enterScale: 0.98,
   stagger: 40,
 } as const;

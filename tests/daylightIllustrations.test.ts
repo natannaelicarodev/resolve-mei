@@ -29,8 +29,9 @@ const SLOT_NAMES = [
 ];
 
 describe('illustration registry', () => {
+  const slots = /const slotsFor[\s\S]*?^\}\);/m.exec(SOURCE)?.[0] ?? '';
+
   it('declares a slot for every role the product uses', () => {
-    const slots = /const SLOTS: Record<[\s\S]*?^};/m.exec(SOURCE)?.[0] ?? '';
     expect(slots).not.toBe('');
     for (const name of SLOT_NAMES) {
       expect(slots).toContain(`${name}:`);
@@ -38,11 +39,16 @@ describe('illustration registry', () => {
   });
 
   it('gives every slot a fallback glyph and tint', () => {
-    const slots = /const SLOTS: Record<[\s\S]*?^};/m.exec(SOURCE)?.[0] ?? '';
     // One `icon:` and one `tint:` per slot, so a missing file can never leave
     // an empty circle on screen.
     expect((slots.match(/icon:/g) ?? []).length).toBe(SLOT_NAMES.length);
     expect((slots.match(/tint:/g) ?? []).length).toBe(SLOT_NAMES.length);
+  });
+
+  it('derives fallback colors from the active theme', () => {
+    expect(SOURCE).toContain('useDayTheme()');
+    expect(slots).toContain('day.brandSoft');
+    expect(slots).not.toMatch(/#[0-9a-f]{6}/i);
   });
 
   it('keeps artwork optional so a missing file cannot break a screen', () => {

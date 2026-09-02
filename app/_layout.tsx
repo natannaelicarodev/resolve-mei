@@ -1,21 +1,14 @@
-import { Geist_300Light } from '@expo-google-fonts/geist/300Light';
-import { Geist_400Regular } from '@expo-google-fonts/geist/400Regular';
-import { Geist_500Medium } from '@expo-google-fonts/geist/500Medium';
-import { Geist_600SemiBold } from '@expo-google-fonts/geist/600SemiBold';
-import { Manrope_400Regular } from '@expo-google-fonts/manrope/400Regular';
-import { Manrope_500Medium } from '@expo-google-fonts/manrope/500Medium';
-import { Manrope_600SemiBold } from '@expo-google-fonts/manrope/600SemiBold';
-import { Manrope_700Bold } from '@expo-google-fonts/manrope/700Bold';
 import { Poppins_400Regular } from '@expo-google-fonts/poppins/400Regular';
 import { Poppins_500Medium } from '@expo-google-fonts/poppins/500Medium';
 import { Poppins_600SemiBold } from '@expo-google-fonts/poppins/600SemiBold';
 import { Poppins_700Bold } from '@expo-google-fonts/poppins/700Bold';
-import { Poppins_800ExtraBold } from '@expo-google-fonts/poppins/800ExtraBold';
 import { useFonts } from 'expo-font';
+import * as NavigationBar from 'expo-navigation-bar';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
@@ -25,20 +18,13 @@ import { useTheme } from '@/theme';
 void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // Poppins é a única família do app. Quatro pesos cobrem toda a rampa
+  // tipográfica; qualquer peso extra atrasa a splash sem uso correspondente.
   const [fontsLoaded, fontError] = useFonts({
-    Geist_300Light,
-    Geist_400Regular,
-    Geist_500Medium,
-    Geist_600SemiBold,
-    Manrope_400Regular,
-    Manrope_500Medium,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
     Poppins_400Regular,
     Poppins_500Medium,
     Poppins_600SemiBold,
     Poppins_700Bold,
-    Poppins_800ExtraBold,
   });
 
   useEffect(() => {
@@ -47,23 +33,39 @@ export default function RootLayout() {
 
   if (!fontsLoaded && !fontError) return null;
 
-  // GestureHandlerRootView must wrap the whole tree: any Gesture Detector
-  // mounted outside it silently receives no touches.
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <AppErrorBoundary>
-        <AppProviders>
-          <ThemedNavigation />
-        </AppProviders>
-      </AppErrorBoundary>
+    <AppErrorBoundary>
+      <AppProviders>
+        <ThemedAppRoot />
+      </AppProviders>
+    </AppErrorBoundary>
+  );
+}
+
+function ThemedAppRoot() {
+  const { colors } = useTheme();
+
+  // This must be the first full-screen native view, not only a child of a
+  // transparent GestureHandlerRootView. Android's edge-to-edge navigation bar
+  // can expose this surface for a frame while native-stack swaps screens.
+  return (
+    <GestureHandlerRootView
+      style={{ backgroundColor: colors.background, flex: 1 }}
+    >
+      <ThemedNavigation />
     </GestureHandlerRootView>
   );
 }
 
 function ThemedNavigation() {
   const { colors, resolvedTheme } = useTheme();
+
+  useEffect(() => {
+    NavigationBar.setStyle(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedTheme]);
+
   return (
-    <>
+    <View style={{ backgroundColor: colors.background, flex: 1 }}>
       <StatusBar style={resolvedTheme === 'dark' ? 'light' : 'dark'} />
       <Stack
         screenOptions={{
@@ -77,8 +79,14 @@ function ThemedNavigation() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(protected)" options={{ headerShown: false }} />
-        <Stack.Screen name="auth-callback" options={{ headerShown: false }} />
-        <Stack.Screen name="q" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="auth-callback"
+          options={{ animation: 'fade', headerShown: false }}
+        />
+        <Stack.Screen
+          name="q"
+          options={{ animation: 'fade', headerShown: false }}
+        />
         {__DEV__ ? (
           <Stack.Screen
             name="design-system"
@@ -86,6 +94,6 @@ function ThemedNavigation() {
           />
         ) : null}
       </Stack>
-    </>
+    </View>
   );
 }

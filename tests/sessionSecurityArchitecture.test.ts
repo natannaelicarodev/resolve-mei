@@ -13,7 +13,8 @@ it('keeps avatar URLs and the protected tree bound to the current user', () => {
   expect(profile).toContain(
     "'private',\n      userId,\n      'profile-avatar'",
   );
-  expect(layout).toContain('key={user?.id}');
+  expect(layout).toContain('userId={user?.id}');
+  expect(layout).toContain('key={userId}');
   expect(profile).toContain('query.data?.id === userId');
 });
 

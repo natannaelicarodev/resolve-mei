@@ -38,7 +38,7 @@ export function formatDateForDisplay(value: string) {
 
 export function getTodayDatabaseDate(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: 'America/Fortaleza',
+    timeZone: 'America/Sao_Paulo',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',

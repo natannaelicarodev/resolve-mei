@@ -142,3 +142,46 @@ it('does not save partially: the mutation only runs on the last step', async () 
 
   await dispose();
 });
+
+it('shows every saved field in the final review and links each section back to editing', async () => {
+  const { dispose, screen } = await renderOnboarding();
+
+  await fillBusinessStep(screen);
+  await fireEvent.changeText(
+    screen.getByLabelText('Telefone profissional'),
+    '11988887777',
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+
+  await fireEvent.changeText(screen.getByLabelText('Rua'), 'Rua das Flores');
+  await fireEvent.changeText(screen.getByLabelText(/mero$/), '123');
+  await fireEvent.changeText(
+    screen.getByLabelText('Complemento (opcional)'),
+    'Sala 4',
+  );
+  await fireEvent.changeText(screen.getByLabelText('Bairro'), 'Centro');
+  await fireEvent.changeText(screen.getByLabelText('Cidade'), 'SÃ£o Paulo');
+  await fireEvent.changeText(screen.getByLabelText('CEP'), '01001000');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+
+  await fireEvent.changeText(screen.getByLabelText('Chave Pix'), 'ana@pix');
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
+
+  expect(await screen.findByText('Etapa 5 de 5')).toBeTruthy();
+  expect(screen.getByText('529.982.247-25')).toBeTruthy();
+  expect(screen.getByText('11988887777')).toBeTruthy();
+  expect(screen.getByText('Rua das Flores')).toBeTruthy();
+  expect(screen.getByText('Sala 4')).toBeTruthy();
+  expect(screen.getByText('01001000')).toBeTruthy();
+  expect(screen.getByText('ana@pix')).toBeTruthy();
+  expect(screen.getByRole('button', { name: /Editar Neg/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Editar Contato' })).toBeTruthy();
+  expect(screen.getByRole('button', { name: /Editar Endere/ })).toBeTruthy();
+  expect(screen.getByRole('button', { name: 'Editar Pagamento' })).toBeTruthy();
+
+  await fireEvent.press(screen.getByRole('button', { name: /Editar Endere/ }));
+  expect(await screen.findByText('Etapa 3 de 5')).toBeTruthy();
+  expect(screen.getByDisplayValue('Rua das Flores')).toBeTruthy();
+
+  await dispose();
+});

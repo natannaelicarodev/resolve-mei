@@ -1,31 +1,31 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, View } from 'react-native';
 
 import { radii, spacing, useTheme } from '@/theme';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 export type FeedbackVariant = 'success' | 'error' | 'warning' | 'info';
 const config = {
   success: {
-    icon: 'check-circle-outline',
+    icon: 'success',
     background: 'successSurface',
     color: 'success',
     label: 'Sucesso',
   },
   error: {
-    icon: 'alert-circle-outline',
+    icon: 'alert',
     background: 'dangerSurface',
     color: 'danger',
     label: 'Erro',
   },
   warning: {
-    icon: 'alert-outline',
+    icon: 'alert',
     background: 'warningSurface',
     color: 'warning',
     label: 'Atenção',
   },
   info: {
-    icon: 'information-outline',
+    icon: 'statusInfo',
     background: 'infoSurface',
     color: 'info',
     label: 'Informação',
@@ -59,17 +59,13 @@ export function InlineFeedback({
         importantForAccessibility="no-hide-descendants"
         style={styles.icon}
       >
-        <MaterialCommunityIcons
-          color={colors[item.color]}
-          name={item.icon}
-          size={22}
-        />
+        <Icon name={item.icon} rawColor={colors[item.color]} size="medium" />
       </View>
       <View style={styles.copy}>
         <Text color="textPrimary" variant="label">
           {item.label}
         </Text>
-        <Text variant="bodySecondary">{message}</Text>
+        <Text variant="bodySmall">{message}</Text>
       </View>
     </View>
   );

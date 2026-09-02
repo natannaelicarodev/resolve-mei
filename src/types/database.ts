@@ -179,6 +179,159 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      service_orders: {
+        Row: {
+          id: string;
+          quote_id: string;
+          business_id: string;
+          client_id: string;
+          status:
+            'pending' | 'in_progress' | 'paused' | 'completed' | 'canceled';
+          created_at: string;
+          started_at: string | null;
+          completed_at: string | null;
+          canceled_at: string | null;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      service_order_events: {
+        Row: {
+          id: number;
+          service_order_id: string;
+          business_id: string;
+          event_type:
+            | 'created'
+            | 'started'
+            | 'paused'
+            | 'resumed'
+            | 'completed'
+            | 'reopened'
+            | 'canceled'
+            | 'note';
+          from_status:
+            | 'pending'
+            | 'in_progress'
+            | 'paused'
+            | 'completed'
+            | 'canceled'
+            | null;
+          to_status:
+            | 'pending'
+            | 'in_progress'
+            | 'paused'
+            | 'completed'
+            | 'canceled'
+            | null;
+          note: string | null;
+          actor_user_id: string;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      service_appointments: {
+        Row: {
+          id: string;
+          service_order_id: string;
+          business_id: string;
+          client_id: string;
+          scheduled_on: string;
+          scheduled_time: string | null;
+          status: 'scheduled' | 'completed' | 'rescheduled' | 'canceled';
+          note: string | null;
+          resolution_note: string | null;
+          rescheduled_from_id: string | null;
+          actor_user_id: string;
+          resolved_by_user_id: string | null;
+          resolved_at: string | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      service_order_evidence: {
+        Row: {
+          id: string;
+          service_order_id: string;
+          business_id: string;
+          category: 'before' | 'during' | 'after';
+          note: string | null;
+          storage_path: string;
+          status: 'pending' | 'active' | 'deleted';
+          byte_size: number | null;
+          locked_at: string | null;
+          created_by: string;
+          created_at: string;
+          deleted_at: string | null;
+          deleted_by: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      business_expenses: {
+        Row: {
+          id: string;
+          business_id: string;
+          quote_id: string | null;
+          amount_cents: number;
+          occurred_on: string;
+          category:
+            | 'material'
+            | 'transporte'
+            | 'ferramentas_equipamentos'
+            | 'alimentacao'
+            | 'taxas_impostos'
+            | 'marketing'
+            | 'outros';
+          description: string | null;
+          recurring: boolean;
+          status: 'active' | 'deleted';
+          created_by: string;
+          updated_by: string;
+          deleted_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      expense_receipts: {
+        Row: {
+          id: string;
+          expense_id: string;
+          business_id: string;
+          storage_path: string;
+          status: 'pending' | 'active' | 'deleted';
+          byte_size: number | null;
+          created_by: string;
+          created_at: string;
+          deleted_by: string | null;
+          deleted_at: string | null;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      business_relationship_settings: {
+        Row: { business_id:string; reconnect_after_days:number; updated_by:string; created_at:string; updated_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      client_relationship_profiles: {
+        Row: { client_id:string; business_id:string; recurring:boolean; priority:boolean; expected_return_days:number|null; updated_by:string; created_at:string; updated_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
+      service_order_relationship_notes: {
+        Row: { service_order_id:string; business_id:string; client_id:string; satisfaction:number|null; observation:string|null; created_by:string; updated_by:string; created_at:string; updated_at:string };
+        Insert: never; Update: never; Relationships: [];
+      };
     };
     Views: Record<never, never>;
     Functions: {
@@ -232,6 +385,164 @@ export interface Database {
         };
         Returns: Json;
       };
+      create_service_order: {
+        Args: { p_business_id: string; p_quote_id: string };
+        Returns: Json;
+      };
+      transition_service_order: {
+        Args: {
+          p_business_id: string;
+          p_service_order_id: string;
+          p_expected_status: string;
+          p_status: string;
+          p_reason?: string | null;
+        };
+        Returns: Json;
+      };
+      add_service_order_note: {
+        Args: {
+          p_business_id: string;
+          p_service_order_id: string;
+          p_note: string;
+        };
+        Returns: Json;
+      };
+      get_quote_receivable: {
+        Args: { p_business_id: string; p_quote_id: string };
+        Returns: Json;
+      };
+      record_quote_financial_entry: {
+        Args: {
+          p_business_id: string;
+          p_quote_id: string;
+          p_entry_type: string;
+          p_amount_cents: string;
+          p_occurred_on: string;
+          p_payment_method: string;
+          p_note?: string | null;
+          p_service_order_id?: string | null;
+          p_original_entry_id?: string | null;
+        };
+        Returns: Json;
+      };
+      set_quote_receivable_due_on: {
+        Args: {
+          p_business_id: string;
+          p_quote_id: string;
+          p_due_on: string | null;
+        };
+        Returns: Json;
+      };
+      get_total_receivable: {
+        Args: { p_business_id: string };
+        Returns: string;
+      };
+      create_service_appointment: {
+        Args: {
+          p_business_id: string;
+          p_service_order_id: string;
+          p_scheduled_on: string;
+          p_scheduled_time?: string | null;
+          p_note?: string | null;
+        };
+        Returns: Json;
+      };
+      reschedule_service_appointment: {
+        Args: {
+          p_business_id: string;
+          p_appointment_id: string;
+          p_scheduled_on: string;
+          p_scheduled_time?: string | null;
+          p_note?: string | null;
+        };
+        Returns: Json;
+      };
+      resolve_service_appointment: {
+        Args: {
+          p_business_id: string;
+          p_appointment_id: string;
+          p_status: string;
+          p_resolution_note?: string | null;
+        };
+        Returns: Json;
+      };
+      get_agenda_overview: {
+        Args: { p_business_id: string };
+        Returns: Json;
+      };
+      reserve_service_evidence: {
+        Args: {
+          p_business_id: string;
+          p_service_order_id: string;
+          p_category: string;
+          p_note?: string | null;
+        };
+        Returns: Json;
+      };
+      finalize_service_evidence: {
+        Args: { p_business_id: string; p_evidence_id: string };
+        Returns: Json;
+      };
+      delete_service_evidence: {
+        Args: {
+          p_business_id: string;
+          p_evidence_id: string;
+          p_reason: string;
+        };
+        Returns: Json;
+      };
+      cancel_service_evidence_reservation: {
+        Args: { p_business_id: string; p_evidence_id: string };
+        Returns: undefined;
+      };
+      save_business_expense: {
+        Args: {
+          p_business_id: string;
+          p_amount_cents: string;
+          p_occurred_on: string;
+          p_category: string;
+          p_description?: string | null;
+          p_quote_id?: string | null;
+          p_recurring?: boolean;
+          p_expense_id?: string | null;
+        };
+        Returns: Json;
+      };
+      delete_business_expense: {
+        Args: { p_business_id: string; p_expense_id: string };
+        Returns: Json;
+      };
+      get_business_expense: { Args:{p_business_id:string;p_expense_id:string}; Returns:Json };
+      reserve_expense_receipt: {
+        Args: { p_business_id: string; p_expense_id: string };
+        Returns: Json;
+      };
+      finalize_expense_receipt: {
+        Args: { p_business_id: string; p_receipt_id: string };
+        Returns: Json;
+      };
+      delete_expense_receipt: {
+        Args: { p_business_id: string; p_receipt_id: string };
+        Returns: Json;
+      };
+      cancel_expense_receipt_reservation: {
+        Args: { p_business_id: string; p_receipt_id: string };
+        Returns: undefined;
+      };
+      get_expense_month: {
+        Args: { p_business_id: string; p_month: string };
+        Returns: Json;
+      };
+      get_quote_expense_margin: {
+        Args: { p_business_id: string; p_quote_id: string };
+        Returns: Json;
+      };
+      save_relationship_settings: { Args:{p_business_id:string;p_reconnect_after_days:number}; Returns:Json };
+      save_client_relationship_profile: { Args:{p_business_id:string;p_client_id:string;p_recurring:boolean;p_priority:boolean}; Returns:Json };
+      save_client_return_interval: { Args:{p_business_id:string;p_client_id:string;p_expected_return_days:number|null}; Returns:Json };
+      save_service_order_relationship_note: { Args:{p_business_id:string;p_service_order_id:string;p_satisfaction:number|null;p_observation:string}; Returns:Json };
+      get_reconnect_clients: { Args:{p_business_id:string}; Returns:Json };
+      get_client_relationship_overview: { Args:{p_business_id:string;p_client_id:string}; Returns:Json };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

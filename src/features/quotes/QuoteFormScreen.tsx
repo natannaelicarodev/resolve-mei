@@ -1,6 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -9,18 +8,25 @@ import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
+  Badge,
   Card,
   ConfirmationDialog,
+  Divider,
   InlineFeedback,
+  InlineLoading,
+  Icon,
   Input,
+  ListItem,
+  SearchInput,
+  Select,
   Screen,
   Text,
 } from '@/components/ui';
-import { listClients } from '@/features/clients/api';
+import { useClients } from '@/features/clients/hooks';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { listServices } from '@/features/services/api';
+import { useServices } from '@/features/services/hooks';
 import { normalizeError } from '@/lib/errors';
-import { spacing, useTheme } from '@/theme';
+import { spacing } from '@/theme';
 import { quotesQueryKey } from './hooks';
 import {
   calculateQuoteTotals,
@@ -77,7 +83,6 @@ function QuoteForm({
   businessId: string;
   quote?: QuoteWithItems;
 }) {
-  const { colors } = useTheme();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
   const mounted = useRef(true);
@@ -87,32 +92,31 @@ function QuoteForm({
     Parameters<typeof navigation.dispatch>[0] | null
   >(null);
   const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const [clientPickerOpen, setClientPickerOpen] = useState(false);
+  const [clientInput, setClientInput] = useState('');
+  const [clientSearch, setClientSearch] = useState('');
+  const [selectedClientLabel, setSelectedClientLabel] = useState(
+    quote?.client_name_snapshot,
+  );
+  const [servicePickerOpen, setServicePickerOpen] = useState(false);
+  const [serviceInput, setServiceInput] = useState('');
+  const [serviceSearch, setServiceSearch] = useState('');
   useEffect(
     () => () => {
       mounted.current = false;
     },
     [],
   );
-  const clients = useQuery({
-    queryKey: ['private', userId, 'quote-form', businessId, 'clients'],
-    queryFn: async ({ signal }) => {
-      const rows = await listClients(businessId, '', 'active', 0, signal);
-      if (rows.some((client) => client.business_id !== businessId))
-        throw new Error('CLIENT_IDENTITY_MISMATCH');
-      return rows;
-    },
-    enabled: Boolean(userId && businessId),
-  });
-  const services = useQuery({
-    queryKey: ['private', userId, 'quote-form', businessId, 'services'],
-    queryFn: async ({ signal }) => {
-      const page = await listServices(businessId, '', 'active', null, signal);
-      if (page.items.some((service) => service.business_id !== businessId))
-        throw new Error('SERVICE_IDENTITY_MISMATCH');
-      return page;
-    },
-    enabled: Boolean(userId && businessId),
-  });
+  useEffect(() => {
+    const timer = setTimeout(() => setClientSearch(clientInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [clientInput]);
+  useEffect(() => {
+    const timer = setTimeout(() => setServiceSearch(serviceInput.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [serviceInput]);
+  const clients = useClients(userId, businessId, clientSearch, 'active');
+  const services = useServices(userId, businessId, serviceSearch, 'active');
   const form = useForm<QuoteFormData>({
     resolver: zodResolver(quoteSchema),
     defaultValues: quote ? quoteToForm(quote) : defaultQuoteValues(),
@@ -123,6 +127,11 @@ function QuoteForm({
     control: form.control,
     name: 'clientId',
   });
+  const clientRows = clients.data?.pages.flat() ?? [];
+  const serviceRows = services.data?.pages.flatMap((page) => page.items) ?? [];
+  const selectedClientName =
+    clientRows.find((client) => client.id === selectedClientId)?.name ??
+    selectedClientLabel;
   const discount =
     useWatch({ control: form.control, name: 'discountCents' }) ?? 0;
   const totals = calculateQuoteTotals(items, discount);
@@ -207,20 +216,72 @@ function QuoteForm({
       />
       <Card>
         <Text variant="cardTitle">Cliente</Text>
-        {clients.isLoading ? (
-          <Text color="textSecondary">Carregando clientes...</Text>
+        <Select
+          error={form.formState.errors.clientId?.message}
+          label="Cliente do orçamento"
+          onPress={() => setClientPickerOpen((open) => !open)}
+          placeholder="Escolher cliente"
+          value={selectedClientName}
+        />
+        {clientPickerOpen ? (
+          <View style={styles.picker}>
+            <SearchInput
+              label="Buscar cliente"
+              onChangeText={setClientInput}
+              placeholder="Nome, documento, telefone ou e-mail"
+              value={clientInput}
+            />
+            {clients.isLoading ? (
+              <InlineLoading label="Carregando clientes" />
+            ) : null}
+            {clients.isError ? (
+              <InlineFeedback
+                message="Não foi possível carregar os clientes."
+                variant="error"
+              />
+            ) : null}
+            {clients.isSuccess && clientRows.length === 0 ? (
+              <InlineFeedback
+                message="Nenhum cliente ativo encontrado."
+                variant="info"
+              />
+            ) : null}
+            {clientRows.length ? (
+              <Card style={styles.optionList}>
+                {clientRows.map((client, index) => (
+                  <View key={client.id}>
+                    {index > 0 ? <Divider /> : null}
+                    <ListItem
+                      accessibilityLabel={`Selecionar cliente ${client.name}`}
+                      onPress={() => {
+                        form.setValue('clientId', client.id, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                        setSelectedClientLabel(client.name);
+                        setClientPickerOpen(false);
+                      }}
+                      title={client.name}
+                      trailing={
+                        selectedClientId === client.id ? (
+                          <Badge label="Selecionado" variant="success" />
+                        ) : undefined
+                      }
+                    />
+                  </View>
+                ))}
+              </Card>
+            ) : null}
+            {clients.hasNextPage ? (
+              <Button
+                label="Carregar mais clientes"
+                loading={clients.isFetchingNextPage}
+                onPress={() => void clients.fetchNextPage()}
+                variant="secondary"
+              />
+            ) : null}
+          </View>
         ) : null}
-        {(clients.data ?? []).map((client) => (
-          <Button
-            key={client.id}
-            label={client.name}
-            onPress={() =>
-              form.setValue('clientId', client.id, { shouldValidate: true })
-            }
-            state={selectedClientId === client.id ? 'success' : 'normal'}
-            variant="secondary"
-          />
-        ))}
         {form.formState.errors.clientId ? (
           <InlineFeedback
             message={form.formState.errors.clientId.message ?? ''}
@@ -230,30 +291,64 @@ function QuoteForm({
       </Card>
       <Card>
         <Text variant="cardTitle">Itens</Text>
-        {(services.data?.items ?? []).map((service) => (
-          <Button
-            key={service.id}
-            label={`Adicionar ${service.name}`}
-            onPress={() =>
-              fields.append({
-                serviceId: service.id,
-                name: service.name,
-                description: service.description ?? '',
-                quantity: 1,
-                unitPriceCents: service.price_cents,
-              })
-            }
-            variant="secondary"
-          />
-        ))}
         <Button
-          icon={
-            <MaterialCommunityIcons
-              color={colors.primary}
-              name="plus"
-              size={20}
-            />
+          label={
+            servicePickerOpen ? 'Fechar catálogo' : 'Adicionar do catálogo'
           }
+          onPress={() => setServicePickerOpen((open) => !open)}
+          variant="secondary"
+        />
+        {servicePickerOpen ? (
+          <View style={styles.picker}>
+            <SearchInput
+              label="Buscar serviço"
+              onChangeText={setServiceInput}
+              placeholder="Nome ou descrição"
+              value={serviceInput}
+            />
+            {services.isLoading ? (
+              <InlineLoading label="Carregando serviços" />
+            ) : null}
+            {services.isError ? (
+              <InlineFeedback
+                message="Não foi possível carregar os serviços."
+                variant="error"
+              />
+            ) : null}
+            {services.isSuccess && serviceRows.length === 0 ? (
+              <InlineFeedback
+                message="Nenhum serviço ativo encontrado."
+                variant="info"
+              />
+            ) : null}
+            {serviceRows.map((service) => (
+              <Button
+                key={service.id}
+                label={`Adicionar ${service.name}`}
+                onPress={() =>
+                  fields.append({
+                    serviceId: service.id,
+                    name: service.name,
+                    description: service.description ?? '',
+                    quantity: 1,
+                    unitPriceCents: service.price_cents,
+                  })
+                }
+                variant="secondary"
+              />
+            ))}
+            {services.hasNextPage ? (
+              <Button
+                label="Carregar mais serviços"
+                loading={services.isFetchingNextPage}
+                onPress={() => void services.fetchNextPage()}
+                variant="ghost"
+              />
+            ) : null}
+          </View>
+        ) : null}
+        <Button
+          icon={<Icon color="primary" name="add" size="small" />}
           label="Adicionar item personalizado"
           onPress={() =>
             fields.append({
@@ -424,4 +519,6 @@ function QuoteForm({
 
 const styles = StyleSheet.create({
   item: { gap: spacing.sm, paddingVertical: spacing.sm },
+  picker: { gap: spacing.sm },
+  optionList: { gap: 0, overflow: 'hidden', padding: 0 },
 });

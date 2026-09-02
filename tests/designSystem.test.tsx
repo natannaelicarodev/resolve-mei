@@ -1,4 +1,5 @@
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import {
   Button,
@@ -34,24 +35,17 @@ describe('design system foundation', () => {
     expect(sizes.touchTarget).toBeGreaterThanOrEqual(44);
   });
 
-  it.each([
-    'display',
-    'pageTitle',
-    'sectionTitle',
-    'cardTitle',
-    'body',
-    'bodySecondary',
-    'label',
-    'caption',
-    'button',
-    'financial',
-    'status',
-  ] as const)('renders typography variant %s', async (variant) => {
-    const screen = await render(<Text variant={variant}>Exemplo</Text>);
-    expect(screen.getByText('Exemplo')).toHaveStyle({
-      fontFamily: typography[variant].fontFamily,
-    });
-  });
+  // Derivado da própria rampa: uma variante nova entra no teste sozinha, e
+  // uma removida não deixa a lista dessincronizada.
+  it.each(Object.keys(typography) as (keyof typeof typography)[])(
+    'renders typography variant %s',
+    async (variant) => {
+      const screen = await render(<Text variant={variant}>Exemplo</Text>);
+      expect(screen.getByText('Exemplo')).toHaveStyle({
+        fontFamily: typography[variant].fontFamily,
+      });
+    },
+  );
 
   it.each(['primary', 'secondary', 'ghost', 'danger'] as const)(
     'renders and activates the %s button',
@@ -203,9 +197,10 @@ describe('design system foundation', () => {
     const elevatedStyle = flattenStyle(
       screen.getByTestId('elevated-card').props.style,
     );
-    expect(elevatedStyle.borderRadius).toBeGreaterThan(
-      defaultStyle.borderRadius,
-    );
+    // Um card elevado se separa por cor de superfície e sombra, nunca por
+    // raio: raios diferentes entre variantes fazem cards vizinhos nunca
+    // alinharem entre si.
+    expect(elevatedStyle.borderRadius).toBe(defaultStyle.borderRadius);
     expect(elevatedStyle.backgroundColor).toBe(colors.surfaceElevated);
     expect(elevatedStyle.elevation).toBeGreaterThan(2);
     expect(elevatedStyle.boxShadow).toBeTruthy();
@@ -225,11 +220,22 @@ describe('design system foundation', () => {
       />,
     );
 
+    // Each option is wrapped in a measured container that carries the flex,
+    // so the sliding indicator can follow it. Walk up until the flexed box is
+    // found rather than pinning a fixed tree depth.
     for (const label of ['Sistema', 'Claro', 'Escuro']) {
-      expect(screen.getByRole('radio', { name: label }).parent).toHaveStyle({
-        flex: 1,
-        minWidth: 0,
-      });
+      let node = screen.getByRole('radio', { name: label }).parent;
+      let distributed = false;
+      for (let depth = 0; node && depth < 4; depth += 1) {
+        const style = StyleSheet.flatten(node.props.style) as
+          { flex?: number; minWidth?: number } | undefined;
+        if (style?.flex === 1 && style?.minWidth === 0) {
+          distributed = true;
+          break;
+        }
+        node = node.parent;
+      }
+      expect(distributed).toBe(true);
     }
   });
 

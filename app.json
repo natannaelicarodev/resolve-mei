@@ -3,6 +3,7 @@
     "name": "ResolveMEI",
     "slug": "resolve-mei",
     "version": "1.0.0",
+    "backgroundColor": "#F7F5F2",
     "orientation": "portrait",
     "scheme": "resolvemei",
     "icon": "./assets/resolve-mei-logo.png",
@@ -11,11 +12,13 @@
       "supportsTablet": true
     },
     "android": {
+      "backgroundColor": "#F7F5F2",
       "adaptiveIcon": {
         "backgroundColor": "#24556F",
         "foregroundImage": "./assets/resolve-mei-logo.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.anonymous.resolvemei"
     },
     "web": {
       "favicon": "./assets/resolve-mei-logo.png"
@@ -23,9 +26,19 @@
     "plugins": [
       "expo-router",
       [
+        "expo-navigation-bar",
+        {
+          "enforceContrast": false,
+          "hidden": false,
+          "style": "dark"
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "photosPermission": "Permita que o ResolveMEI acesse suas fotos para selecionar o logotipo do negócio."
+          "photosPermission": "Permita que o ResolveMEI acesse suas fotos para selecionar imagens do perfil, do negócio e evidências do serviço.",
+          "cameraPermission": "Permita que o ResolveMEI use a câmera para registrar evidências do serviço.",
+          "microphonePermission": false
         }
       ],
       "expo-font",

@@ -5,6 +5,7 @@ import type { PropsWithChildren } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { ToastProvider } from '@/components/ui';
+import { ReducedMotionProvider } from '@/components/motion';
 import { ThemeProvider } from '@/theme';
 import { AuthProvider } from './AuthProvider';
 
@@ -22,13 +23,15 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <SafeAreaProvider>
       <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <BottomSheetModalProvider>
-            <ToastProvider>
-              <AuthProvider>{children}</AuthProvider>
-            </ToastProvider>
-          </BottomSheetModalProvider>
-        </QueryClientProvider>
+        <ReducedMotionProvider>
+          <QueryClientProvider client={queryClient}>
+            <BottomSheetModalProvider>
+              <ToastProvider>
+                <AuthProvider>{children}</AuthProvider>
+              </ToastProvider>
+            </BottomSheetModalProvider>
+          </QueryClientProvider>
+        </ReducedMotionProvider>
       </ThemeProvider>
     </SafeAreaProvider>
   );

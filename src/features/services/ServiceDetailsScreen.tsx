@@ -10,10 +10,12 @@ import {
   ConfirmationDialog,
   InlineFeedback,
   Screen,
+  SkeletonBlock,
   Text,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { FadeInView } from '@/components/motion';
+import { motion, spacing } from '@/theme';
 import { setServiceStatus } from './api';
 import { formatDuration, formatPriceCents } from './format';
 import { servicesQueryKey, useService } from './hooks';
@@ -58,7 +60,7 @@ export function ServiceDetailsScreen({
     return (
       <Screen safeAreaEdges={['top', 'bottom']}>
         {header}
-        <Text accessibilityLiveRegion="polite">Carregando serviço...</Text>
+        <SkeletonBlock label="Carregando serviço" />
       </Screen>
     );
   if (query.isError)
@@ -97,34 +99,43 @@ export function ServiceDetailsScreen({
   return (
     <Screen safeAreaEdges={['top', 'bottom']}>
       {header}
-      <View style={styles.heading}>
-        <View style={styles.headingCopy}>
-          <Text variant="sectionTitle">{service.name}</Text>
+      {/* O preço é a informação central de um serviço, e como `Detail` genérico
+          pesava igual à descrição. Aqui ele ganha a escala monetária. */}
+      <FadeInView
+        distance={motion.distance.medium}
+        scaleFrom={motion.enterScale}
+      >
+        <Card style={styles.summary} variant="summary">
+          <View style={styles.heading}>
+            <View style={styles.headingCopy}>
+              <Text color="textSecondary" variant="caption">
+                SERVIÇO
+              </Text>
+              <Text variant="sectionTitle">{service.name}</Text>
+            </View>
+            {service.status === 'active' ? null : (
+              <Badge label="Inativo" variant="neutral" />
+            )}
+          </View>
           <Text
             accessibilityLabel={`Preço: ${formatPriceCents(service.price_cents)}`}
             color="primary"
-            variant="cardTitle"
+            variant="financial"
           >
             {formatPriceCents(service.price_cents)}
           </Text>
-        </View>
-        <Badge
-          label={service.status === 'active' ? 'Ativo' : 'Inativo'}
-          variant={service.status === 'active' ? 'success' : 'neutral'}
-        />
-      </View>
-      {service.description || duration ? (
-        <Card>
-          <Text variant="cardTitle">Informações</Text>
-          {service.description ? <Text>{service.description}</Text> : null}
           {duration ? (
-            <View style={styles.detail}>
-              <Text color="textSecondary" variant="caption">
-                Duração estimada
-              </Text>
-              <Text>{duration}</Text>
-            </View>
+            <Text color="textSecondary" variant="bodySmall">
+              Duração estimada: {duration}
+            </Text>
           ) : null}
+        </Card>
+      </FadeInView>
+      {/* A duração subiu para o resumo; aqui resta o que não cabe numa linha. */}
+      {service.description ? (
+        <Card>
+          <Text variant="cardTitle">Descrição</Text>
+          <Text>{service.description}</Text>
         </Card>
       ) : null}
       {status.isError ? (
@@ -169,6 +180,7 @@ export function ServiceDetailsScreen({
 }
 
 const styles = StyleSheet.create({
+  summary: { gap: spacing.sm },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   detail: { gap: 2 },

@@ -1,5 +1,4 @@
 import { useEffect } from 'react';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -10,6 +9,7 @@ import Animated, {
 import { triggerHaptic } from '@/lib/haptics';
 import { motion, radii, spacing, useTheme } from '@/theme';
 import { Text } from '../ui/Text';
+import { Icon } from '../ui/Icon';
 import { useReducedMotion } from './useReducedMotion';
 
 export function SuccessTransition({
@@ -55,11 +55,7 @@ export function SuccessTransition({
           iconStyle,
         ]}
       >
-        <MaterialCommunityIcons
-          color={colors.success}
-          name="check-bold"
-          size={22}
-        />
+        <Icon name="success" rawColor={colors.success} size="medium" />
       </Animated.View>
       <Text color="success" variant="label">
         {message}

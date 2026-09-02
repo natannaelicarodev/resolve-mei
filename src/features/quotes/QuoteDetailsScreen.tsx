@@ -6,14 +6,17 @@ import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
   Button,
+  Card,
   ConfirmationDialog,
   Icon,
   InlineFeedback,
   Screen,
+  SkeletonBlock,
   Text,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { radii, spacing, useTheme } from '@/theme';
+import { FadeInView } from '@/components/motion';
+import { motion, spacing, useTheme } from '@/theme';
 import { duplicateQuote, transitionQuote } from './api';
 import {
   allowedQuoteTransitions,
@@ -27,6 +30,9 @@ import type { QuoteStatus } from './domain';
 import { formatDateForDisplay } from './date';
 import { quotesQueryKey, useQuote } from './hooks';
 import { QuoteClientLinkSection } from './QuoteClientLinkSection';
+import { QuoteServiceOrderSection } from '@/features/service-orders/QuoteServiceOrderSection';
+import { QuoteReceivablesSection } from '@/features/receivables/QuoteReceivablesSection';
+import { QuoteExpenseMarginSection } from '@/features/expenses/QuoteExpenseMarginSection';
 import {
   loadQuoteDocumentForExport,
   previewQuoteDocument,
@@ -242,7 +248,7 @@ export function QuoteDetailsScreen({
     return (
       <Screen safeAreaEdges={['top', 'bottom']}>
         {header}
-        <Text>Carregando orçamento...</Text>
+        <SkeletonBlock label="Carregando orçamento" />
       </Screen>
     );
   if (query.isError || !query.data)
@@ -270,12 +276,8 @@ export function QuoteDetailsScreen({
       safeAreaEdges={['top', 'bottom']}
     >
       {header}
-      <View
-        style={[
-          styles.hero,
-          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-        ]}
-      >
+      <FadeInView distance={motion.distance.medium} scaleFrom={motion.enterScale}>
+        <Card style={styles.hero} variant="summary">
         <View style={styles.copy}>
           <Text color="textSecondary" variant="caption">
             ORÇAMENTO
@@ -295,20 +297,16 @@ export function QuoteDetailsScreen({
                 : 'neutral'
           }
         />
-        <Text style={styles.heroTotal} variant="sectionTitle">
-          {formatMoney(quote.total_cents)}
-        </Text>
-      </View>
+          <Text style={styles.heroTotal} variant="sectionTitle">
+            {formatMoney(quote.total_cents)}
+          </Text>
+        </Card>
+      </FadeInView>
       <View style={styles.section}>
         <Text color="primary" style={styles.sectionTitle} variant="caption">
           CLIENTE E VALIDADE
         </Text>
-        <View
-          style={[
-            styles.card,
-            { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-          ]}
-        >
+        <Card>
           <View style={styles.clientRow}>
             <View
               style={[
@@ -332,7 +330,9 @@ export function QuoteDetailsScreen({
               ) : null}
             </View>
           </View>
-          <View style={[styles.dateRow, { borderTopColor: colors.borderSubtle }]}>
+          <View
+            style={[styles.dateRow, { borderTopColor: colors.borderSubtle }]}
+          >
             <View>
               <Text color="textMuted" variant="caption">
                 Emissão
@@ -350,20 +350,14 @@ export function QuoteDetailsScreen({
               </Text>
             </View>
           </View>
-        </View>
+        </Card>
       </View>
       <View style={styles.section}>
         <Text color="primary" style={styles.sectionTitle} variant="caption">
           ITENS DO ORÇAMENTO
         </Text>
         {quote.items.map((item) => (
-          <View
-            key={item.id}
-            style={[
-              styles.item,
-              { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-            ]}
-          >
+          <Card key={item.id} style={styles.item}>
             <View style={styles.copy}>
               <Text variant="label">{item.name_snapshot}</Text>
               {item.description_snapshot ? (
@@ -376,22 +370,14 @@ export function QuoteDetailsScreen({
               </Text>
             </View>
             <Text>{formatMoney(item.item_total_cents)}</Text>
-          </View>
+          </Card>
         ))}
       </View>
       <View style={styles.section}>
         <Text color="primary" style={styles.sectionTitle} variant="caption">
           RESUMO FINANCEIRO
         </Text>
-        <View
-          style={[
-            styles.totalCard,
-            {
-              backgroundColor: colors.surfaceElevated,
-              borderColor: colors.borderSubtle,
-            },
-          ]}
-        >
+        <Card style={styles.totalCard} variant="summary">
           <View style={styles.summaryRow}>
             <Text color="textSecondary">Subtotal</Text>
             <Text>{formatMoney(quote.subtotal_cents)}</Text>
@@ -401,28 +387,26 @@ export function QuoteDetailsScreen({
             <Text>{formatMoney(quote.discount_cents)}</Text>
           </View>
           <View
-            style={[styles.summaryTotal, { borderTopColor: colors.borderSubtle }]}
+            style={[
+              styles.summaryTotal,
+              { borderTopColor: colors.borderSubtle },
+            ]}
           >
             <Text variant="label">Total do orçamento</Text>
             <Text color="primary" variant="sectionTitle">
               {formatMoney(quote.total_cents)}
             </Text>
           </View>
-        </View>
+        </Card>
       </View>
       {quote.notes ? (
         <View style={styles.section}>
           <Text color="primary" style={styles.sectionTitle} variant="caption">
             OBSERVAÇÕES
           </Text>
-          <View
-            style={[
-              styles.card,
-              { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-            ]}
-          >
+          <Card>
             <Text color="textSecondary">{quote.notes}</Text>
-          </View>
+          </Card>
         </View>
       ) : null}
       {statusMutation.isError || duplicateMutation.isError ? (
@@ -487,6 +471,23 @@ export function QuoteDetailsScreen({
         key={`${userId}:${businessId}:${quoteId}`}
         quoteId={quoteId}
         quoteStatus={quote.status}
+        userId={userId}
+      />
+      <QuoteServiceOrderSection
+        businessId={businessId}
+        quoteId={quoteId}
+        quoteStatus={quote.status}
+        userId={userId}
+      />
+      <QuoteReceivablesSection
+        businessId={businessId}
+        quoteId={quoteId}
+        quoteStatus={quote.status}
+        userId={userId}
+      />
+      <QuoteExpenseMarginSection
+        businessId={businessId}
+        quoteId={quoteId}
         userId={userId}
       />
       <View style={styles.section}>
@@ -579,12 +580,8 @@ const styles = StyleSheet.create({
   screenContent: { paddingHorizontal: spacing.lg },
   hero: {
     alignItems: 'center',
-    borderRadius: radii.medium,
-    borderWidth: 1,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
-    padding: spacing.md,
   },
   heroTotal: { width: '100%' },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },
@@ -597,7 +594,6 @@ const styles = StyleSheet.create({
   },
   pdfActions: { gap: spacing.sm },
   pdfAction: { width: '100%' },
-  card: { borderRadius: radii.medium, borderWidth: 1, padding: spacing.md },
   clientRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   iconTile: {
     alignItems: 'center',
@@ -613,25 +609,20 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
   },
-  item: {
-    alignItems: 'center',
+  item: { alignItems: 'center', flexDirection: 'row' },
+  totalCard: { gap: spacing.sm },
+  summaryRow: {
     flexDirection: 'row',
-    gap: spacing.md,
-    borderRadius: radii.medium,
-    borderWidth: 1,
-    padding: spacing.md,
-  },
-  totalCard: {
-    borderRadius: radii.medium,
-    borderWidth: 1,
+    flexWrap: 'wrap',
     gap: spacing.sm,
-    padding: spacing.md,
+    justifyContent: 'space-between',
   },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between' },
   summaryTotal: {
     alignItems: 'center',
     borderTopWidth: 1,
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
     justifyContent: 'space-between',
     marginTop: spacing.xs,
     paddingTop: spacing.md,

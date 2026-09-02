@@ -31,8 +31,14 @@ it('matches the grouped Clients structure with shared controls', () => {
   expect(clients).toContain('<SearchInput');
   expect(list).toContain('<SegmentedControl');
   expect(list).toContain('scrollable');
-  expect(list).toContain('<Card style={styles.groupedList}>');
-  expect(clients).toContain('<Card style={styles.list}>');
+  // A lista de orçamentos virtualiza por linha: o agrupamento visual vem das
+  // bordas/raios da própria linha, não de um Card envolvendo todos os itens.
+  expect(list).toContain('data={quotes}');
+  expect(list).toContain('keyExtractor={(quote) => quote.id}');
+  expect(list).not.toContain('<Card style={styles.groupedList}>');
+  expect(clients).toContain('data={clients}');
+  expect(clients).toContain('keyExtractor={(client) => client.id}');
+  expect(clients).not.toContain('<Card style={styles.list}>');
   expect(list).toContain('numberOfLines={1}');
   expect(list).toContain('paddingBottom: 112');
   expect(list).not.toContain('getThemeShadows');
@@ -55,10 +61,32 @@ it('gives both themes distinct layers and dark cards stronger separation', () =>
   expect(getThemeShadows('dark').card).not.toEqual(shadows.card);
 });
 
-it('keeps the Home period selector compact with a larger hit target', () => {
-  const home = source('src/features/home/HomeDashboard.tsx');
-  expect(home).toContain('hitSlop={6}');
-  expect(home).toContain('minHeight: 36');
-  expect(home).toContain("compactLabel: '3 meses'");
-  expect(home).toContain("compactLabel: '6 meses'");
+it('uses lateral transitions for list, detail and edit flows', () => {
+  for (const layout of [
+    'app/(protected)/clients/_layout.tsx',
+    'app/(protected)/services/_layout.tsx',
+    'app/(protected)/quotes/_layout.tsx',
+    'app/(protected)/expenses/_layout.tsx',
+    'app/(protected)/service-orders/_layout.tsx',
+  ]) {
+    expect(source(layout)).toContain("animation: 'slide_from_right'");
+  }
+  expect(source('app/_layout.tsx')).toContain("animation: 'fade'");
+});
+
+it('protects editable production flows from accidental discard', () => {
+  for (const screen of [
+    'src/features/business/OnboardingScreen.tsx',
+    'src/features/clients/ClientFormScreen.tsx',
+    'src/features/services/ServiceFormScreen.tsx',
+    'src/features/expenses/ExpenseFormScreen.tsx',
+    'src/features/profile/ProfileScreen.tsx',
+    'src/features/profile/ProfessionalProfileForm.tsx',
+  ]) {
+    expect(source(screen)).toContain('useUnsavedChangesGuard');
+    expect(source(screen)).toContain('<ConfirmationDialog');
+  }
+  expect(source('src/features/quotes/QuoteFormScreen.tsx')).toContain(
+    "navigation.addListener('beforeRemove'",
+  );
 });

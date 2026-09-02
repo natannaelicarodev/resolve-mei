@@ -1,19 +1,36 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import type { ComponentProps, PropsWithChildren, ReactNode } from 'react';
-import { Modal, StyleSheet, Switch as NativeSwitch, View } from 'react-native';
+import { useEffect } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Switch as NativeSwitch,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import type { PressableProps } from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 
-import { AnimatedPressable } from '@/components/motion';
+import { AnimatedPressable, useReducedMotion } from '@/components/motion';
 import { triggerHaptic } from '@/lib/haptics';
-import { radii, sizes, spacing, useTheme } from '@/theme';
+import { motion, radii, sizes, spacing, useTheme } from '@/theme';
 import { Button } from './Button';
 import { Card } from './Card';
 import { IconButton } from './IconButton';
 import { Input } from './Input';
 import type { InputProps } from './Input';
+import { Skeleton } from './Skeleton';
 import { Text } from './Text';
-
-type IconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
+import { Icon } from './Icon';
+import type { IconName } from './Icon';
 
 export function Divider() {
   const { colors } = useTheme();
@@ -53,7 +70,7 @@ export const AppHeader = SectionHeader;
 
 export function CompactCreateButton({
   label,
-  icon = 'plus',
+  icon = 'add',
   onPress,
   accessibilityHint,
 }: {
@@ -80,11 +97,7 @@ export function CompactCreateButton({
           { backgroundColor: colors.primary },
         ]}
       >
-        <MaterialCommunityIcons
-          color={colors.textInverse}
-          name={icon}
-          size={17}
-        />
+        <Icon name={icon} rawColor={colors.textInverse} size="small" />
         <Text color="textInverse" numberOfLines={1} variant="badge">
           {label}
         </Text>
@@ -156,7 +169,6 @@ export function ListItem({
   onPress?: PressableProps['onPress'];
   accessibilityLabel?: string;
 }) {
-  const { colors } = useTheme();
   const content = (
     <>
       {leading}
@@ -169,19 +181,14 @@ export function ListItem({
         ) : null}
       </View>
       {trailing}
-      {onPress ? (
-        <MaterialCommunityIcons
-          color={colors.textMuted}
-          name="chevron-right"
-          size={sizes.iconMedium}
-        />
-      ) : null}
+      {onPress ? <Icon color="textMuted" name="forward" size="medium" /> : null}
     </>
   );
   return onPress ? (
     <AnimatedPressable
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityRole="button"
+      haptic="selection"
       onPress={onPress}
       style={styles.listItem}
     >
@@ -231,7 +238,7 @@ export function MetricCard({
 export function EmptyState({
   title,
   description,
-  icon = 'inbox-outline',
+  icon = 'archive',
   action,
 }: {
   title: string;
@@ -245,7 +252,7 @@ export function EmptyState({
       <View
         style={[styles.stateIcon, { backgroundColor: colors.primarySubtle }]}
       >
-        <MaterialCommunityIcons color={colors.primary} name={icon} size={28} />
+        <Icon name={icon} rawColor={colors.primary} size="large" />
       </View>
       <Text align="center" variant="cardTitle">
         {title}
@@ -271,7 +278,7 @@ export function ErrorState({
     <EmptyState
       title={title}
       description={description}
-      icon="alert-circle-outline"
+      icon="alert"
       action={
         onRetry ? (
           <Button
@@ -285,6 +292,46 @@ export function ErrorState({
   );
 }
 
+export function SkeletonBlock({
+  lines = 3,
+  height = 72,
+  label = 'Carregando',
+}: {
+  lines?: number;
+  height?: number;
+  label?: string;
+}) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={label}
+      accessibilityLiveRegion="polite"
+      style={styles.skeletonBlock}
+    >
+      {Array.from({ length: lines }, (_, index) => (
+        <Skeleton height={height} key={index} />
+      ))}
+    </View>
+  );
+}
+
+export function InlineLoading({ label }: { label: string }) {
+  const { colors } = useTheme();
+  return (
+    <View
+      accessible
+      accessibilityLabel={label}
+      accessibilityLiveRegion="polite"
+      style={styles.inlineLoading}
+    >
+      <ActivityIndicator color={colors.primary} size="small" />
+      <Text color="textSecondary" variant="bodySmall">
+        {label}
+      </Text>
+    </View>
+  );
+}
+
 export function Chip({
   label,
   selected = false,
@@ -295,23 +342,59 @@ export function Chip({
   onPress?: () => void;
 }) {
   const { colors } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(selected ? 1 : 0);
+
+  useEffect(() => {
+    const target = selected ? 1 : 0;
+    progress.value = reducedMotion
+      ? target
+      : withTiming(target, { duration: motion.duration.fast });
+  }, [progress, reducedMotion, selected]);
+
+  const chipStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [colors.surface, colors.surfaceSelected],
+    ),
+    borderColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [colors.borderSubtle, colors.primary],
+    ),
+  }));
+
+  // A marca acompanha a cor: aparecer seca no meio de uma transição suave lê
+  // pior do que não animar nada.
+  //
+  // Ambos os estilos vão no `containerStyle`, que é o `Animated.View` do
+  // próprio AnimatedPressable; o `style` interno vai para um Pressable comum,
+  // que ignora estilo do Reanimated.
+  const markStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    width: progress.value * sizes.iconSmall,
+  }));
+
   return (
     <AnimatedPressable
       accessibilityLabel={label}
       accessibilityRole="button"
       accessibilityState={{ selected }}
+      containerStyle={[styles.chipSurface, chipStyle]}
+      haptic="selection"
       onPress={onPress}
-      style={[
-        styles.chip,
-        {
-          backgroundColor: selected ? colors.surfaceSelected : colors.surface,
-          borderColor: selected ? colors.primary : colors.borderSubtle,
-        },
-      ]}
+      style={styles.chip}
     >
-      {selected ? (
-        <MaterialCommunityIcons color={colors.primary} name="check" size={16} />
-      ) : null}
+      {/* Sempre montado, para poder animar a saída; o estado já é anunciado
+          por `accessibilityState`, então a marca é decorativa. */}
+      <Animated.View
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[styles.chipMark, markStyle]}
+      >
+        <Icon color="primary" name="success" size="small" />
+      </Animated.View>
       <Text color={selected ? 'primary' : 'textSecondary'} variant="badge">
         {label}
       </Text>
@@ -358,30 +441,17 @@ export function Switch({
 export function SearchInput(
   props: Omit<InputProps, 'label'> & { label?: string },
 ) {
-  const { colors } = useTheme();
   return (
     <Input
       label={props.label ?? 'Buscar'}
-      leading={
-        <MaterialCommunityIcons
-          color={colors.textMuted}
-          name="magnify"
-          size={20}
-        />
-      }
+      leading={<Icon color="textMuted" name="search" size="medium" />}
       returnKeyType="search"
       reserveMessageSpace={false}
       trailing={
         props.value ? (
           <IconButton
             accessibilityLabel="Limpar busca"
-            icon={
-              <MaterialCommunityIcons
-                color={colors.textSecondary}
-                name="close"
-                size={20}
-              />
-            }
+            icon={<Icon color="textSecondary" name="close" size="medium" />}
             onPress={() => props.onChangeText?.('')}
           />
         ) : undefined
@@ -408,7 +478,7 @@ export function DateInput(props: InputProps) {
 export function FloatingAction({
   label,
   onPress,
-  icon = 'plus',
+  icon = 'add',
 }: {
   label: string;
   onPress: () => void;
@@ -422,11 +492,7 @@ export function FloatingAction({
       onPress={onPress}
       style={[styles.fab, { backgroundColor: colors.primary }]}
     >
-      <MaterialCommunityIcons
-        color={colors.textInverse}
-        name={icon}
-        size={24}
-      />
+      <Icon name={icon} rawColor={colors.textInverse} size="medium" />
       <Text color="textInverse" variant="button">
         {label}
       </Text>
@@ -467,11 +533,7 @@ export function Select({
         <Text color={value ? 'textPrimary' : 'textMuted'}>
           {value ?? placeholder}
         </Text>
-        <MaterialCommunityIcons
-          color={colors.textSecondary}
-          name="chevron-down"
-          size={20}
-        />
+        <Icon color="textSecondary" name="expand" size="medium" />
       </AnimatedPressable>
       {error ? (
         <Text accessibilityLiveRegion="polite" color="danger" variant="caption">
@@ -495,17 +557,31 @@ export function Dialog({
   onClose: () => void;
 }>) {
   const { colors } = useTheme();
+  const { height } = useWindowDimensions();
   return (
     <Modal
       animationType="fade"
       onRequestClose={onClose}
+      statusBarTranslucent
       transparent
       visible={visible}
     >
-      <View style={[styles.scrim, { backgroundColor: colors.overlay }]}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={[styles.scrim, { backgroundColor: colors.overlay }]}
+      >
         <View
+          accessibilityViewIsModal
           accessibilityRole="alert"
-          style={[styles.dialog, { backgroundColor: colors.surfaceElevated }]}
+          onAccessibilityEscape={onClose}
+          testID="dialog-surface"
+          style={[
+            styles.dialog,
+            {
+              backgroundColor: colors.surfaceElevated,
+              maxHeight: Math.max(280, height - spacing.xl * 2),
+            },
+          ]}
         >
           <View style={styles.sectionHeader}>
             <View style={styles.flexCopy}>
@@ -516,19 +592,20 @@ export function Dialog({
             </View>
             <IconButton
               accessibilityLabel="Fechar"
-              icon={
-                <MaterialCommunityIcons
-                  color={colors.textPrimary}
-                  name="close"
-                  size={22}
-                />
-              }
+              icon={<Icon color="textPrimary" name="close" size="medium" />}
               onPress={onClose}
             />
           </View>
-          {children}
+          <ScrollView
+            contentContainerStyle={styles.dialogContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            testID="dialog-scroll"
+          >
+            {children}
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -554,6 +631,9 @@ export function ConfirmationDialog({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { fontScale, width } = useWindowDimensions();
+  const stackActions = width < 480 || fontScale > 1.15;
+
   return (
     <Dialog
       description={description}
@@ -561,11 +641,20 @@ export function ConfirmationDialog({
       title={title}
       visible={visible}
     >
-      <View style={styles.dialogActions}>
+      <View
+        testID="dialog-actions"
+        style={[
+          styles.dialogActions,
+          stackActions && styles.dialogActionsStacked,
+        ]}
+      >
         <Button
           disabled={loading}
           label={cancelLabel}
           onPress={onCancel}
+          style={
+            stackActions ? styles.dialogActionStacked : styles.dialogAction
+          }
           variant="ghost"
         />
         <Button
@@ -573,6 +662,9 @@ export function ConfirmationDialog({
           label={confirmLabel}
           loading={loading}
           onPress={onConfirm}
+          style={
+            stackActions ? styles.dialogActionStacked : styles.dialogAction
+          }
           variant={destructive ? 'danger' : 'primary'}
         />
       </View>
@@ -625,6 +717,13 @@ const styles = StyleSheet.create({
   },
   metricCard: { flex: 1, minWidth: 140, padding: sizes.cardPadding },
   metricTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
+  skeletonBlock: { gap: spacing.sm },
+  inlineLoading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+  },
   state: {
     alignItems: 'center',
     gap: spacing.sm,
@@ -638,15 +737,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 56,
   },
-  chip: {
-    alignItems: 'center',
+  // A superfície carrega borda e raio porque é ela que anima; o miolo cuida
+  // só do arranjo do conteúdo.
+  chipSurface: {
     borderRadius: radii.pill,
     borderWidth: 1,
+    overflow: 'hidden',
+  },
+  chip: {
+    alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.xs,
     minHeight: 40,
     paddingHorizontal: spacing.md,
   },
+  chipMark: { alignItems: 'center', overflow: 'hidden' },
   switchRow: {
     alignItems: 'center',
     flexDirection: 'row',
@@ -678,15 +783,23 @@ const styles = StyleSheet.create({
   },
   dialog: {
     borderRadius: radii.modal,
-    gap: spacing.lg,
     maxWidth: 520,
     padding: spacing.lg,
     width: '100%',
   },
+  dialogContent: { gap: spacing.lg, paddingTop: spacing.lg },
   dialogActions: {
     alignItems: 'center',
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     justifyContent: 'flex-end',
   },
+  dialogAction: { flexBasis: 160, flexGrow: 1 },
+  dialogActionsStacked: {
+    alignItems: 'stretch',
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+  },
+  dialogActionStacked: { flexGrow: 0, width: '100%' },
 });

@@ -4,7 +4,7 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 import { getMyBusiness } from '@/features/business/api';
-import { supabase } from '@/lib/supabase';
+import { assertCurrentExportSession, safeDeleteExport } from '@/features/exports/fileExport';
 import { getQuote } from './api';
 import {
   buildQuoteDocumentData,
@@ -23,10 +23,12 @@ export interface GeneratedQuotePdf {
 }
 
 export async function assertCurrentQuoteSession(expectedUserId: string) {
-  const { data, error } = await supabase.auth.getSession();
-  if (error) throw error;
-  if (data.session?.user.id !== expectedUserId)
-    throw new Error('QUOTE_PDF_SESSION_CHANGED');
+  try { await assertCurrentExportSession(expectedUserId); }
+  catch (error) {
+    if (error instanceof Error && error.message === 'EXPORT_SESSION_CHANGED')
+      throw new Error('QUOTE_PDF_SESSION_CHANGED');
+    throw error;
+  }
 }
 
 export async function loadQuoteDocumentForExport(
@@ -45,12 +47,7 @@ export async function loadQuoteDocumentForExport(
 }
 
 function safeDelete(uri: string) {
-  try {
-    const file = new File(uri);
-    if (file.exists) file.delete();
-  } catch {
-    // Cache cleanup must never replace the user-facing result with a new error.
-  }
+  safeDeleteExport(uri);
 }
 
 export function cleanupGeneratedQuotePdf(pdf: GeneratedQuotePdf | null) {

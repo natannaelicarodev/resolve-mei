@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { useMemo, useRef } from 'react';
+import { memo, useMemo, useRef } from 'react';
 import {
+  Platform,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -13,6 +14,9 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { Icon, Skeleton, Text } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
+import { useTheme } from '@/theme';
+import { markRender } from '@/lib/renderDiagnostics';
+import type { ThemeColors } from '@/theme';
 import {
   Card,
   Enter,
@@ -23,12 +27,15 @@ import {
 } from './DaylightPrimitives';
 import type { Shortcut } from './DaylightPrimitives';
 import { Illustration } from './Illustration';
-import { day, dayRadii, daySizes, daySpace, dayType } from './theme';
+import { dayRadii, daySizes, daySpace, dayType, useDayTheme } from './theme';
+import type { DayPalette } from './theme';
 
-// Home-only brand trial. Global theme tokens stay untouched until this
-// direction has been validated across the product.
-const HOME_BRAND = '#4054D6';
-const HOME_BRAND_SOFT = '#E8EBFF';
+const quoteMarkStyle = {
+  alignItems: 'center',
+  height: 40,
+  justifyContent: 'center',
+  width: 40,
+} as const;
 
 /**
  * The shortcuts this Home offers. Every one leads somewhere that exists — a
@@ -44,13 +51,6 @@ const SHORTCUTS: readonly Shortcut[] = [
     route: '/quotes',
   },
   {
-    id: 'clients',
-    art: 'client',
-    label: 'Clientes',
-    hint: 'Sua carteira de contatos',
-    route: '/clients',
-  },
-  {
     id: 'services',
     art: 'service',
     label: 'Serviços',
@@ -58,11 +58,12 @@ const SHORTCUTS: readonly Shortcut[] = [
     route: '/services',
   },
   {
-    id: 'profile',
-    art: 'business',
-    label: 'Meu negócio',
-    hint: 'Dados e documentos',
-    route: '/profile?section=professional&field=first-required',
+    id: 'expenses',
+    art: 'expense',
+    artSize: 40,
+    label: 'Despesas',
+    hint: 'Gastos e resultado',
+    route: '/expenses',
   },
 ];
 
@@ -83,6 +84,10 @@ export interface DaylightHomeScreenProps {
   recentQuotes?: RecentQuote[];
   highlightQuote?: RecentQuote;
   loading?: boolean;
+  agendaActionCount?: number;
+  agendaLoading?: boolean;
+  reconnectCount?: number;
+  reconnectLoading?: boolean;
 }
 
 interface RecentQuote {
@@ -101,18 +106,19 @@ const recentStatusLabels: Record<RecentQuote['status'], string> = {
   sent: 'Enviado',
 };
 
-const quoteStatusMarks: Record<
-  RecentQuote['status'],
-  { color: string; soft: string }
-> = {
-  approved: { color: day.income, soft: day.incomeSoft },
-  canceled: { color: day.expense, soft: day.expenseSoft },
-  draft: { color: HOME_BRAND, soft: HOME_BRAND_SOFT },
-  rejected: { color: day.expense, soft: day.expenseSoft },
-  sent: { color: day.info, soft: day.infoSoft },
-};
-
 function QuoteStatusMark({ status }: { status: RecentQuote['status'] }) {
+  const day = useDayTheme();
+  const { colors } = useTheme();
+  const quoteStatusMarks: Record<
+    RecentQuote['status'],
+    { color: string; soft: string }
+  > = {
+    approved: { color: day.income, soft: day.incomeSoft },
+    canceled: { color: day.expense, soft: day.expenseSoft },
+    draft: { color: colors.primary, soft: colors.primarySubtle },
+    rejected: { color: day.expense, soft: day.expenseSoft },
+    sent: { color: day.info, soft: day.infoSoft },
+  };
   const mark = quoteStatusMarks[status];
   const statusPath = {
     approved: 'M27.1 30.5l2.1 2.1 4-4.3',
@@ -126,34 +132,34 @@ function QuoteStatusMark({ status }: { status: RecentQuote['status'] }) {
     <View
       accessibilityElementsHidden
       importantForAccessibility="no"
-      style={styles.quoteMark}
+      style={quoteMarkStyle}
     >
       <Svg height={40} viewBox="0 0 40 40" width={40}>
         <Path
           d="M8.5 4.5h15l6 6v18.75a3.25 3.25 0 01-3.25 3.25H11.75a3.25 3.25 0 01-3.25-3.25V4.5z"
-          fill={HOME_BRAND_SOFT}
-          stroke={HOME_BRAND}
+          fill={colors.primarySubtle}
+          stroke={colors.primary}
           strokeLinejoin="round"
           strokeWidth={1.7}
         />
         <Path
           d="M23.5 4.5v6h6"
           fill="none"
-          stroke={HOME_BRAND}
+          stroke={colors.primary}
           strokeLinejoin="round"
           strokeWidth={1.7}
         />
         <Path
           d="M13 14.5h5.5M13 19h11.5M13 23.5h8"
           fill="none"
-          stroke={HOME_BRAND}
+          stroke={colors.primary}
           strokeLinecap="round"
           strokeWidth={1.7}
         />
         <Path
           d="M13.2 9.7c.7-.65 2.7-.5 2.7.75 0 1.35-2.7.55-2.7 1.9 0 1.15 2 1.35 2.85.6M14.6 8.7v5.2"
           fill="none"
-          stroke={HOME_BRAND}
+          stroke={colors.primary}
           strokeLinecap="round"
           strokeWidth={1.15}
         />
@@ -242,7 +248,11 @@ function suggestionFor(
  * is a fast way into each area plus a short list of actions the owner can
  * resolve immediately. Financial figures stay off this screen deliberately.
  */
-export function DaylightHomeScreen({
+export const DaylightHomeScreen = memo(function DaylightHomeScreen({
+  agendaActionCount,
+  agendaLoading = false,
+  reconnectCount,
+  reconnectLoading = false,
   avatarUrl,
   businessName,
   clientCount,
@@ -257,9 +267,15 @@ export function DaylightHomeScreen({
   serviceCount,
   sentQuoteCount,
 }: DaylightHomeScreenProps) {
+  markRender('DaylightHomeScreen');
+  const day = useDayTheme();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createStyles(day, colors), [colors, day]);
   const blurTarget = useRef<View | null>(null);
   const { fontScale, width } = useWindowDimensions();
   const compactShortcutGrid = width < 360 || fontScale > 1.15;
+  const stackedHero = width < 340 || fontScale > 1.15;
+  const stackedOperationalGroup = width < 340 || fontScale > 1.15;
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Bom dia';
@@ -332,9 +348,16 @@ export function DaylightHomeScreen({
     [highlightQuote?.id, recentQuotes],
   );
 
+  // `BlurTargetView` é uma superfície nativa que existe só para o `BlurView`
+  // do menu de criação ler o que está atrás dele — e esse blur roda apenas no
+  // iOS; no Android o menu usa um backdrop opaco. Envolver a Home inteira nela
+  // impedia o achatamento automático de views em toda a árvore, e o custo
+  // aparecia como thread de UI lenta a cada transição.
+  const Surface = Platform.OS === 'ios' ? BlurTargetView : View;
+
   return (
     <View style={styles.root}>
-      <BlurTargetView ref={blurTarget} style={styles.screenContent}>
+      <Surface ref={blurTarget} style={styles.screenContent}>
         <StatusBar style="light" />
 
         <SafeAreaView edges={['top']} style={styles.headerSafe}>
@@ -379,7 +402,12 @@ export function DaylightHomeScreen({
         <View style={styles.body}>
           <View pointerEvents="none" style={styles.bodyShape} />
           <ScrollView
-            contentContainerStyle={styles.scroll}
+            contentContainerStyle={[
+              styles.scroll,
+              {
+                paddingBottom: daySpace.xxxl,
+              },
+            ]}
             showsVerticalScrollIndicator={false}
             style={styles.bodyScroll}
           >
@@ -398,8 +426,15 @@ export function DaylightHomeScreen({
             ) : (
               <>
                 <Enter style={styles.section}>
-                  <Card style={styles.hero}>
-                    <View style={styles.heroCopy}>
+                  <Card
+                    style={[styles.hero, stackedHero && styles.heroStacked]}
+                  >
+                    <View
+                      style={[
+                        styles.heroCopy,
+                        stackedHero && styles.heroCopyStacked,
+                      ]}
+                    >
                       <Text style={styles.heroTitle}>{hero.title}</Text>
                       <Text style={styles.heroBody}>{hero.body}</Text>
                       <Tappable
@@ -424,13 +459,207 @@ export function DaylightHomeScreen({
                         ) : null}
                       </Tappable>
                     </View>
-                    <View pointerEvents="none" style={styles.heroArtwork}>
+                    <View
+                      pointerEvents="none"
+                      style={[
+                        styles.heroArtwork,
+                        stackedHero && styles.heroArtworkStacked,
+                      ]}
+                    >
                       <HeroArtwork>
                         <Illustration name={hero.artwork} bare size={142} />
                       </HeroArtwork>
                     </View>
                   </Card>
                 </Enter>
+
+                {agendaLoading ||
+                reconnectLoading ||
+                agendaActionCount !== undefined ||
+                reconnectCount !== undefined ? (
+                  <Enter index={1} style={styles.section}>
+                    <Card
+                      style={[
+                        styles.operationalGroup,
+                        stackedOperationalGroup &&
+                          styles.operationalGroupStacked,
+                        agendaActionCount === 0 &&
+                        reconnectCount === 0 &&
+                        !agendaLoading &&
+                        !reconnectLoading
+                          ? styles.operationalGroupCompact
+                          : null,
+                      ]}
+                    >
+                      {agendaLoading || agendaActionCount === undefined ? (
+                        <View style={styles.operationalAction}>
+                          <Skeleton
+                            height={64}
+                            radius={dayRadii.control}
+                            width="100%"
+                          />
+                        </View>
+                      ) : (
+                        <Tappable
+                          accessibilityLabel={`Abrir agenda e ações do dia. ${agendaActionCount} ação(ões).`}
+                          onPress={() => router.push('/agenda' as never)}
+                          style={styles.operationalAction}
+                        >
+                          <View style={styles.operationalHeader}>
+                            <Text
+                              numberOfLines={
+                                stackedOperationalGroup ? undefined : 2
+                              }
+                              style={styles.operationalLabel}
+                            >
+                              Ações de hoje
+                            </Text>
+                            <View style={styles.operationalIconSlot}>
+                              <Icon
+                                name="date"
+                                rawColor={colors.primary}
+                                size="medium"
+                              />
+                            </View>
+                          </View>
+                          {agendaActionCount === 0 ? (
+                            <View style={styles.operationalContent}>
+                              <View style={styles.operationalContentCopy}>
+                                <View style={styles.operationalClear}>
+                                  <View style={styles.operationalStatusIcon}>
+                                    <Icon
+                                      name="success"
+                                      rawColor={day.income}
+                                      size="small"
+                                    />
+                                  </View>
+                                  <Text
+                                    numberOfLines={
+                                      stackedOperationalGroup ? undefined : 2
+                                    }
+                                    style={styles.operationalClearText}
+                                  >
+                                    Nenhuma ação hoje
+                                  </Text>
+                                </View>
+                              </View>
+                              <Icon
+                                name="forward"
+                                rawColor={day.textMuted}
+                                size="small"
+                              />
+                            </View>
+                          ) : (
+                            <View style={styles.operationalContent}>
+                              <View style={styles.operationalContentCopy}>
+                                <Text style={styles.operationalValue}>
+                                  {agendaActionCount}
+                                </Text>
+                                <Text style={styles.operationalHint}>
+                                  Visitas e vencimentos
+                                </Text>
+                              </View>
+                              <Icon
+                                name="forward"
+                                rawColor={day.textMuted}
+                                size="small"
+                              />
+                            </View>
+                          )}
+                        </Tappable>
+                      )}
+
+                      <View
+                        pointerEvents="none"
+                        style={[
+                          styles.operationalDivider,
+                          stackedOperationalGroup &&
+                            styles.operationalDividerStacked,
+                        ]}
+                      />
+
+                      {reconnectLoading || reconnectCount === undefined ? (
+                        <View style={styles.operationalAction}>
+                          <Skeleton
+                            height={64}
+                            radius={dayRadii.control}
+                            width="100%"
+                          />
+                        </View>
+                      ) : (
+                        <Tappable
+                          accessibilityLabel={`Abrir clientes para retomar. ${reconnectCount} cliente(s).`}
+                          onPress={() =>
+                            router.push('/clients?filter=reconnect' as never)
+                          }
+                          style={styles.operationalAction}
+                        >
+                          <View style={styles.operationalHeader}>
+                            <Text
+                              numberOfLines={
+                                stackedOperationalGroup ? undefined : 2
+                              }
+                              style={styles.operationalLabel}
+                            >
+                              Clientes para retomar
+                            </Text>
+                            <View style={styles.operationalIconSlot}>
+                              <Icon
+                                name="client"
+                                rawColor={colors.primary}
+                                size="medium"
+                              />
+                            </View>
+                          </View>
+                          {reconnectCount === 0 ? (
+                            <View style={styles.operationalContent}>
+                              <View style={styles.operationalContentCopy}>
+                                <View style={styles.operationalClear}>
+                                  <View style={styles.operationalStatusIcon}>
+                                    <Icon
+                                      name="success"
+                                      rawColor={day.income}
+                                      size="small"
+                                    />
+                                  </View>
+                                  <Text
+                                    numberOfLines={
+                                      stackedOperationalGroup ? undefined : 2
+                                    }
+                                    style={styles.operationalClearText}
+                                  >
+                                    Nenhum retorno vencido
+                                  </Text>
+                                </View>
+                              </View>
+                              <Icon
+                                name="forward"
+                                rawColor={day.textMuted}
+                                size="small"
+                              />
+                            </View>
+                          ) : (
+                            <View style={styles.operationalContent}>
+                              <View style={styles.operationalContentCopy}>
+                                <Text style={styles.operationalValue}>
+                                  {reconnectCount}
+                                </Text>
+                                <Text style={styles.operationalHint}>
+                                  Retornos vencidos
+                                </Text>
+                              </View>
+                              <Icon
+                                name="forward"
+                                rawColor={day.textMuted}
+                                size="small"
+                              />
+                            </View>
+                          )}
+                        </Tappable>
+                      )}
+                    </Card>
+                  </Enter>
+                ) : null}
 
                 <Enter index={1} style={styles.section}>
                   <Text style={styles.sectionTitle}>Gerencie seu negócio</Text>
@@ -451,99 +680,82 @@ export function DaylightHomeScreen({
                   </View>
                 </Enter>
 
-                {pendingLoading || pendingItems.length || !highlightQuote ? (
-                  <Enter index={2} style={styles.section}>
-                    <Text style={styles.sectionTitle}>
-                      {highlightQuote
-                        ? 'Outras pendências do negócio'
-                        : 'Pendências do negócio'}
-                    </Text>
-                    {pendingLoading ? (
-                      <Skeleton
-                        height={76}
-                        radius={dayRadii.card}
-                        width="100%"
-                      />
-                    ) : (
-                      <View
-                        style={[
-                          styles.pendingPanel,
-                          !pendingItems.length && styles.pendingPanelClear,
-                        ]}
-                      >
-                        {pendingItems.length ? (
-                          pendingItems.map((item, index) => (
-                            <View key={`${item.kind}-${item.route}`}>
-                              {index ? (
-                                <View style={styles.pendingDivider} />
-                              ) : null}
-                              <Tappable
-                                accessibilityHint="Abre a tela para resolver."
-                                accessibilityLabel={`${item.title}. ${item.body}`}
-                                onPress={() => router.push(item.route as never)}
-                                style={styles.pendingRow}
-                              >
-                                {item.kind === 'draft' ||
-                                item.kind === 'sent' ? (
-                                  <QuoteStatusMark status={item.kind} />
-                                ) : (
-                                  <View style={styles.pendingIcon}>
-                                    <Icon
-                                      name={
-                                        item.route.startsWith('/services')
-                                          ? 'service'
-                                          : item.route.startsWith('/clients')
-                                            ? 'clientAdd'
-                                            : 'profile'
-                                      }
-                                      rawColor={HOME_BRAND}
-                                      size="small"
-                                    />
-                                  </View>
-                                )}
-                                <View style={styles.pendingCopy}>
-                                  <Text style={styles.pendingTitle}>
-                                    {item.title}
-                                  </Text>
-                                  <Text style={styles.pendingBody}>
-                                    {item.body}
-                                  </Text>
+                <Enter index={2} style={styles.section}>
+                  <Text style={styles.sectionTitle}>Pendências do negócio</Text>
+                  {pendingLoading ? (
+                    <Skeleton height={76} radius={dayRadii.card} width="100%" />
+                  ) : (
+                    <View
+                      style={[
+                        styles.pendingPanel,
+                        !pendingItems.length && styles.pendingPanelClear,
+                      ]}
+                    >
+                      {pendingItems.length ? (
+                        pendingItems.map((item, index) => (
+                          <View key={`${item.kind}-${item.route}`}>
+                            {index ? (
+                              <View style={styles.pendingDivider} />
+                            ) : null}
+                            <Tappable
+                              accessibilityHint="Abre a tela para resolver."
+                              accessibilityLabel={`${item.title}. ${item.body}`}
+                              onPress={() => router.push(item.route as never)}
+                              style={styles.pendingRow}
+                            >
+                              {item.kind === 'draft' || item.kind === 'sent' ? (
+                                <QuoteStatusMark status={item.kind} />
+                              ) : (
+                                <View style={styles.pendingIcon}>
+                                  <Icon
+                                    name={
+                                      item.route.startsWith('/services')
+                                        ? 'service'
+                                        : item.route.startsWith('/clients')
+                                          ? 'clientAdd'
+                                          : 'profile'
+                                    }
+                                    rawColor={colors.primary}
+                                    size="small"
+                                  />
                                 </View>
-                                <Icon
-                                  name="forward"
-                                  rawColor={HOME_BRAND}
-                                  size="small"
-                                />
-                              </Tappable>
-                            </View>
-                          ))
-                        ) : (
-                          <View
-                            style={[styles.pendingRow, styles.pendingRowClear]}
-                          >
-                            <Icon
-                              name="success"
-                              rawColor={day.income}
-                              size="medium"
-                            />
-                            <View style={styles.pendingCopy}>
-                              <Text style={styles.pendingTitle}>
-                                {highlightQuote
-                                  ? 'Nenhuma outra pendência'
-                                  : 'Tudo em dia'}
-                              </Text>
-                              <Text style={styles.pendingBody}>
-                                {highlightQuote
-                                  ? 'A prioridade atual já está destacada acima.'
-                                  : 'Seu negócio não tem pendências agora.'}
-                              </Text>
-                            </View>
+                              )}
+                              <View style={styles.pendingCopy}>
+                                <Text style={styles.pendingTitle}>
+                                  {item.title}
+                                </Text>
+                                <Text style={styles.pendingBody}>
+                                  {item.body}
+                                </Text>
+                              </View>
+                              <Icon
+                                name="forward"
+                                rawColor={colors.primary}
+                                size="small"
+                              />
+                            </Tappable>
                           </View>
-                        )}
-                      </View>
-                    )}
-                  </Enter>
-                ) : null}
+                        ))
+                      ) : (
+                        <View
+                          style={[styles.pendingRow, styles.pendingRowClear]}
+                        >
+                          <Icon
+                            name="success"
+                            rawColor={day.income}
+                            size="medium"
+                          />
+                          <View style={styles.pendingCopy}>
+                            <Text style={styles.pendingTitle}>Tudo em dia</Text>
+                            <Text style={styles.pendingBody}>
+                              Nenhuma pendência agora
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  )}
+                </Enter>
 
                 <Enter index={3} style={styles.section}>
                   <View style={styles.sectionHeadingRow}>
@@ -632,201 +844,293 @@ export function DaylightHomeScreen({
         </View>
 
         <ProtectedBottomNavigation
-          accentColor={HOME_BRAND}
-          accentSoftColor={HOME_BRAND_SOFT}
+          backgroundColor={day.canvas}
           blurTarget={blurTarget}
           selected="home"
+          surfaceColor={day.surface}
+          warmQuickCreate
         />
-      </BlurTargetView>
+      </Surface>
     </View>
   );
-}
-
-const styles = StyleSheet.create({
-  root: { backgroundColor: day.canvas, flex: 1 },
-  screenContent: { flex: 1 },
-
-  headerSafe: { backgroundColor: HOME_BRAND },
-  header: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: daySpace.md,
-    paddingBottom: daySpace.xxl,
-    paddingHorizontal: daySpace.lg,
-    paddingTop: daySpace.md,
-  },
-  headerButton: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
-    borderRadius: dayRadii.pill,
-    height: daySizes.control,
-    justifyContent: 'center',
-    width: daySizes.control,
-  },
-  headerCopy: { alignItems: 'center', flex: 1, minWidth: 0 },
-  businessName: { ...dayType.heading, color: day.onBrand },
-  greeting: {
-    ...dayType.caption,
-    color: day.onBrand,
-    marginTop: 1,
-    opacity: 0.85,
-  },
-  avatarImage: {
-    borderRadius: dayRadii.pill,
-    height: daySizes.control,
-    width: daySizes.control,
-  },
-  avatarText: { ...dayType.bodyMedium, color: day.onBrand },
-
-  body: {
-    flex: 1,
-    marginTop: -daySpace.lg,
-    overflow: 'hidden',
-    position: 'relative',
-    zIndex: 1,
-  },
-  bodyShape: {
-    backgroundColor: day.canvas,
-    borderTopLeftRadius: dayRadii.sheet + daySpace.md,
-    borderTopRightRadius: dayRadii.sheet + daySpace.md,
-    bottom: 0,
-    left: -daySpace.md,
-    position: 'absolute',
-    right: -daySpace.md,
-    top: 0,
-  },
-  bodyScroll: { flex: 1 },
-  scroll: { paddingBottom: daySizes.scrollTail, paddingTop: daySpace.lg },
-  section: { marginBottom: daySpace.lg, paddingHorizontal: daySpace.lg },
-  gap: { height: daySpace.md },
-  sectionTitle: {
-    ...dayType.label,
-    color: day.textPrimary,
-    fontFamily: 'Poppins_600SemiBold',
-    marginBottom: daySpace.sm,
-  },
-  sectionHeadingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: daySpace.xs,
-  },
-  sectionTitleInline: {
-    ...dayType.label,
-    color: day.textPrimary,
-    fontFamily: 'Poppins_600SemiBold',
-  },
-  sectionLink: { paddingHorizontal: daySpace.xs, paddingVertical: daySpace.xs },
-  sectionLinkText: { ...dayType.caption, color: HOME_BRAND },
-
-  hero: {
-    backgroundColor: HOME_BRAND_SOFT,
-    minHeight: 140,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  heroCopy: { maxWidth: '60%', minWidth: 0, zIndex: 1 },
-  heroTitle: { ...dayType.cardTitle, color: day.textPrimary },
-  heroBody: {
-    ...dayType.caption,
-    color: day.textSecondary,
-    marginTop: 2,
-  },
-  heroButton: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: HOME_BRAND,
-    borderRadius: dayRadii.control,
-    flexDirection: 'row',
-    gap: daySpace.xs + 2,
-    height: 40,
-    justifyContent: 'center',
-    marginTop: daySpace.md,
-    paddingHorizontal: daySpace.lg,
-  },
-  heroButtonText: { ...dayType.label, color: day.onBrand },
-  heroArtwork: {
-    bottom: 0,
-    position: 'absolute',
-    right: daySpace.xs,
-  },
-  grid: { flexDirection: 'row', gap: daySpace.sm },
-  gridCompact: { flexWrap: 'wrap' },
-
-  pendingPanel: {
-    backgroundColor: HOME_BRAND_SOFT,
-    borderRadius: dayRadii.card,
-    overflow: 'hidden',
-  },
-  pendingPanelClear: { backgroundColor: '#F6F8F7' },
-  pendingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: daySpace.md,
-    padding: daySpace.lg,
-  },
-  pendingRowClear: {
-    gap: daySpace.sm,
-    minHeight: 56,
-    paddingHorizontal: daySpace.md,
-    paddingVertical: daySpace.sm,
-  },
-  pendingIcon: {
-    alignItems: 'center',
-    backgroundColor: day.surface,
-    borderRadius: dayRadii.control,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  pendingCopy: { flex: 1, minWidth: 0 },
-  pendingTitle: { ...dayType.label, color: day.textPrimary },
-  pendingBody: {
-    ...dayType.caption,
-    color: day.textSecondary,
-    marginTop: 2,
-  },
-  pendingDivider: {
-    backgroundColor: 'rgba(64,84,214,0.12)',
-    height: StyleSheet.hairlineWidth,
-    marginLeft: daySpace.lg + 36 + daySpace.md,
-  },
-  activityLoading: { gap: daySpace.xs },
-  activityList: { paddingHorizontal: daySpace.xs },
-  activityRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: daySpace.md,
-    minHeight: 64,
-    paddingVertical: daySpace.sm,
-  },
-  quoteMark: {
-    alignItems: 'center',
-    height: 40,
-    justifyContent: 'center',
-    width: 40,
-  },
-  activityCopy: { flex: 1, minWidth: 0 },
-  activityTitle: { ...dayType.label, color: day.textPrimary },
-  activityBody: { ...dayType.caption, color: day.textSecondary, marginTop: 1 },
-  activityMeta: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: daySpace.xs,
-  },
-  activityDate: {
-    ...dayType.caption,
-    color: day.textMuted,
-    fontVariant: ['tabular-nums'],
-  },
-  activityDivider: {
-    backgroundColor: day.border,
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 40 + daySpace.md,
-  },
-  activityEmpty: {
-    paddingHorizontal: daySpace.xs,
-    paddingVertical: daySpace.md,
-  },
-  activityEmptyText: { ...dayType.caption, color: day.textSecondary },
 });
+
+const createStyles = (day: DayPalette, colors: ThemeColors) =>
+  StyleSheet.create({
+    root: { backgroundColor: day.canvas, flex: 1 },
+    screenContent: { flex: 1 },
+
+    headerSafe: { backgroundColor: colors.primary },
+    header: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.md,
+      paddingBottom: daySpace.xxl,
+      paddingHorizontal: daySpace.lg,
+      paddingTop: daySpace.md,
+    },
+    headerButton: {
+      alignItems: 'center',
+      backgroundColor: 'rgba(255,255,255,0.16)',
+      borderRadius: dayRadii.pill,
+      height: daySizes.control,
+      justifyContent: 'center',
+      width: daySizes.control,
+    },
+    headerCopy: { alignItems: 'center', flex: 1, minWidth: 0 },
+    businessName: { ...dayType.heading, color: day.onBrand },
+    greeting: {
+      ...dayType.caption,
+      color: day.onBrand,
+      marginTop: 1,
+      opacity: 0.85,
+    },
+    avatarImage: {
+      borderRadius: dayRadii.pill,
+      height: daySizes.control,
+      width: daySizes.control,
+    },
+    avatarText: { ...dayType.bodyMedium, color: day.onBrand },
+
+    body: {
+      flex: 1,
+      marginTop: -daySpace.lg,
+      overflow: 'hidden',
+      position: 'relative',
+      zIndex: 1,
+    },
+    bodyShape: {
+      backgroundColor: day.canvas,
+      borderTopLeftRadius: dayRadii.sheet + daySpace.md,
+      borderTopRightRadius: dayRadii.sheet + daySpace.md,
+      bottom: 0,
+      left: -daySpace.md,
+      position: 'absolute',
+      right: -daySpace.md,
+      top: 0,
+    },
+    bodyScroll: { flex: 1 },
+    scroll: { paddingBottom: daySizes.scrollTail, paddingTop: daySpace.lg },
+    section: { marginBottom: daySpace.lg, paddingHorizontal: daySpace.lg },
+    gap: { height: daySpace.md },
+    sectionTitle: {
+      ...dayType.label,
+      color: day.textPrimary,
+      fontFamily: 'Poppins_600SemiBold',
+      marginBottom: daySpace.sm,
+    },
+    sectionHeadingRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginBottom: daySpace.xs,
+    },
+    sectionTitleInline: {
+      ...dayType.label,
+      color: day.textPrimary,
+      fontFamily: 'Poppins_600SemiBold',
+    },
+    sectionLink: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: daySizes.touchTarget,
+      paddingHorizontal: daySpace.sm,
+    },
+    sectionLinkText: { ...dayType.caption, color: colors.primary },
+
+    hero: {
+      backgroundColor: colors.primarySubtle,
+      minHeight: 140,
+      overflow: 'hidden',
+      position: 'relative',
+    },
+    heroStacked: {
+      minHeight: 268,
+      paddingBottom: 116,
+    },
+    heroCopy: { maxWidth: '60%', minWidth: 0, zIndex: 1 },
+    heroCopyStacked: { maxWidth: '100%' },
+    heroTitle: { ...dayType.cardTitle, color: day.textPrimary },
+    heroBody: {
+      ...dayType.caption,
+      color: day.textSecondary,
+      marginTop: 2,
+    },
+    heroButton: {
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: colors.primary,
+      borderRadius: dayRadii.control,
+      flexDirection: 'row',
+      gap: daySpace.xs + 2,
+      minHeight: daySizes.control,
+      justifyContent: 'center',
+      marginTop: daySpace.md,
+      paddingHorizontal: daySpace.lg,
+    },
+    heroButtonText: { ...dayType.label, color: day.onBrand },
+    heroArtwork: {
+      bottom: 0,
+      position: 'absolute',
+      right: daySpace.xs,
+    },
+    heroArtworkStacked: {
+      bottom: -daySpace.sm,
+      right: daySpace.md,
+    },
+    operationalGroup: {
+      backgroundColor: day.surfaceMuted,
+      flexDirection: 'row',
+      minHeight: 124,
+      overflow: 'hidden',
+      padding: 0,
+    },
+    operationalGroupStacked: { flexDirection: 'column' },
+    operationalGroupCompact: { minHeight: 112 },
+    operationalAction: {
+      flex: 1,
+      justifyContent: 'flex-start',
+      minWidth: 0,
+      paddingHorizontal: daySpace.lg,
+      paddingVertical: daySpace.md,
+    },
+    operationalHeader: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: daySpace.sm,
+      height: 40,
+      justifyContent: 'space-between',
+    },
+    operationalLabel: {
+      ...dayType.label,
+      color: day.textPrimary,
+      flex: 1,
+      fontFamily: 'Poppins_600SemiBold',
+      minWidth: 0,
+    },
+    operationalIconSlot: {
+      alignItems: 'center',
+      backgroundColor: colors.primarySubtle,
+      borderRadius: dayRadii.chip,
+      height: 24,
+      justifyContent: 'center',
+      width: 24,
+    },
+    operationalContent: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.xs,
+      justifyContent: 'flex-start',
+      marginTop: daySpace.sm,
+      minHeight: 40,
+    },
+    operationalContentCopy: { flex: 1, minWidth: 0 },
+    operationalValue: { ...dayType.money, color: day.textPrimary },
+    operationalHint: { ...dayType.caption, color: day.textSecondary },
+    operationalClear: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.sm,
+      minHeight: 40,
+    },
+    operationalStatusIcon: {
+      alignItems: 'center',
+      height: 20,
+      justifyContent: 'center',
+      width: 20,
+    },
+    operationalClearText: {
+      ...dayType.caption,
+      color: day.textSecondary,
+      flex: 1,
+    },
+    operationalDivider: {
+      alignSelf: 'stretch',
+      backgroundColor: day.borderStrong,
+      marginVertical: daySpace.md,
+      width: StyleSheet.hairlineWidth,
+    },
+    operationalDividerStacked: {
+      height: StyleSheet.hairlineWidth,
+      marginHorizontal: daySpace.lg,
+      marginVertical: 0,
+      width: 'auto',
+    },
+    grid: { flexDirection: 'row', gap: daySpace.sm },
+    gridCompact: { flexWrap: 'wrap' },
+
+    pendingPanel: {
+      backgroundColor: colors.primarySubtle,
+      borderRadius: dayRadii.card,
+      overflow: 'hidden',
+    },
+    pendingPanelClear: { backgroundColor: day.surfaceMuted },
+    pendingRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.md,
+      padding: daySpace.lg,
+    },
+    pendingRowClear: {
+      gap: daySpace.sm,
+      minHeight: 56,
+      paddingHorizontal: daySpace.md,
+      paddingVertical: daySpace.sm,
+    },
+    pendingIcon: {
+      alignItems: 'center',
+      backgroundColor: day.surface,
+      borderRadius: dayRadii.control,
+      height: 36,
+      justifyContent: 'center',
+      width: 36,
+    },
+    pendingCopy: { flex: 1, minWidth: 0 },
+    pendingTitle: { ...dayType.label, color: day.textPrimary },
+    pendingBody: {
+      ...dayType.caption,
+      color: day.textSecondary,
+      marginTop: 2,
+    },
+    pendingDivider: {
+      backgroundColor: day.border,
+      height: StyleSheet.hairlineWidth,
+      marginLeft: daySpace.lg + 36 + daySpace.md,
+    },
+    activityLoading: { gap: daySpace.xs },
+    activityList: { paddingHorizontal: daySpace.xs },
+    activityRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.md,
+      minHeight: 64,
+      paddingVertical: daySpace.sm,
+    },
+    activityCopy: { flex: 1, minWidth: 0 },
+    activityTitle: { ...dayType.label, color: day.textPrimary },
+    activityBody: {
+      ...dayType.caption,
+      color: day.textSecondary,
+      marginTop: 1,
+    },
+    activityMeta: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: daySpace.xs,
+    },
+    activityDate: {
+      ...dayType.caption,
+      color: day.textMuted,
+      fontVariant: ['tabular-nums'],
+    },
+    activityDivider: {
+      backgroundColor: day.border,
+      height: StyleSheet.hairlineWidth,
+      marginLeft: 40 + daySpace.md,
+    },
+    activityEmpty: {
+      paddingHorizontal: daySpace.xs,
+      paddingVertical: daySpace.md,
+    },
+    activityEmptyText: { ...dayType.caption, color: day.textSecondary },
+  });

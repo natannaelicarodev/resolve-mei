@@ -1,4 +1,3 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   createContext,
   useCallback,
@@ -26,6 +25,7 @@ import { getThemeShadows, motion, radii, spacing, useTheme } from '@/theme';
 import type { FeedbackVariant } from './InlineFeedback';
 import { IconButton } from './IconButton';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 type ToastInput = {
   title: string;
@@ -87,10 +87,10 @@ export function ToastProvider({ children }: PropsWithChildren) {
   const value = useMemo(() => ({ showToast }), [showToast]);
   const variant = toast?.variant ?? 'info';
   const config = {
-    success: { color: colors.success, icon: 'check-circle-outline' as const },
-    error: { color: colors.danger, icon: 'alert-circle-outline' as const },
-    warning: { color: colors.warning, icon: 'alert-outline' as const },
-    info: { color: colors.info, icon: 'information-outline' as const },
+    success: { color: colors.success, icon: 'success' as const },
+    error: { color: colors.danger, icon: 'alert' as const },
+    warning: { color: colors.warning, icon: 'alert' as const },
+    info: { color: colors.info, icon: 'statusInfo' as const },
   }[variant];
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -118,11 +118,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
           ]}
         >
           <View style={[styles.icon, { backgroundColor: `${config.color}20` }]}>
-            <MaterialCommunityIcons
-              color={config.color}
-              name={config.icon}
-              size={22}
-            />
+            <Icon name={config.icon} rawColor={config.color} size="medium" />
           </View>
           <View style={styles.copy}>
             <Text variant="label">{toast.title}</Text>
@@ -134,13 +130,7 @@ export function ToastProvider({ children }: PropsWithChildren) {
           </View>
           <IconButton
             accessibilityLabel="Fechar mensagem"
-            icon={
-              <MaterialCommunityIcons
-                color={colors.textSecondary}
-                name="close"
-                size={20}
-              />
-            }
+            icon={<Icon color="textSecondary" name="close" size="medium" />}
             onPress={dismiss}
           />
         </Animated.View>

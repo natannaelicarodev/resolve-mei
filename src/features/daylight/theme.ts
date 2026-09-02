@@ -1,13 +1,14 @@
-import { lightColors } from '@/theme';
+import { useMemo } from 'react';
+
+import { lightColors, useTheme } from '@/theme';
+import type { ThemeColors } from '@/theme';
 
 /**
  * "Daylight" — the light, friendly direction.
  *
- * Every value here comes from `src/theme/colors.ts`, the app's real token file,
- * rather than a sixth competing palette. The named aliases exist so a screen
- * reads in the product's own words ("income", "expense") instead of in raw
- * token names, and so the mapping is stated once rather than guessed at each
- * call site.
+ * Every color comes from the active canonical theme in `src/theme/colors.ts`.
+ * These aliases only express product roles such as income and expense; they do
+ * not introduce a second brand palette or local hexadecimal overrides.
  */
 export const day = {
   /** Page ground. A soft grey so white cards read as raised. */
@@ -47,6 +48,44 @@ export const day = {
   disabled: lightColors.surfaceDisabled,
   disabledText: lightColors.textDisabled,
 } as const;
+
+export type DayPalette = ReturnType<typeof createDayPalette>;
+
+export function createDayPalette(colors: ThemeColors, _dark = false) {
+  return {
+    canvas: colors.background,
+    surface: colors.surface,
+    surfaceMuted: colors.backgroundSubtle,
+    surfacePressed: colors.surfacePressed,
+    textPrimary: colors.textPrimary,
+    textSecondary: colors.textSecondary,
+    textMuted: colors.textMuted,
+    brand: colors.primary,
+    brandPressed: colors.primaryPressed,
+    brandSoft: colors.primarySubtle,
+    onBrand: colors.textInverse,
+    income: colors.success,
+    incomeSoft: colors.successSurface,
+    expense: colors.danger,
+    expenseSoft: colors.dangerSurface,
+    pending: colors.warning,
+    pendingSoft: colors.warningSurface,
+    info: colors.info,
+    infoSoft: colors.infoSurface,
+    border: colors.borderSubtle,
+    borderStrong: colors.borderStrong,
+    disabled: colors.surfaceDisabled,
+    disabledText: colors.textDisabled,
+  } as const;
+}
+
+export function useDayTheme() {
+  const { colors, resolvedTheme } = useTheme();
+  return useMemo(
+    () => createDayPalette(colors, resolvedTheme === 'dark'),
+    [colors, resolvedTheme],
+  );
+}
 
 export const daySpace = {
   xs: 4,

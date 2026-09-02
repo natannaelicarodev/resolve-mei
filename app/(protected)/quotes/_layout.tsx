@@ -8,7 +8,7 @@ export default function QuotesLayout() {
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: colors.background },
-        animation: 'fade',
+        animation: 'slide_from_right',
       }}
     />
   );

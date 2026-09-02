@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { PressableProps } from 'react-native';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 
 import { AnimatedPressable } from '@/components/motion';
-import { triggerHaptic } from '@/lib/haptics';
 import type { HapticIntent } from '@/lib/haptics';
 import { radii, sizes, spacing, typography, useTheme } from '@/theme';
 import { Text } from './Text';
+import { Icon } from './Icon';
 
 export type ButtonVariant =
   'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'link' | 'icon';
@@ -24,12 +23,9 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
   haptic?: HapticIntent | false;
 }
 
-const RADIUS_BY_SIZE: Record<ButtonSize, number> = {
-  small: 10,
-  compact: 12,
-  medium: radii.medium,
-  large: 16,
-};
+// A altura varia com o tamanho porque isso é funcional; o raio não varia,
+// porque quatro raios quase iguais só produzem inconsistência visível.
+const BUTTON_RADIUS = radii.control;
 
 const MIN_HEIGHT_BY_SIZE: Record<ButtonSize, number> = {
   small: 44,
@@ -66,10 +62,10 @@ export function Button({
   const resolvedIcon =
     icon ??
     (variant === 'danger' && !loading ? (
-      <MaterialCommunityIcons
-        color={foreground}
-        name="alert-outline"
-        size={sizes.iconMedium}
+      <Icon
+        name="alert"
+        rawColor={foreground}
+        size="medium"
         testID="button-danger-icon"
       />
     ) : undefined);
@@ -79,19 +75,16 @@ export function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
-      onPress={(event) => {
-        if (haptic) void triggerHaptic(haptic);
-        onPress?.(event);
-      }}
+      haptic={haptic}
+      onPress={onPress}
       style={(pressState) => [
         styles.base,
         styles[size],
-        { borderRadius: RADIUS_BY_SIZE[size] },
+        { borderRadius: BUTTON_RADIUS },
         variant === 'primary' && { backgroundColor: colors.primary },
         variant === 'secondary' && {
           backgroundColor: colors.primaryMuted,
           borderColor: colors.borderSubtle,
-          borderRadius: RADIUS_BY_SIZE[size] - 2,
           borderWidth: StyleSheet.hairlineWidth,
         },
         variant === 'outline' && {

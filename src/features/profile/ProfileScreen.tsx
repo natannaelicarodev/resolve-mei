@@ -21,6 +21,7 @@ import {
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Input,
   Screen,
@@ -35,6 +36,7 @@ import {
 } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { spacing, useTheme } from '@/theme';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { getMyProfile, profileQueryKey, updateMyProfile } from './api';
 import { createAvatarSignedUrl, getProfileInitial } from './avatar';
 import { scheduleProfileRedirect } from './navigation';
@@ -125,11 +127,12 @@ export function ProfileScreen() {
     reset,
     clearErrors,
     setError,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
     defaultValues: { fullName: '', phone: '' },
   });
+  const discard = useUnsavedChangesGuard(isDirty || Boolean(selectedImage));
   useEffect(() => {
     if (query.data?.id === userId)
       reset({ fullName: query.data.full_name, phone: query.data.phone ?? '' });
@@ -183,6 +186,7 @@ export function ProfileScreen() {
     },
     onSuccess: (profile) => {
       if (profile.id !== userId) return;
+      discard.allowNextNavigation();
       queryClient.setQueryData(profileQueryKey(userId), profile);
       void queryClient.invalidateQueries({ queryKey: profileQueryKey(userId) });
       if (selectedImage) {
@@ -311,6 +315,16 @@ export function ProfileScreen() {
             )}
           </View>
         </StepTransition>
+        <ConfirmationDialog
+          cancelLabel="Continuar editando"
+          confirmLabel="Descartar alterações"
+          description="As alterações feitas no perfil ainda não foram salvas."
+          destructive
+          onCancel={discard.cancelDiscard}
+          onConfirm={discard.confirmDiscard}
+          title="Descartar alterações?"
+          visible={discard.visible}
+        />
       </Screen>
       <ProtectedBottomNavigation selected="profile" />
     </SafeAreaView>

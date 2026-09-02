@@ -1,9 +1,8 @@
 import type { PropsWithChildren, ReactNode } from 'react';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { FadeInView } from '@/components/motion';
-import { Screen, Text } from '@/components/ui';
+import { Icon, Screen, Text } from '@/components/ui';
 import { radii, spacing, useTheme } from '@/theme';
 
 export function AuthShell({
@@ -61,11 +60,7 @@ export function AuthShell({
                 'Controle sem burocracia',
               ].map((benefit) => (
                 <View key={benefit} style={styles.benefit}>
-                  <MaterialCommunityIcons
-                    color={colors.primary}
-                    name="check-circle-outline"
-                    size={20}
-                  />
+                  <Icon color="primary" name="success" size="medium" />
                   <Text variant="bodySmall">{benefit}</Text>
                 </View>
               ))}

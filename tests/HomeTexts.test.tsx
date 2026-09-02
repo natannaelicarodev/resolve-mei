@@ -100,12 +100,15 @@ it('leads with starting a quote', async () => {
   queryClient.clear();
 });
 
-it('offers a shortcut into every area of the business', async () => {
+it('keeps only destinations absent from the bottom navigation in the business grid', async () => {
   const { queryClient, screen } = await renderWithClient(<HomeRoute />);
   await screen.findByText(/Ana$/);
   expect(screen.getByText('Gerencie seu negócio')).toBeTruthy();
-  for (const label of ['Orçamentos', 'Clientes', 'Serviços', 'Meu negócio'])
+  for (const label of ['Orçamentos', 'Serviços', 'Despesas'])
     expect(screen.getByRole('button', { name: label })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'Clientes' })).toBeTruthy();
+  expect(screen.getByRole('tab', { name: 'Agenda' })).toBeTruthy();
+  expect(screen.queryByRole('button', { name: 'Meu negócio' })).toBeNull();
   await screen.unmount();
   queryClient.clear();
 });

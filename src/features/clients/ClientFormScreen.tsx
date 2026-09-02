@@ -1,12 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import type { Href } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { StyleSheet, View } from 'react-native';
 
 import {
   Button,
   Card,
+  ConfirmationDialog,
   InlineFeedback,
   Input,
   Screen,
@@ -15,6 +17,7 @@ import {
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { spacing } from '@/theme';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import type { Client } from './api';
 import { createClient, updateClient } from './api';
 import { formatClientDocument, formatPhone } from './format';
@@ -47,12 +50,14 @@ export function ClientFormScreen({
         }
       : emptyClientForm,
   });
+  const discard = useUnsavedChangesGuard(form.formState.isDirty);
   const mutation = useMutation({
     mutationFn: (input: ClientFormData) =>
       client
         ? updateClient(businessId, client.id, input)
         : createClient(businessId, input),
     onSuccess: async (saved) => {
+      discard.allowNextNavigation();
       queryClient.setQueryData(
         [...clientsQueryKey(userId, businessId), 'detail', saved.id],
         saved,
@@ -67,13 +72,16 @@ export function ClientFormScreen({
     },
   });
   const type = useWatch({ control: form.control, name: 'type' });
+  const backFallback: Href = client
+    ? ({ pathname: '/clients/[id]', params: { id: client.id } } as const)
+    : '/clients';
 
   return (
     <Screen keyboardAvoiding safeAreaEdges={['top', 'bottom']}>
       <ProtectedPageHeader
         alwaysUseBackFallback
         back
-        backFallback="/home"
+        backFallback={backFallback}
         title={client ? 'Editar cliente' : 'Novo cliente'}
       />
       <View style={styles.intro}>
@@ -208,6 +216,16 @@ export function ClientFormScreen({
         onPress={form.handleSubmit((values) => {
           if (!mutation.isPending) mutation.mutate(values);
         })}
+      />
+      <ConfirmationDialog
+        cancelLabel="Continuar editando"
+        confirmLabel="Descartar alterações"
+        description="As alterações feitas neste cliente ainda não foram salvas."
+        destructive
+        onCancel={discard.cancelDiscard}
+        onConfirm={discard.confirmDiscard}
+        title="Descartar alterações?"
+        visible={discard.visible}
       />
     </Screen>
   );

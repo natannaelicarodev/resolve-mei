@@ -5,6 +5,10 @@ import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 import { useMyBusiness } from '@/features/business/hooks';
 import { useAuth } from '@/providers/AuthProvider';
 import { usePathname } from 'expo-router';
+import {
+  getRenderDiagnostic,
+  resetRenderDiagnostics,
+} from '@/lib/renderDiagnostics';
 
 jest.mock('@/features/business/hooks', () => ({
   useMyBusiness: jest.fn(),
@@ -52,6 +56,7 @@ const consoleError = jest
 describe('ProtectedLayout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    resetRenderDiagnostics();
     mockStackMountCounter = 0;
     jest.mocked(useAuth).mockReturnValue({
       isLoading: false,
@@ -67,6 +72,24 @@ describe('ProtectedLayout', () => {
   });
 
   afterAll(() => consoleError.mockRestore());
+
+  it('records the protected Stack work repeated by a pathname update', async () => {
+    jest.mocked(usePathname).mockReturnValue('/home');
+    jest.mocked(useMyBusiness).mockReturnValue({
+      data: { onboarding_completed: true },
+      error: null,
+      isError: false,
+      isLoading: false,
+      refetch: jest.fn(),
+    } as unknown as ReturnType<typeof useMyBusiness>);
+
+    const screen = await render(<ProtectedLayout />);
+    jest.mocked(usePathname).mockReturnValue('/clients');
+    await screen.rerender(<ProtectedLayout />);
+
+    expect(getRenderDiagnostic('ProtectedLayout')).toBe(2);
+    expect(getRenderDiagnostic('ProtectedStack')).toBe(1);
+  });
 
   it('redirects an authenticated user without a business to onboarding without triggering the boundary', async () => {
     jest.mocked(usePathname).mockReturnValue('/home');

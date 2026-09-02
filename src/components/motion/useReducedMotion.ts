@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react';
+import {
+  createContext,
+  createElement,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
+import type { PropsWithChildren } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
-export function useReducedMotion(): boolean {
+const ReducedMotionContext = createContext(false);
+
+export function ReducedMotionProvider({ children }: PropsWithChildren) {
   const [reduced, setReduced] = useState(false);
 
   useEffect(() => {
@@ -19,5 +28,13 @@ export function useReducedMotion(): boolean {
     };
   }, []);
 
-  return reduced;
+  return createElement(
+    ReducedMotionContext.Provider,
+    { value: reduced },
+    children,
+  );
+}
+
+export function useReducedMotion(): boolean {
+  return useContext(ReducedMotionContext);
 }

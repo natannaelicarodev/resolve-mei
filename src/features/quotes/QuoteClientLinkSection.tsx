@@ -5,6 +5,7 @@ import { useRef, useState } from 'react';
 
 import {
   Button,
+  Card,
   ConfirmationDialog,
   Icon,
   InlineFeedback,
@@ -138,12 +139,7 @@ export function QuoteClientLinkSection({
       <Text color="primary" variant="caption">
         LINK DO CLIENTE
       </Text>
-      <View
-        style={[
-          styles.card,
-          { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
-        ]}
-      >
+      <Card style={styles.card}>
         <View style={styles.heading}>
           <View
             style={[styles.icon, { backgroundColor: colors.primarySubtle }]}
@@ -198,14 +194,14 @@ export function QuoteClientLinkSection({
         ) : null}
 
         {decision ? (
-          <View style={[styles.decision, { borderColor: colors.borderSubtle }]}>
+          <Card style={styles.decision}>
             <Text variant="label">{decision.responderName}</Text>
             <Text color="textSecondary" variant="caption">
               Nome autodeclarado, não verificado ·{' '}
               {formatTimestamp(decision.respondedAt)}
             </Text>
             {decision.reason ? <Text>{decision.reason}</Text> : null}
-          </View>
+          </Card>
         ) : null}
 
         {ephemeralUrl ? (
@@ -272,7 +268,7 @@ export function QuoteClientLinkSection({
           onPress={() => void refresh()}
           variant="ghost"
         />
-      </View>
+      </Card>
 
       <ConfirmationDialog
         confirmLabel={
@@ -311,10 +307,7 @@ export function QuoteClientLinkSection({
 const styles = StyleSheet.create({
   section: { gap: spacing.sm },
   card: {
-    borderRadius: radii.large,
-    borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.md,
-    padding: spacing.md,
   },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   icon: {

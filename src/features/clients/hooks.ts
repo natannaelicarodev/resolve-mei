@@ -1,5 +1,10 @@
-import { useQuery } from '@tanstack/react-query';
-import { countActiveClients, getClient, listClients } from './api';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import {
+  CLIENT_PAGE_SIZE,
+  countActiveClients,
+  getClient,
+  listClients,
+} from './api';
 import type { ClientStatusFilter } from './api';
 
 export const clientsQueryKey = (userId: string, businessId: string) =>
@@ -11,7 +16,7 @@ export function useClients(
   status: ClientStatusFilter,
   page = 0,
 ) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: [
       ...clientsQueryKey(userId, businessId),
       'list',
@@ -19,8 +24,11 @@ export function useClients(
       status,
       page,
     ],
-    queryFn: ({ signal }) =>
-      listClients(businessId, search, status, page, signal),
+    queryFn: ({ pageParam, signal }) =>
+      listClients(businessId, search, status, pageParam, signal),
+    initialPageParam: page,
+    getNextPageParam: (lastPage, pages) =>
+      lastPage.length === CLIENT_PAGE_SIZE ? page + pages.length : undefined,
     enabled: Boolean(userId && businessId),
   });
 }

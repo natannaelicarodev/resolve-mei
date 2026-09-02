@@ -136,7 +136,7 @@ export function DesignSystemCatalog({
         <Text variant="sectionTitle">Título de seção</Text>
         <Text variant="cardTitle">Título de card</Text>
         <Text>Corpo confortável em português.</Text>
-        <Text variant="bodySecondary">Corpo secundário para contexto.</Text>
+        <Text variant="bodySmall">Corpo secundário para contexto.</Text>
         <Text variant="financial">R$ 1.240,00</Text>
       </Section>
 
@@ -241,7 +241,7 @@ export function DesignSystemCatalog({
       <Section title="Cards">
         <Card>
           <Text variant="cardTitle">Padrão</Text>
-          <Text variant="bodySecondary">
+          <Text variant="bodySmall">
             Informação agrupada sem excesso visual.
           </Text>
         </Card>
@@ -298,12 +298,12 @@ export function DesignSystemCatalog({
           <Input label="Nome fantasia" placeholder="Como você é conhecido" />
         </FormSection>
         <CompactCreateButton
-          icon="account-plus-outline"
+          icon="clientAdd"
           label="Novo cliente"
           onPress={() => void triggerHaptic('selection')}
         />
         <FloatingAction
-          icon="file-document-plus-outline"
+          icon="quote"
           label="Novo orçamento"
           onPress={() => void triggerHaptic('selection')}
         />
@@ -421,7 +421,7 @@ export function DesignSystemCatalog({
       </Section>
 
       <Section title="Animações">
-        <Text variant="bodySecondary">
+        <Text variant="bodySmall">
           Movimento reduzido do sistema: {reducedMotion ? 'ativo' : 'inativo'}
         </Text>
         <StepTransition direction={step === 1 ? 'back' : 'forward'} step={step}>

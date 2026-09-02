@@ -1,4 +1,3 @@
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -8,9 +7,9 @@ import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
-  Card,
   CompactCreateButton,
   EmptyState,
+  Icon,
   InlineFeedback,
   ListPageHeader,
   SearchInput,
@@ -20,7 +19,7 @@ import {
 } from '@/components/ui';
 import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { sizes, spacing, useTheme } from '@/theme';
+import { radii, sizes, spacing, useTheme } from '@/theme';
 import type { Quote, QuoteStatusFilter } from './api';
 import {
   formatMoney,
@@ -29,7 +28,7 @@ import {
   quoteStatusLabels,
 } from './domain';
 import { useQuotes } from './hooks';
-import { formatDateForDisplay } from './date';
+import { quoteTimingLabel, quoteUrgency } from './urgency';
 
 const STATUS_FILTERS: readonly {
   label: string;
@@ -41,15 +40,40 @@ const STATUS_FILTERS: readonly {
   { label: 'Aprovados', value: 'approved' },
 ];
 
-function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
+function QuoteRow({
+  item,
+  divided,
+  first,
+  last,
+}: {
+  item: Quote;
+  divided: boolean;
+  first: boolean;
+  last: boolean;
+}) {
   const { colors } = useTheme();
   const display = getDisplayQuoteStatus(item.status, item.valid_until);
-  const issuedOn = formatDateForDisplay(item.issued_on);
-  const validUntil = formatDateForDisplay(item.valid_until);
+  const timing = quoteTimingLabel(display, item.issued_on, item.valid_until);
+  // A urgência aparece duas vezes na linha — no texto e na faixa lateral —
+  // porque cor sozinha não pode carregar estado.
+  const urgency = quoteUrgency(display, item.valid_until);
+  const urgencyTone =
+    urgency === 'expired'
+      ? 'danger'
+      : urgency === 'due'
+        ? 'warning'
+        : 'textSecondary';
+  const urgencyEdge =
+    urgency === 'expired'
+      ? colors.danger
+      : urgency === 'due'
+        ? colors.warning
+        : undefined;
   return (
     <AnimatedPressable
-      accessibilityLabel={`${formatQuoteNumber(item.quote_number)}, ${item.client_name_snapshot}, ${quoteStatusLabels[display]}, emissão ${issuedOn}, validade ${validUntil}, ${formatMoney(item.total_cents)}`}
+      accessibilityLabel={`${formatQuoteNumber(item.quote_number)}, ${item.client_name_snapshot}, ${quoteStatusLabels[display]}, ${timing}, ${formatMoney(item.total_cents)}`}
       accessibilityRole="button"
+      haptic="selection"
       onPress={() =>
         router.push({
           pathname: '/quotes/[id]',
@@ -58,9 +82,30 @@ function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
       }
       style={[
         styles.row,
+        {
+          backgroundColor: colors.surface,
+          borderColor: colors.borderSubtle,
+          borderLeftWidth: StyleSheet.hairlineWidth,
+          borderRightWidth: StyleSheet.hairlineWidth,
+        },
+        first && {
+          borderTopLeftRadius: radii.card,
+          borderTopRightRadius: radii.card,
+          borderTopWidth: StyleSheet.hairlineWidth,
+        },
+        last && {
+          borderBottomLeftRadius: radii.card,
+          borderBottomRightRadius: radii.card,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+        },
         divided && {
           borderTopColor: colors.borderSubtle,
           borderTopWidth: StyleSheet.hairlineWidth,
+        },
+        urgencyEdge && {
+          borderLeftColor: urgencyEdge,
+          borderLeftWidth: 3,
+          paddingLeft: spacing.md - 3,
         },
       ]}
     >
@@ -81,8 +126,8 @@ function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
             }
           />
         </View>
-        <Text color="textSecondary" numberOfLines={1} variant="caption">
-          {issuedOn} · validade {validUntil}
+        <Text color={urgencyTone} numberOfLines={1} variant="caption">
+          {timing}
         </Text>
         <Text
           adjustsFontSizeToFit
@@ -94,11 +139,7 @@ function QuoteRow({ item, divided }: { item: Quote; divided: boolean }) {
           {formatMoney(item.total_cents)}
         </Text>
       </View>
-      <MaterialCommunityIcons
-        color={colors.textMuted}
-        name="chevron-right"
-        size={20}
-      />
+      <Icon color="textMuted" name="forward" size="medium" />
     </AnimatedPressable>
   );
 }
@@ -136,7 +177,7 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
           <CompactCreateButton
             accessibilityHint="Abre o formulário para criar um orçamento."
             label="Novo orçamento"
-            icon="file-document-plus-outline"
+            icon="quote"
             onPress={() => router.push('/quotes/new')}
           />
         }
@@ -184,8 +225,8 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
       ) : (
         <FlatList
           contentContainerStyle={styles.list}
-          data={quotes.length ? [quotes] : []}
-          keyExtractor={() => 'quote-list'}
+          data={quotes}
+          keyExtractor={(quote) => quote.id}
           ListHeaderComponent={header}
           onRefresh={() => void query.refetch()}
           refreshing={query.isRefetching && !query.isFetchingNextPage}
@@ -193,6 +234,7 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
             if (query.hasNextPage && !query.isFetchingNextPage)
               void query.fetchNextPage();
           }}
+          onEndReachedThreshold={0.35}
           ListFooterComponent={
             query.isFetchingNextPage ? (
               <ActivityIndicator color={colors.primary} />
@@ -211,7 +253,7 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
                   ? 'Tente alterar a busca ou os filtros.'
                   : 'Seus orçamentos aparecerão aqui conforme você criá-los.'
               }
-              icon="file-document-outline"
+              icon="quote"
               title={
                 search || status !== 'all'
                   ? 'Nenhum orçamento encontrado'
@@ -219,12 +261,13 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
               }
             />
           }
-          renderItem={({ item: group }) => (
-            <Card style={styles.groupedList}>
-              {group.map((quote, index) => (
-                <QuoteRow divided={index > 0} item={quote} key={quote.id} />
-              ))}
-            </Card>
+          renderItem={({ item: quote, index }) => (
+            <QuoteRow
+              divided={index > 0}
+              first={index === 0}
+              item={quote}
+              last={index === quotes.length - 1}
+            />
           )}
         />
       )}
@@ -252,7 +295,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   header: { gap: spacing.lg, marginBottom: spacing.lg },
-  groupedList: { gap: 0, overflow: 'hidden', padding: 0 },
   row: {
     alignItems: 'center',
     flexDirection: 'row',

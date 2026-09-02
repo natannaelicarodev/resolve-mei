@@ -32,6 +32,7 @@ export {
   ErrorState,
   FloatingAction,
   FormSection,
+  InlineLoading,
   ListContainer,
   ListItem,
   ListPageHeader,
@@ -40,6 +41,7 @@ export {
   SearchInput,
   Select,
   SectionHeader,
+  SkeletonBlock,
   Switch,
 } from './patterns';
 export { Badge as StatusBadge } from './Badge';

@@ -6,6 +6,7 @@ import {
   Briefcase,
   Calendar,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   CircleAlert,
   CircleCheck,
@@ -19,6 +20,7 @@ import {
   FileText,
   Filter,
   GripVertical,
+  House,
   Mail,
   MessageCircle,
   Info,
@@ -44,11 +46,13 @@ import {
 } from 'lucide-react-native';
 import type { ColorToken } from '@/theme';
 import { sizes, useTheme } from '@/theme';
+import { View } from 'react-native';
 
 // One catalog, one stroke weight, one size scale. Screens name an icon by its
 // role in the product, so swapping the underlying glyph never touches a screen.
 const icons = {
   // Domain objects
+  home: House,
   client: Users,
   clientAdd: UserPlus,
   profile: User,
@@ -74,6 +78,7 @@ const icons = {
   close: X,
   // Navigation
   back: ArrowLeft,
+  previous: ChevronLeft,
   forward: ChevronRight,
   expand: ChevronDown,
   // Status and data
@@ -114,6 +119,7 @@ export interface IconProps {
   color?: ColorToken;
   /** Overrides the token colour when a raw value is unavoidable. */
   rawColor?: string;
+  testID?: string;
 }
 
 export function Icon({
@@ -121,16 +127,18 @@ export function Icon({
   size = 'medium',
   color = 'textPrimary',
   rawColor,
+  testID,
 }: IconProps) {
   const { colors } = useTheme();
   const Glyph = icons[name];
-  return (
+  const glyph = (
     <Glyph
       color={rawColor ?? colors[color]}
       size={iconSizes[size]}
       strokeWidth={1.75}
     />
   );
+  return testID ? <View testID={testID}>{glyph}</View> : glyph;
 }
 
 export const iconNames = Object.keys(icons) as IconName[];

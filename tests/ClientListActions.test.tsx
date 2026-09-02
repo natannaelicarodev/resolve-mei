@@ -8,15 +8,40 @@ import { useAuth } from '@/providers/AuthProvider';
 
 jest.mock('@/features/clients/hooks', () => ({ useClients: jest.fn() }));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
+jest.mock('@/features/relationships/hooks', () => ({
+  useReconnectClients: jest.fn(() => ({ data: undefined })),
+  useRelationshipMutations: jest.fn(() => ({
+    settings: { isPending: false, mutate: jest.fn() },
+  })),
+}));
 
-beforeEach(() => {
-  jest.clearAllMocks();
+jest.mock('@/components/motion', () => {
+  const { Pressable, View } = jest.requireActual('react-native');
+  return {
+    AnimatedPressable: Pressable,
+    FadeInView: View,
+    useReducedMotion: () => true,
+  };
+});
+
+function mockClients(overrides = {}) {
   jest.mocked(useClients).mockReturnValue({
-    data: [],
+    data: { pages: [], pageParams: [] },
+    fetchNextPage: jest.fn(),
+    hasNextPage: false,
+    isFetching: false,
+    isFetchingNextPage: false,
     isError: false,
     isLoading: false,
     isSuccess: true,
+    refetch: jest.fn(),
+    ...overrides,
   } as unknown as ReturnType<typeof useClients>);
+}
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockClients();
   jest.mocked(useAuth).mockReturnValue({
     user: { id: 'user-1' },
   } as ReturnType<typeof useAuth>);

@@ -62,4 +62,41 @@ describe('protected back navigation', () => {
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/home'));
   });
+
+  it('consumes a blocked back request instead of dispatching it again after a rerender', async () => {
+    const fallback = {
+      pathname: '/clients/[id]' as const,
+      params: { id: 'client-1' },
+    };
+    const screen = await render(
+      <ThemeProvider>
+        <ProtectedPageHeader
+          alwaysUseBackFallback
+          back
+          backFallback={fallback}
+          title="Editar cliente"
+        />
+      </ThemeProvider>,
+    );
+
+    fireEvent.press(screen.getByLabelText('Voltar'));
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+
+    screen.rerender(
+      <ThemeProvider>
+        <ProtectedPageHeader
+          alwaysUseBackFallback
+          back
+          backFallback={{
+            pathname: '/clients/[id]',
+            params: { id: 'client-1' },
+          }}
+          title="Editar cliente"
+        />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => expect(router.replace).toHaveBeenCalledTimes(1));
+  });
 });
