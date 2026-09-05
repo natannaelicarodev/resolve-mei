@@ -39,6 +39,18 @@ O Perfetto localizou depois um hotspot repetível de Home→Agenda na main threa
 portanto, restrito à concentração mais evidente da árvore da Agenda: as 42
 células do calendário.
 
+## A/B orientado pelo Perfetto
+
+| Experimento                                         |                 Árvore nativa | Maior `doFrame`, Home→Agenda | Maior `Record View#draw()`, Home→Agenda | Decisão |
+| --------------------------------------------------- | ----------------------------: | ---------------------------: | --------------------------------------: | ------- |
+| Fundir wrapper e controle das células do calendário | 246 → 216 views no mês medido | 72,73–74,64 → 54,89–57,55 ms |            59,10–60,73 → 44,29–47,04 ms | Mantido |
+
+A mediana do pior `doFrame` melhorou 22,4%, e a mediana do pior desenho melhorou
+23,3%. A implementação preservou o grid de sete colunas, seleção, feedback
+háptico, estado pressionado e rótulos de acessibilidade. Como a melhora excedeu
+largamente a variação entre as três rodadas, a hipótese foi confirmada. Os dados
+por rodada e o protocolo estão em `docs/performance/agenda-system-trace.md`.
+
 ## Regra para novos experimentos
 
 Alterar uma única hipótese, repetir as três rodadas por direção e comparar com o

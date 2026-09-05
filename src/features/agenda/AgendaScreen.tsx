@@ -2,9 +2,9 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 
-import { AnimatedPressable, FadeInView } from '@/components/motion';
+import { FadeInView } from '@/components/motion';
 import {
   Badge,
   Button,
@@ -26,7 +26,15 @@ import {
 import { formatQuoteNumber } from '@/features/quotes/domain';
 import { formatDateForDisplay } from '@/features/quotes/date';
 import { formatBigIntMoney } from '@/features/receivables/domain';
-import { getThemeShadows, motion, radii, spacing, useTheme } from '@/theme';
+import { triggerHaptic } from '@/lib/haptics';
+import {
+  getThemeShadows,
+  motion,
+  opacity,
+  radii,
+  spacing,
+  useTheme,
+} from '@/theme';
 import {
   calendarGrid,
   calendarMonthLabel,
@@ -182,20 +190,19 @@ function AgendaCalendar({
           const status = dayStatus.get(cell.date) ?? 'none';
           if (!cell.inMonth) {
             return (
-              <View key={cell.date} style={styles.calendarCell}>
-                <View
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                  style={[
-                    styles.calendarDay,
-                    styles.calendarDayOutside,
-                    { borderColor: colors.borderSubtle },
-                  ]}
-                >
-                  <Text color="textMuted" numberOfLines={1} variant="caption">
-                    {cell.day}
-                  </Text>
-                </View>
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+                key={cell.date}
+                style={[
+                  styles.calendarDayCell,
+                  styles.calendarDayOutside,
+                  { borderColor: colors.borderSubtle },
+                ]}
+              >
+                <Text color="textMuted" numberOfLines={1} variant="caption">
+                  {cell.day}
+                </Text>
               </View>
             );
           }
@@ -211,23 +218,28 @@ function AgendaCalendar({
               ? statusForeground[status]
               : colors.textPrimary;
           return (
-            <View key={cell.date} style={styles.calendarCell}>
-              <AnimatedPressable
-                accessibilityLabel={`${cell.day}${status !== 'none' ? `, ${URGENCY_LABEL[status]}` : ''}${cell.date === today ? ', hoje' : ''}`}
-                accessibilityRole="button"
-                haptic="selection"
-                onPress={() => onSelectDay(isSelected ? null : cell.date)}
-                style={[styles.calendarDay, { backgroundColor: background }]}
+            <Pressable
+              accessibilityLabel={`${cell.day}${status !== 'none' ? `, ${URGENCY_LABEL[status]}` : ''}${cell.date === today ? ', hoje' : ''}`}
+              accessibilityRole="button"
+              key={cell.date}
+              onPress={() => {
+                void triggerHaptic('selection');
+                onSelectDay(isSelected ? null : cell.date);
+              }}
+              style={({ pressed }) => [
+                styles.calendarDayCell,
+                { backgroundColor: background },
+                pressed && styles.calendarCellPressed,
+              ]}
+            >
+              <Text
+                numberOfLines={1}
+                style={{ color: foreground }}
+                variant="caption"
               >
-                <Text
-                  numberOfLines={1}
-                  style={{ color: foreground }}
-                  variant="caption"
-                >
-                  {cell.day}
-                </Text>
-              </AnimatedPressable>
-            </View>
+                {cell.day}
+              </Text>
+            </Pressable>
           );
         })}
       </View>
@@ -570,13 +582,16 @@ const styles = StyleSheet.create({
   calendarWeekRow: { flexDirection: 'row' },
   calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
   calendarCell: { alignItems: 'center', width: `${100 / 7}%` },
-  calendarDay: {
+  calendarCellPressed: { opacity: opacity.pressed },
+  calendarDayCell: {
     alignItems: 'center',
     aspectRatio: 1,
     borderRadius: radii.pill,
+    height: spacing.xl,
     justifyContent: 'center',
+    marginHorizontal: '2%',
     marginVertical: 2,
-    width: '72%',
+    width: `${72 / 7}%`,
   },
   calendarDayOutside: {
     borderStyle: 'dashed',

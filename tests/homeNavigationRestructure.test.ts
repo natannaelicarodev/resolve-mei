@@ -69,4 +69,11 @@ describe('home and primary navigation restructure', () => {
     );
     expect(agenda).not.toContain('<ProtectedPageHeader back');
   });
+
+  it('keeps calendar day cells free of one animated native wrapper each', () => {
+    const agenda = source('src/features/agenda/AgendaScreen.tsx');
+    expect(agenda).not.toContain('<AnimatedPressable');
+    expect(agenda).toContain('<Pressable');
+    expect(agenda).toContain("triggerHaptic('selection')");
+  });
 });
