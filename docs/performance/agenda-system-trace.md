@@ -109,6 +109,11 @@ e foi mantido. Esta bateria não autoriza uma nova sequência aberta de tentativ
 qualquer experimento adicional precisa de outra hipótese delimitada e do mesmo
 critério de parada.
 
+A verificação representativa em Serviços confirmou a mesma assinatura de custo
+na main thread e encerrou a frente para o beta. A decisão de escopo do app, seus
+limites e os números dessa captura estão em
+`docs/performance/app-structural-baseline.md`.
+
 ## Experimentos anteriores
 
 O ledger completo das tentativas mantidas e revertidas está em
