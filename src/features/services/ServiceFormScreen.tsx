@@ -1,9 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import { SuccessTransition } from '@/components/motion';
 import {
@@ -12,12 +13,13 @@ import {
   ConfirmationDialog,
   InlineFeedback,
   Input,
+  Icon,
   Screen,
   SegmentedControl,
   Text,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
-import { spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import type { Service } from './api';
 import { createService, updateService } from './api';
@@ -45,6 +47,8 @@ export function ServiceFormScreen({
   businessId: string;
   service?: Service;
 }) {
+  const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const queryClient = useQueryClient();
@@ -100,23 +104,53 @@ export function ServiceFormScreen({
     : '/services';
 
   return (
-    <Screen keyboardAvoiding safeAreaEdges={['top', 'bottom']}>
-      <ProtectedPageHeader
-        alwaysUseBackFallback
-        back
-        backFallback={detailPath}
-        dismissToBackFallback
-        title={service ? 'Editar serviço' : 'Novo serviço'}
-      />
-      <View style={styles.intro}>
-        <Text variant="sectionTitle">
-          {service ? 'Atualize o serviço' : 'Cadastre um serviço'}
-        </Text>
-        <Text color="textSecondary">
-          Informe o que você oferece e o valor cobrado.
-        </Text>
+    <Screen
+      background="subtle"
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
+      keyboardAvoiding
+      safeAreaColor={colors.primary}
+      safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
+    >
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <ProtectedPageHeader
+          alwaysUseBackFallback
+          back
+          backFallback={detailPath}
+          dismissToBackFallback
+          foregroundColor={colors.textInverse}
+          title={service ? 'Editar serviço' : 'Novo serviço'}
+        />
+        <View style={styles.intro}>
+          <View
+            style={[styles.introIcon, { backgroundColor: colors.textInverse }]}
+          >
+            <Icon
+              name={service ? 'edit' : 'service'}
+              rawColor={colors.primary}
+              size="large"
+            />
+          </View>
+          <View style={styles.introCopy}>
+            <Text style={{ color: colors.textInverse }} variant="sectionTitle">
+              {service ? 'Atualize o serviço' : 'Cadastre um serviço'}
+            </Text>
+            <Text style={{ color: colors.textInverse }} variant="bodySmall">
+              Organize sua oferta, defina o valor e o tempo de atendimento.
+            </Text>
+          </View>
+        </View>
       </View>
-      <Card>
+      <Card style={styles.formCard} variant="elevated">
         <Controller
           control={form.control}
           name="name"
@@ -152,22 +186,37 @@ export function ServiceFormScreen({
             />
           )}
         />
-        <Controller
-          control={form.control}
-          name="price"
-          render={({ field, fieldState }) => (
-            <Input
-              editable={!mutation.isPending && !showSuccess}
-              error={fieldState.error?.message}
-              helperText="Digite somente os números. Exemplo: 15000 vira R$ 150,00."
-              keyboardType="number-pad"
-              label="Preço"
-              onBlur={field.onBlur}
-              onChangeText={(value) => field.onChange(formatPriceInput(value))}
-              value={field.value}
-            />
-          )}
-        />
+        {/* O preço é o que define um serviço no catálogo, mas como `Input`
+            genérico pesava igual à descrição. Com quatro campos, agrupar seria
+            burocracia; destacar o campo central resolve pelo mesmo espaço. */}
+        <View
+          style={[
+            styles.priceField,
+            {
+              backgroundColor: colors.primarySubtle,
+              borderColor: colors.primary,
+            },
+          ]}
+        >
+          <Controller
+            control={form.control}
+            name="price"
+            render={({ field, fieldState }) => (
+              <Input
+                editable={!mutation.isPending && !showSuccess}
+                error={fieldState.error?.message}
+                helperText="Digite somente os números. Exemplo: 15000 vira R$ 150,00."
+                keyboardType="number-pad"
+                label="Preço"
+                onBlur={field.onBlur}
+                onChangeText={(value) =>
+                  field.onChange(formatPriceInput(value))
+                }
+                value={field.value}
+              />
+            )}
+          />
+        </View>
         <Controller
           control={form.control}
           name="estimatedDurationMinutes"
@@ -234,7 +283,34 @@ export function ServiceFormScreen({
 }
 
 const styles = StyleSheet.create({
-  intro: { gap: spacing.xs },
+  content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    marginTop: -spacing.md,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  intro: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  introIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  introCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  formCard: { marginTop: -40 },
+  priceField: {
+    borderRadius: radii.card,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
   description: {
     minHeight: 112,
     paddingTop: spacing.md,

@@ -1,5 +1,6 @@
 import {
   completeOnboarding,
+  consumeOnboardingFocus,
   getMyBusiness,
   updateExistingBusiness,
 } from '@/features/business/api';
@@ -53,13 +54,17 @@ describe('completeOnboarding', () => {
   beforeEach(() => jest.clearAllMocks());
   it('marks onboarding complete only after the draft persists', async () => {
     configureQueries(null);
-    await expect(completeOnboarding('user-1', input)).resolves.toMatchObject({
+    await expect(
+      completeOnboarding('user-1', input, 'quotes'),
+    ).resolves.toMatchObject({
       onboarding_completed: true,
     });
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         owner_id: 'user-1',
         onboarding_completed: false,
+        onboarding_priority: 'quotes',
+        onboarding_focus_consumed_at: null,
       }),
       { onConflict: 'owner_id' },
     );
@@ -67,13 +72,38 @@ describe('completeOnboarding', () => {
   });
   it('leaves the persisted draft incomplete when final persistence fails', async () => {
     configureQueries(new Error('failure'));
-    await expect(completeOnboarding('user-1', input)).rejects.toThrow(
+    await expect(completeOnboarding('user-1', input, 'quotes')).rejects.toThrow(
       'failure',
     );
     expect(upsert).toHaveBeenCalledWith(
       expect.objectContaining({ onboarding_completed: false }),
       { onConflict: 'owner_id' },
     );
+  });
+});
+
+describe('consumeOnboardingFocus', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('marks only the owned business suggestion as consumed', async () => {
+    const single = jest.fn().mockResolvedValue({
+      data: { id: 'business-1' },
+      error: null,
+    });
+    const select = jest.fn(() => ({ single }));
+    const ownerEq = jest.fn(() => ({ select }));
+    const idEq = jest.fn(() => ({ eq: ownerEq }));
+    update.mockImplementation(() => ({ eq: idEq }));
+    jest.mocked(supabase.from).mockReturnValue({ update } as never);
+
+    await expect(
+      consumeOnboardingFocus('user-1', 'business-1'),
+    ).resolves.toEqual(expect.any(String));
+    expect(update).toHaveBeenCalledWith({
+      onboarding_focus_consumed_at: expect.any(String),
+    });
+    expect(idEq).toHaveBeenCalledWith('id', 'business-1');
+    expect(ownerEq).toHaveBeenCalledWith('owner_id', 'user-1');
   });
 });
 

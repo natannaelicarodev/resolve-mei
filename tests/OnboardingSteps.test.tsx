@@ -20,6 +20,15 @@ jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/lib/haptics', () => ({
   triggerHaptic: jest.fn(() => Promise.resolve()),
 }));
+jest.mock('@/features/business/postalCode', () => ({
+  ...jest.requireActual('@/features/business/postalCode'),
+  lookupPostalCode: jest.fn().mockResolvedValue({
+    street: 'Rua das Flores',
+    neighborhood: 'Centro',
+    city: 'São Paulo',
+    state: 'SP',
+  }),
+}));
 
 async function renderOnboarding() {
   const queryClient = new QueryClient({
@@ -43,6 +52,12 @@ async function renderOnboarding() {
 async function fillBusinessStep(
   screen: Awaited<ReturnType<typeof render>>,
 ): Promise<void> {
+  await fireEvent.press(
+    screen.getByRole('radio', {
+      name: 'Criar orçamentos com mais agilidade',
+    }),
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
   await fireEvent.changeText(
     screen.getByLabelText('Nome do negócio'),
     'Ana Serviços',
@@ -64,9 +79,9 @@ beforeEach(() => {
 it('starts on the first step and shows textual progress', async () => {
   const { dispose, screen } = await renderOnboarding();
 
-  expect(screen.getByText('Etapa 1 de 5')).toBeTruthy();
-  expect(screen.getByText('Vamos preparar seu perfil')).toBeTruthy();
-  expect(screen.getByLabelText('20% concluído')).toBeTruthy();
+  expect(screen.getByText('Etapa 1 de 6')).toBeTruthy();
+  expect(screen.getByText('O que você quer organizar primeiro?')).toBeTruthy();
+  expect(screen.getByLabelText('17% concluído')).toBeTruthy();
   expect(screen.queryByRole('button', { name: 'Voltar' })).toBeNull();
 
   await dispose();
@@ -77,8 +92,11 @@ it('blocks an invalid step and does not advance', async () => {
 
   await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
-  expect(await screen.findByText('Etapa 1 de 5')).toBeTruthy();
-  expect(screen.queryByText('Etapa 2 de 5')).toBeNull();
+  expect(await screen.findByText('Etapa 1 de 6')).toBeTruthy();
+  expect(
+    screen.getByText('Escolha uma prioridade para continuar.'),
+  ).toBeTruthy();
+  expect(screen.queryByText('Etapa 2 de 6')).toBeNull();
   expect(completeOnboarding).not.toHaveBeenCalled();
 
   await dispose();
@@ -88,12 +106,12 @@ it('advances, goes back, and keeps the data entered in each step', async () => {
   const { dispose, screen } = await renderOnboarding();
 
   await fillBusinessStep(screen);
-  expect(await screen.findByText('Etapa 2 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 3 de 6')).toBeTruthy();
   expect(screen.getByDisplayValue('ana@example.com')).toBeTruthy();
 
   await fireEvent.press(screen.getByRole('button', { name: 'Voltar' }));
 
-  expect(await screen.findByText('Etapa 1 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 2 de 6')).toBeTruthy();
   expect(screen.getByDisplayValue('Ana Serviços')).toBeTruthy();
   expect(screen.getByDisplayValue('529.982.247-25')).toBeTruthy();
 
@@ -102,6 +120,11 @@ it('advances, goes back, and keeps the data entered in each step', async () => {
 
 it('switches the document type accessibly and clears the previous number', async () => {
   const { dispose, screen } = await renderOnboarding();
+
+  await fireEvent.press(
+    screen.getByRole('radio', { name: 'Criar orçamentos com mais agilidade' }),
+  );
+  await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
   await fireEvent.changeText(
     screen.getByLabelText('Número do CPF'),
@@ -129,14 +152,14 @@ it('does not save partially: the mutation only runs on the last step', async () 
   const { dispose, screen } = await renderOnboarding();
 
   await fillBusinessStep(screen);
-  expect(await screen.findByText('Etapa 2 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 3 de 6')).toBeTruthy();
   await fireEvent.changeText(
     screen.getByLabelText('Telefone profissional'),
     '11988887777',
   );
   await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
-  expect(await screen.findByText('Etapa 3 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 4 de 6')).toBeTruthy();
   expect(completeOnboarding).not.toHaveBeenCalled();
   expect(screen.queryByRole('button', { name: 'Concluir perfil' })).toBeNull();
 
@@ -167,12 +190,12 @@ it('shows every saved field in the final review and links each section back to e
   await fireEvent.changeText(screen.getByLabelText('Chave Pix'), 'ana@pix');
   await fireEvent.press(screen.getByRole('button', { name: 'Continuar' }));
 
-  expect(await screen.findByText('Etapa 5 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 6 de 6')).toBeTruthy();
   expect(screen.getByText('529.982.247-25')).toBeTruthy();
   expect(screen.getByText('11988887777')).toBeTruthy();
   expect(screen.getByText('Rua das Flores')).toBeTruthy();
   expect(screen.getByText('Sala 4')).toBeTruthy();
-  expect(screen.getByText('01001000')).toBeTruthy();
+  expect(screen.getByText('01001-000')).toBeTruthy();
   expect(screen.getByText('ana@pix')).toBeTruthy();
   expect(screen.getByRole('button', { name: /Editar Neg/ })).toBeTruthy();
   expect(screen.getByRole('button', { name: 'Editar Contato' })).toBeTruthy();
@@ -180,7 +203,7 @@ it('shows every saved field in the final review and links each section back to e
   expect(screen.getByRole('button', { name: 'Editar Pagamento' })).toBeTruthy();
 
   await fireEvent.press(screen.getByRole('button', { name: /Editar Endere/ }));
-  expect(await screen.findByText('Etapa 3 de 5')).toBeTruthy();
+  expect(await screen.findByText('Etapa 4 de 6')).toBeTruthy();
   expect(screen.getByDisplayValue('Rua das Flores')).toBeTruthy();
 
   await dispose();

@@ -51,6 +51,10 @@ As migrations nao sao aplicadas automaticamente e nao exigem Docker ou senha do 
 5. `supabase/migrations/202608260005_profile_avatars.sql`
 6. `supabase/migrations/202608260006_services.sql`
 
+Antes de validar a personalização do onboarding, aplique também
+`supabase/migrations/202609040001_onboarding_personalization.sql`. Ela adiciona
+a prioridade escolhida e o controle de consumo do destaque temporário da Home.
+
 A primeira migration cria `profiles`, `businesses`, constraints, timestamps, trigger de perfil, indices, RLS e politicas por proprietario. A segunda cria/atualiza o bucket privado `business-logos`, limitado a 5 MB e JPEG/PNG/WebP, e restringe objetos a `{user_id}/{arquivo}`.
 
 A terceira migration concede ao papel `authenticated` somente `SELECT`, `INSERT` e `UPDATE` em `profiles` e `businesses`. Grants e RLS atuam em etapas diferentes e sao necessarios conjuntamente: os grants autorizam quais operacoes o papel pode solicitar nas tabelas, enquanto as policies de RLS limitam quais linhas cada usuario autenticado pode acessar. Uma policy permissiva nao substitui o grant da operacao, e um grant nao ignora a RLS habilitada.

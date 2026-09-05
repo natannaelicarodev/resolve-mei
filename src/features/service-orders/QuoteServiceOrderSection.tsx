@@ -1,9 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
-import { Badge, Button, Card, InlineFeedback, Text } from '@/components/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  Icon,
+  InlineFeedback,
+  Text,
+} from '@/components/ui';
 import { quotesQueryKey } from '@/features/quotes/hooks';
-import { spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { createServiceOrder } from './api';
 import { serviceOrderErrorMessage, serviceOrderStatusLabels } from './domain';
 import { serviceOrdersQueryKey, useServiceOrderForQuote } from './hooks';
@@ -19,6 +26,7 @@ export function QuoteServiceOrderSection({
   quoteId: string;
   quoteStatus: string;
 }) {
+  const { colors } = useTheme();
   const queryClient = useQueryClient();
   const query = useServiceOrderForQuote(userId, businessId, quoteId);
   const mutation = useMutation({
@@ -42,7 +50,7 @@ export function QuoteServiceOrderSection({
       <Text color="primary" style={styles.title} variant="caption">
         EXECUÇÃO DO SERVIÇO
       </Text>
-      <Card style={styles.card}>
+      <Card style={styles.card} variant="elevated">
         {query.isLoading ? (
           <Text color="textSecondary">Consultando execução...</Text>
         ) : null}
@@ -62,6 +70,14 @@ export function QuoteServiceOrderSection({
         {query.data ? (
           <>
             <View style={styles.row}>
+              <View
+                style={[
+                  styles.iconTile,
+                  { backgroundColor: colors.primarySubtle },
+                ]}
+              >
+                <Icon color="primary" name="service" size="medium" />
+              </View>
               <View style={styles.copy}>
                 <Text variant="label">Ordem de serviço</Text>
                 <Text color="textSecondary" variant="caption">
@@ -101,10 +117,22 @@ export function QuoteServiceOrderSection({
           </>
         ) : quoteStatus === 'approved' && !query.isLoading && !query.isError ? (
           <>
-            <Text color="textSecondary">
-              Crie a ordem agora e inicie a execução somente quando o trabalho
-              começar.
-            </Text>
+            <View style={styles.row}>
+              <View
+                style={[
+                  styles.iconTile,
+                  { backgroundColor: colors.primarySubtle },
+                ]}
+              >
+                <Icon color="primary" name="service" size="medium" />
+              </View>
+              <View style={styles.copy}>
+                <Text variant="label">Pronto para executar</Text>
+                <Text color="textSecondary" variant="caption">
+                  Crie a ordem agora e inicie somente quando o trabalho começar.
+                </Text>
+              </View>
+            </View>
             <Button
               label="Criar ordem de serviço"
               loading={mutation.isPending}
@@ -136,4 +164,11 @@ const styles = StyleSheet.create({
   },
   row: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   copy: { flex: 1, gap: spacing.xs },
+  iconTile: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 44,
+    justifyContent: 'center',
+    width: 44,
+  },
 });

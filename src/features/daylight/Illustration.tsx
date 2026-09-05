@@ -17,9 +17,11 @@ export type IllustrationName =
   | 'pending'
   | 'approved'
   | 'client'
+  | 'clientEmpty'
   | 'service'
   | 'quote'
   | 'quoteHero'
+  | 'quoteHeroNew'
   | 'quoteHeroDraft'
   | 'catalog'
   | 'business'
@@ -40,9 +42,11 @@ const slotsFor = (day: DayPalette): Record<IllustrationName, Slot> => ({
   pending: { icon: 'alert', tint: day.pending, soft: day.pendingSoft },
   approved: { icon: 'success', tint: day.income, soft: day.incomeSoft },
   client: { icon: 'client', tint: day.info, soft: day.infoSoft },
+  clientEmpty: { icon: 'client', tint: day.info, soft: day.infoSoft },
   service: { icon: 'service', tint: day.brand, soft: day.brandSoft },
   quote: { icon: 'quote', tint: day.brand, soft: day.brandSoft },
   quoteHero: { icon: 'quote', tint: day.brand, soft: day.brandSoft },
+  quoteHeroNew: { icon: 'quote', tint: day.brand, soft: day.brandSoft },
   quoteHeroDraft: { icon: 'edit', tint: day.brand, soft: day.brandSoft },
   catalog: { icon: 'money', tint: day.brand, soft: day.brandSoft },
   business: { icon: 'service', tint: day.brand, soft: day.brandSoft },
@@ -63,14 +67,16 @@ const slotsFor = (day: DayPalette): Record<IllustrationName, Slot> => ({
  */
 const ARTWORK: Partial<Record<IllustrationName, ImageSourcePropType>> = {
   income: require('../../../assets/illustrations/money.png'),
-  expense: require('../../../assets/illustrations/expense-wallet-teal.png'),
+  expense: require('../../../assets/illustrations/home-expense-3x.png'),
   pending: require('../../../assets/illustrations/clock.png'),
   approved: require('../../../assets/illustrations/tick.png'),
   client: require('../../../assets/illustrations/client-person-anil.png'),
-  service: require('../../../assets/illustrations/service-briefcase-teal.png'),
-  quote: require('../../../assets/illustrations/quote-clipboard-teal.png'),
-  quoteHero: require('../../../assets/illustrations/quote-catalog-hero-padded-alpha.png'),
-  quoteHeroDraft: require('../../../assets/illustrations/quote-continue-hero-2d.png'),
+  clientEmpty: require('../../../assets/illustrations/tavi-clientes-circulo-transparente.png'),
+  service: require('../../../assets/illustrations/home-service-3x.png'),
+  quote: require('../../../assets/illustrations/home-quote-3x.png'),
+  quoteHero: require('../../../assets/illustrations/home-quote-hero-sent-3x.png'),
+  quoteHeroNew: require('../../../assets/illustrations/home-quote-hero-new-3x.png'),
+  quoteHeroDraft: require('../../../assets/illustrations/home-quote-hero-draft-3x.png'),
   catalog: require('../../../assets/illustrations/bag.png'),
   business: require('../../../assets/illustrations/business-store-cropped.png'),
   stats: require('../../../assets/illustrations/chart.png'),

@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
 import { useForm } from 'react-hook-form';
 
@@ -26,9 +27,18 @@ function FieldsHarness() {
 }
 
 it('keeps professional fields and exposes no business logo upload', async () => {
-  const screen = await render(<FieldsHarness />);
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  const screen = await render(
+    <QueryClientProvider client={queryClient}>
+      <FieldsHarness />
+    </QueryClientProvider>,
+  );
   expect(screen.getByLabelText('Nome do negócio')).toBeTruthy();
   expect(screen.getByLabelText('Chave Pix')).toBeTruthy();
   expect(screen.queryByText(/logotipo/i)).toBeNull();
   expect(screen.queryByText(/JPEG, PNG ou WebP/i)).toBeNull();
+  await screen.unmount();
+  queryClient.clear();
 });

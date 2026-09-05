@@ -16,12 +16,24 @@ const OPTIONS = [
 ] as const;
 
 /**
- * The selected state is drawn by one pill behind the options rather than a
- * background painted on each of them. That is what lets the selection slide:
- * with a per-option background, changing selection repaints two options at
- * once and the indicator appears to teleport.
+ * Selection used to be painted by a single pill sliding behind the options,
+ * positioned from another element's measured `onLayout` frame. On device
+ * that shipped two confirmed bugs in sequence: the pill going permanently
+ * invisible after the first frame (fixed by giving the selected option its
+ * own fallback background), and then — with both the pill and the fallback
+ * painting at once — two overlapping layers with slightly different
+ * geometry rendering as a visibly deformed edge (a `height: '100%'` fix
+ * attempt made it worse: an unbounded percentage height in that scrollable
+ * layout resolved against a far ancestor and filled the whole screen).
+ * Each option now animates its own background via a shared value — there is
+ * only one layer, so there's nothing to test for a second element's frame or
+ * a background style object; `interpolateColor` runs as a worklet on the UI
+ * thread and isn't observable as a plain prop from here. What stays testable
+ * and load-bearing is that exactly one option is marked selected at a time —
+ * that state, not a style prop, is what the checkmark and label color read
+ * from.
  */
-it('draws the selection as a single layer, not a per-option background', async () => {
+it('marks exactly one option as selected', async () => {
   const screen = await render(
     <ThemeProvider>
       <SegmentedControl
@@ -33,15 +45,12 @@ it('draws the selection as a single layer, not a per-option background', async (
     </ThemeProvider>,
   );
 
-  // No option carries its own selected background — only the shared pill does.
-  for (const option of OPTIONS) {
-    const radio = screen.getByRole('radio', { name: option.label });
-    const style = radio.props.style as { backgroundColor?: string }[] | object;
-    const flat = Array.isArray(style) ? Object.assign({}, ...style) : style;
-    expect((flat as { backgroundColor?: string }).backgroundColor).toBe(
-      undefined,
-    );
-  }
+  const radios = screen.getAllByRole('radio');
+  const selected = radios.filter(
+    (radio) => radio.props.accessibilityState?.selected === true,
+  );
+  expect(selected).toHaveLength(1);
+  expect(selected[0]?.props.accessibilityLabel).toBe('Todos');
 
   await screen.unmount();
 });

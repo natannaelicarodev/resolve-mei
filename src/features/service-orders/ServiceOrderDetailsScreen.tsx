@@ -1,12 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
   Badge,
   Button,
   Card,
   Dialog,
+  Icon,
   InlineFeedback,
   Input,
   Screen,
@@ -22,7 +24,7 @@ import { quotesQueryKey } from '@/features/quotes/hooks';
 import { formatBigIntMoney } from '@/features/receivables/domain';
 import { useQuoteReceivable } from '@/features/receivables/hooks';
 import { FadeInView } from '@/components/motion';
-import { motion, spacing, useTheme } from '@/theme';
+import { motion, radii, spacing, useTheme } from '@/theme';
 import { addServiceOrderNote, transitionServiceOrder } from './api';
 import {
   isActiveServiceOrder,
@@ -51,6 +53,7 @@ export function ServiceOrderDetailsScreen({
   orderId: string;
 }) {
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const queryClient = useQueryClient();
   const query = useServiceOrder(userId, businessId, orderId);
   const receivableQuery = useQuoteReceivable(
@@ -102,26 +105,51 @@ export function ServiceOrderDetailsScreen({
       void invalidate();
     },
   });
-  const header = (
-    <ProtectedPageHeader
-      alwaysUseBackFallback
-      back
-      backFallback="/quotes"
-      dismissToBackFallback
-      title="Execução do serviço"
-    />
+  const identityBand = (
+    <View
+      style={[
+        styles.identityBand,
+        { backgroundColor: colors.primary, width: windowWidth + 4 },
+      ]}
+    >
+      <ProtectedPageHeader
+        alwaysUseBackFallback
+        back
+        backFallback="/quotes"
+        dismissToBackFallback
+        foregroundColor={colors.textInverse}
+        title="Execução do serviço"
+      />
+      <Text style={{ color: colors.textInverse }} variant="bodySmall">
+        Acompanhe o andamento, registre evidências e mantenha o histórico.
+      </Text>
+    </View>
   );
   if (query.isLoading)
     return (
-      <Screen safeAreaEdges={['top', 'bottom']}>
-        {header}
+      <Screen
+        background="subtle"
+        contentContainerStyle={styles.content}
+        safeAreaColor={colors.primary}
+        safeAreaEdges={['top', 'bottom']}
+        style={{ backgroundColor: colors.primary }}
+      >
+        <StatusBar style="light" />
+        {identityBand}
         <SkeletonBlock label="Carregando execução" />
       </Screen>
     );
   if (query.isError || !query.data)
     return (
-      <Screen safeAreaEdges={['top', 'bottom']}>
-        {header}
+      <Screen
+        background="subtle"
+        contentContainerStyle={styles.content}
+        safeAreaColor={colors.primary}
+        safeAreaEdges={['top', 'bottom']}
+        style={{ backgroundColor: colors.primary }}
+      >
+        <StatusBar style="light" />
+        {identityBand}
         <InlineFeedback
           message="Não foi possível carregar esta execução."
           variant="error"
@@ -139,16 +167,31 @@ export function ServiceOrderDetailsScreen({
   const error = transition.error ?? noteMutation.error;
   return (
     <Screen
-      contentContainerStyle={styles.content}
+      background="subtle"
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
+      safeAreaColor={colors.primary}
       safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
     >
-      {header}
+      <StatusBar style="light" />
+      {identityBand}
       <FadeInView
         distance={motion.distance.medium}
         scaleFrom={motion.enterScale}
       >
-        <Card style={styles.card} variant="summary">
+        <Card style={[styles.card, styles.hero]} variant="elevated">
           <View style={styles.row}>
+            <View
+              style={[
+                styles.heroIcon,
+                { backgroundColor: colors.primarySubtle },
+              ]}
+            >
+              <Icon color="primary" name="service" size="large" />
+            </View>
             <View style={styles.copy}>
               <Text color="textSecondary" variant="caption">
                 ORDEM DE SERVIÇO
@@ -168,11 +211,27 @@ export function ServiceOrderDetailsScreen({
               }
             />
           </View>
-          <Text color="textSecondary" variant="caption">
-            {order.started_at
-              ? `Iniciada em ${formatMoment(order.started_at)}`
-              : `Ordem criada em ${formatMoment(order.created_at)} · execução ainda não iniciada`}
-          </Text>
+          <View
+            style={[
+              styles.momentTile,
+              { backgroundColor: colors.backgroundSubtle },
+            ]}
+          >
+            <Icon color="primary" name="duration" size="small" />
+            <View style={styles.copy}>
+              <Text color="textSecondary" variant="caption">
+                {order.started_at ? 'Início da execução' : 'Ordem criada'}
+              </Text>
+              <Text variant="label">
+                {formatMoment(order.started_at ?? order.created_at)}
+              </Text>
+              {!order.started_at ? (
+                <Text color="textSecondary" variant="caption">
+                  Execução ainda não iniciada
+                </Text>
+              ) : null}
+            </View>
+          </View>
           <Button
             label={`Ver orçamento #${formatQuoteNumber(quote.quote_number)}`}
             onPress={() =>
@@ -191,7 +250,7 @@ export function ServiceOrderDetailsScreen({
           ITENS CONTRATADOS
         </Text>
         {quote.items.map((item) => (
-          <Card key={item.id}>
+          <Card key={item.id} variant="elevated">
             <View style={styles.copy}>
               <Text variant="label">{item.name_snapshot}</Text>
               {item.description_snapshot ? (
@@ -212,7 +271,7 @@ export function ServiceOrderDetailsScreen({
           <Text color="primary" style={styles.sectionTitle} variant="caption">
             SALDO DO ORÇAMENTO
           </Text>
-          <Card style={styles.card}>
+          <Card style={styles.card} variant="elevated">
             <View style={styles.row}>
               <View style={styles.copy}>
                 <Text color="textSecondary" variant="caption">
@@ -255,7 +314,7 @@ export function ServiceOrderDetailsScreen({
         {/* Linha de tempo em vez de linhas separadas por borda: o histórico é
             uma sequência, e o traço contínuo com marcador comunica isso pelo
             mesmo espaço que os divisores ocupavam. */}
-        <Card style={styles.timelineCard}>
+        <Card style={styles.timelineCard} variant="elevated">
           {events.map((event, index) => (
             <View key={event.id} style={styles.timelineRow}>
               <View style={styles.timelineRail}>
@@ -494,6 +553,14 @@ export function ServiceOrderDetailsScreen({
 
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.md,
+    minHeight: 168,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
   section: { gap: spacing.sm },
   sectionTitle: {
     fontSize: 10,
@@ -502,8 +569,24 @@ const styles = StyleSheet.create({
     lineHeight: 14,
   },
   card: { gap: spacing.md },
+  hero: { marginTop: -64 },
   row: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  heroIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
+  momentTile: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 72,
+    padding: spacing.md,
+  },
   // O Card separa filhos por gap, o que abriria um vão que nenhum traço
   // cruza. Aqui o espaçamento é do próprio item, para o trilho ficar contínuo.
   timelineCard: { gap: 0 },

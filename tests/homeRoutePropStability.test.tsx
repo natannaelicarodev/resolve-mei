@@ -12,11 +12,18 @@ jest.mock('@/features/daylight/DaylightHomeScreen', () => ({
 }));
 jest.mock('@tanstack/react-query', () => ({
   useQuery: jest.fn(() => ({ data: { full_name: 'Ana Silva' } })),
+  useQueryClient: jest.fn(() => ({
+    getQueryData: jest.fn(),
+    invalidateQueries: jest.fn(),
+    setQueryData: jest.fn(),
+  })),
+  useMutation: jest.fn(() => ({ isPending: false, mutate: jest.fn() })),
 }));
 jest.mock('@/providers/AuthProvider', () => ({
   useAuth: jest.fn(() => ({ user: { id: 'user-1' } })),
 }));
 jest.mock('@/features/business/hooks', () => ({
+  businessQueryKey: (userId: string) => ['private', userId, 'business'],
   useMyBusiness: jest.fn(() => ({
     data: { id: 'business-1', business_name: 'ResolveMEI' },
     isLoading: false,

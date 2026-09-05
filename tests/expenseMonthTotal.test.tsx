@@ -49,6 +49,7 @@ it('shows the month total beside the month selector', async () => {
   mockMonth({
     month: '2026-09',
     expenseCents: '145080',
+    byCategory: [{ category: 'material', amountCents: '145080' }],
     expenses: [
       {
         id: 'expense-1',
@@ -70,8 +71,15 @@ it('shows the month total beside the month selector', async () => {
     </ThemeProvider>,
   );
 
-  // Uma vez no cabeçalho e outra na própria despesa, que aqui é a única.
-  expect(screen.getAllByText('R$ 1.450,80')).toHaveLength(2);
+  // Cabeçalho, detalhamento com comprovante e a própria despesa.
+  expect(screen.getAllByText('R$ 1.450,80')).toHaveLength(3);
+  expect(screen.getByText('lançamento registrado')).toBeTruthy();
+  expect(screen.getByText('comprovantes anexados')).toBeTruthy();
+  expect(
+    screen.getByLabelText(
+      'Distribuição das despesas por comprovante. Com comprovante: R$ 0,00. Sem comprovante: R$ 1.450,80.',
+    ),
+  ).toBeTruthy();
 
   await screen.unmount();
 });

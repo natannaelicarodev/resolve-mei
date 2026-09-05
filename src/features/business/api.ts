@@ -1,7 +1,7 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database';
 import { normalizeBusinessInput } from './schemas';
-import type { BusinessFormData } from './schemas';
+import type { BusinessFormData, OnboardingPriority } from './schemas';
 
 export type Business = Database['public']['Tables']['businesses']['Row'];
 
@@ -21,17 +21,33 @@ export async function getMyBusiness(
 export async function completeOnboarding(
   userId: string,
   input: BusinessFormData,
+  priority: OnboardingPriority,
 ): Promise<Business> {
   const normalized = normalizeBusinessInput(input);
   const { data: draft, error: draftError } = await supabase
     .from('businesses')
     .upsert(
-      { owner_id: userId, ...normalized, onboarding_completed: false },
+      {
+        owner_id: userId,
+        ...normalized,
+        onboarding_completed: false,
+        onboarding_priority: priority,
+        onboarding_focus_consumed_at: null,
+      },
       { onConflict: 'owner_id' },
     )
     .select('*')
     .single();
-  if (draftError) throw draftError;
+  if (draftError) {
+    if (
+      draftError.code === 'PGRST204' &&
+      /onboarding_(priority|focus_consumed_at)/i.test(draftError.message)
+    )
+      throw Object.assign(new Error('ONBOARDING_MIGRATION_REQUIRED'), {
+        code: 'onboarding_migration_required',
+      });
+    throw draftError;
+  }
 
   const { data: completed, error: completionError } = await supabase
     .from('businesses')
@@ -42,6 +58,23 @@ export async function completeOnboarding(
     .single();
   if (completionError) throw completionError;
   return completed;
+}
+
+export async function consumeOnboardingFocus(
+  userId: string,
+  businessId: string,
+): Promise<string> {
+  const consumedAt = new Date().toISOString();
+  const { data, error } = await supabase
+    .from('businesses')
+    .update({ onboarding_focus_consumed_at: consumedAt })
+    .eq('id', businessId)
+    .eq('owner_id', userId)
+    .select('id')
+    .single();
+  if (error) throw error;
+  if (data.id !== businessId) throw new Error('BUSINESS_IDENTITY_MISMATCH');
+  return consumedAt;
 }
 
 export async function updateExistingBusiness(

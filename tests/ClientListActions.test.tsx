@@ -3,10 +3,18 @@ import { router } from 'expo-router';
 
 import { ClientListScreen } from '@/features/clients/ClientListScreen';
 import { useClients } from '@/features/clients/hooks';
+import { ToastProvider } from '@/components/ui';
 import { ThemeProvider } from '@/theme';
 import { useAuth } from '@/providers/AuthProvider';
 
-jest.mock('@/features/clients/hooks', () => ({ useClients: jest.fn() }));
+jest.mock('@/features/clients/hooks', () => ({
+  useClients: jest.fn(),
+  useClientMutations: jest.fn(() => ({
+    archive: { isPending: false, mutate: jest.fn() },
+    activate: { isPending: false, mutate: jest.fn() },
+  })),
+  usePrefetchClientStatuses: jest.fn(),
+}));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/features/relationships/hooks', () => ({
   useReconnectClients: jest.fn(() => ({ data: undefined })),
@@ -50,7 +58,9 @@ beforeEach(() => {
 it('shows an explicit add-client action and opens the creation form', async () => {
   const screen = await render(
     <ThemeProvider>
-      <ClientListScreen businessId="business-1" />
+      <ToastProvider>
+        <ClientListScreen businessId="business-1" />
+      </ToastProvider>
     </ThemeProvider>,
   );
 

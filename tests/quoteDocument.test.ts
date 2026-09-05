@@ -31,6 +31,8 @@ const business: Business = {
   pix_key: 'segredo@example.com',
   logo_path: null,
   onboarding_completed: true,
+  onboarding_priority: null,
+  onboarding_focus_consumed_at: null,
   created_at: '2026-08-01T00:00:00Z',
   updated_at: '2026-08-01T00:00:00Z',
 };

@@ -53,6 +53,9 @@ export interface Database {
           pix_key: string | null;
           logo_path: string | null;
           onboarding_completed: boolean;
+          onboarding_priority:
+            'quotes' | 'collections' | 'agenda' | 'profit' | null;
+          onboarding_focus_consumed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -74,6 +77,9 @@ export interface Database {
           pix_key?: string | null;
           logo_path?: string | null;
           onboarding_completed?: boolean;
+          onboarding_priority?:
+            'quotes' | 'collections' | 'agenda' | 'profit' | null;
+          onboarding_focus_consumed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -321,16 +327,47 @@ export interface Database {
         Relationships: [];
       };
       business_relationship_settings: {
-        Row: { business_id:string; reconnect_after_days:number; updated_by:string; created_at:string; updated_at:string };
-        Insert: never; Update: never; Relationships: [];
+        Row: {
+          business_id: string;
+          reconnect_after_days: number;
+          updated_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       client_relationship_profiles: {
-        Row: { client_id:string; business_id:string; recurring:boolean; priority:boolean; expected_return_days:number|null; updated_by:string; created_at:string; updated_at:string };
-        Insert: never; Update: never; Relationships: [];
+        Row: {
+          client_id: string;
+          business_id: string;
+          recurring: boolean;
+          priority: boolean;
+          expected_return_days: number | null;
+          updated_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
       service_order_relationship_notes: {
-        Row: { service_order_id:string; business_id:string; client_id:string; satisfaction:number|null; observation:string|null; created_by:string; updated_by:string; created_at:string; updated_at:string };
-        Insert: never; Update: never; Relationships: [];
+        Row: {
+          service_order_id: string;
+          business_id: string;
+          client_id: string;
+          satisfaction: number | null;
+          observation: string | null;
+          created_by: string;
+          updated_by: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
       };
     };
     Views: Record<never, never>;
@@ -512,7 +549,10 @@ export interface Database {
         Args: { p_business_id: string; p_expense_id: string };
         Returns: Json;
       };
-      get_business_expense: { Args:{p_business_id:string;p_expense_id:string}; Returns:Json };
+      get_business_expense: {
+        Args: { p_business_id: string; p_expense_id: string };
+        Returns: Json;
+      };
       reserve_expense_receipt: {
         Args: { p_business_id: string; p_expense_id: string };
         Returns: Json;
@@ -537,12 +577,41 @@ export interface Database {
         Args: { p_business_id: string; p_quote_id: string };
         Returns: Json;
       };
-      save_relationship_settings: { Args:{p_business_id:string;p_reconnect_after_days:number}; Returns:Json };
-      save_client_relationship_profile: { Args:{p_business_id:string;p_client_id:string;p_recurring:boolean;p_priority:boolean}; Returns:Json };
-      save_client_return_interval: { Args:{p_business_id:string;p_client_id:string;p_expected_return_days:number|null}; Returns:Json };
-      save_service_order_relationship_note: { Args:{p_business_id:string;p_service_order_id:string;p_satisfaction:number|null;p_observation:string}; Returns:Json };
-      get_reconnect_clients: { Args:{p_business_id:string}; Returns:Json };
-      get_client_relationship_overview: { Args:{p_business_id:string;p_client_id:string}; Returns:Json };
+      save_relationship_settings: {
+        Args: { p_business_id: string; p_reconnect_after_days: number };
+        Returns: Json;
+      };
+      save_client_relationship_profile: {
+        Args: {
+          p_business_id: string;
+          p_client_id: string;
+          p_recurring: boolean;
+          p_priority: boolean;
+        };
+        Returns: Json;
+      };
+      save_client_return_interval: {
+        Args: {
+          p_business_id: string;
+          p_client_id: string;
+          p_expected_return_days: number | null;
+        };
+        Returns: Json;
+      };
+      save_service_order_relationship_note: {
+        Args: {
+          p_business_id: string;
+          p_service_order_id: string;
+          p_satisfaction: number | null;
+          p_observation: string;
+        };
+        Returns: Json;
+      };
+      get_reconnect_clients: { Args: { p_business_id: string }; Returns: Json };
+      get_client_relationship_overview: {
+        Args: { p_business_id: string; p_client_id: string };
+        Returns: Json;
+      };
     };
     Enums: Record<never, never>;
     CompositeTypes: Record<never, never>;

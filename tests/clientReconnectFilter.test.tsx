@@ -3,10 +3,18 @@ import { render } from '@testing-library/react-native';
 import { ClientListScreen } from '@/features/clients/ClientListScreen';
 import { useClients } from '@/features/clients/hooks';
 import { useReconnectClients } from '@/features/relationships/hooks';
+import { ToastProvider } from '@/components/ui';
 import { ThemeProvider } from '@/theme';
 import { useAuth } from '@/providers/AuthProvider';
 
-jest.mock('@/features/clients/hooks', () => ({ useClients: jest.fn() }));
+jest.mock('@/features/clients/hooks', () => ({
+  useClients: jest.fn(),
+  useClientMutations: jest.fn(() => ({
+    archive: { isPending: false, mutate: jest.fn() },
+    activate: { isPending: false, mutate: jest.fn() },
+  })),
+  usePrefetchClientStatuses: jest.fn(),
+}));
 jest.mock('@/providers/AuthProvider', () => ({ useAuth: jest.fn() }));
 jest.mock('@/features/relationships/hooks', () => ({
   useReconnectClients: jest.fn(),
@@ -61,7 +69,9 @@ beforeEach(() => {
 it('shows time since the last service instead of the phone number', async () => {
   const screen = await render(
     <ThemeProvider>
-      <ClientListScreen businessId="business-1" />
+      <ToastProvider>
+        <ClientListScreen businessId="business-1" />
+      </ToastProvider>
     </ThemeProvider>,
   );
 
@@ -77,7 +87,9 @@ it('shows time since the last service instead of the phone number', async () => 
 it('marks only the overdue client for attention', async () => {
   const screen = await render(
     <ThemeProvider>
-      <ClientListScreen businessId="business-1" />
+      <ToastProvider>
+        <ClientListScreen businessId="business-1" />
+      </ToastProvider>
     </ThemeProvider>,
   );
 
@@ -91,7 +103,9 @@ it('marks only the overdue client for attention', async () => {
 it('opens already filtered when the Home sends the user here', async () => {
   const screen = await render(
     <ThemeProvider>
-      <ClientListScreen businessId="business-1" initialFilter="reconnect" />
+      <ToastProvider>
+        <ClientListScreen businessId="business-1" initialFilter="reconnect" />
+      </ToastProvider>
     </ThemeProvider>,
   );
 
@@ -108,7 +122,9 @@ it('opens already filtered when the Home sends the user here', async () => {
 it('hides the interval control outside the reconnect filter', async () => {
   const screen = await render(
     <ThemeProvider>
-      <ClientListScreen businessId="business-1" />
+      <ToastProvider>
+        <ClientListScreen businessId="business-1" />
+      </ToastProvider>
     </ThemeProvider>,
   );
 

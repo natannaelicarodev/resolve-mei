@@ -3,25 +3,25 @@
     "name": "ResolveMEI",
     "slug": "resolve-mei",
     "version": "1.0.0",
-    "backgroundColor": "#F7F5F2",
+    "backgroundColor": "#121A1F",
     "orientation": "portrait",
     "scheme": "resolvemei",
-    "icon": "./assets/resolve-mei-logo.png",
+    "icon": "./assets/images/icon-master.png",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
     },
     "android": {
-      "backgroundColor": "#F7F5F2",
+      "backgroundColor": "#121A1F",
       "adaptiveIcon": {
-        "backgroundColor": "#24556F",
-        "foregroundImage": "./assets/resolve-mei-logo.png"
+        "backgroundColor": "#121A1F",
+        "foregroundImage": "./assets/images/tavi-foreground.png"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.resolvemei"
     },
     "web": {
-      "favicon": "./assets/resolve-mei-logo.png"
+      "favicon": "./assets/images/icon-master.png"
     },
     "plugins": [
       "expo-router",
@@ -45,12 +45,13 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#24556F",
-          "image": "./assets/resolve-mei-logo.png",
+          "backgroundColor": "#121A1F",
+          "image": "./assets/images/splash.png",
           "imageWidth": 200,
           "resizeMode": "contain"
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,34 +1,43 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   Badge,
   Button,
-  CompactCreateButton,
-  Divider,
+  Card,
   EmptyState,
+  Icon,
   InlineFeedback,
-  ListItem,
-  ListPageHeader,
   SearchInput,
   SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
-import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
-import { sizes, spacing, useTheme } from '@/theme';
+import { AnimatedPressable } from '@/components/motion';
+import {
+  ProtectedBottomNavigation,
+  ProtectedPageHeader,
+} from '@/features/navigation/ProtectedNavigation';
+import { radii, sizes, spacing, useTheme } from '@/theme';
 import type { Service, ServiceStatusFilter } from './api';
 import { formatDuration, formatPriceCents } from './format';
 import { useServices } from './hooks';
 import { useAuth } from '@/providers/AuthProvider';
 
-function ServiceRow({ service }: { service: Service }) {
+const ServiceRow = memo(function ServiceRow({ service }: { service: Service }) {
+  const { colors } = useTheme();
   const duration = formatDuration(service.estimated_duration_minutes);
-  const subtitle = [service.description, duration].filter(Boolean).join(' · ');
   return (
-    <ListItem
+    <Card
       accessibilityLabel={`${service.name}, ${formatPriceCents(service.price_cents)}${duration ? `, ${duration}` : ''}${service.status === 'inactive' ? ', inativo' : ''}`}
       onPress={() =>
         router.push({
@@ -36,27 +45,63 @@ function ServiceRow({ service }: { service: Service }) {
           params: { id: service.id },
         })
       }
-      subtitle={subtitle || undefined}
-      title={service.name}
-      trailing={
-        <View style={styles.trailing}>
-          <Text numberOfLines={1} style={styles.price} variant="monetaryValue">
-            {formatPriceCents(service.price_cents)}
-          </Text>
-          {/* Só a exceção ganha selo: marcar "Ativo" em toda linha gasta a
-              coluna com o estado normal e deixa o inativo menos visível. */}
-          {service.status === 'active' ? null : (
-            <Badge label="Inativo" variant="neutral" />
-          )}
+      variant="interactive"
+    >
+      <View style={styles.serviceRow}>
+        <View
+          style={[
+            styles.serviceIcon,
+            { backgroundColor: colors.primarySubtle },
+          ]}
+        >
+          <Icon color="primary" name="service" size="large" />
         </View>
-      }
-    />
+        <View style={styles.serviceCopy}>
+          <View style={styles.serviceHeading}>
+            <Text
+              numberOfLines={1}
+              style={styles.serviceName}
+              variant="cardTitle"
+            >
+              {service.name}
+            </Text>
+            {service.status === 'active' ? null : (
+              <Badge label="Inativo" variant="neutral" />
+            )}
+          </View>
+          {service.description ? (
+            <Text color="textSecondary" numberOfLines={2} variant="bodySmall">
+              {service.description}
+            </Text>
+          ) : null}
+          <View style={styles.serviceMeta}>
+            {duration ? (
+              <View style={styles.duration}>
+                <Icon color="textMuted" name="duration" size="small" />
+                <Text color="textSecondary" variant="caption">
+                  {duration}
+                </Text>
+              </View>
+            ) : null}
+            <Text
+              color="primary"
+              numberOfLines={1}
+              style={styles.price}
+              variant="monetaryValue"
+            >
+              {formatPriceCents(service.price_cents)}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Card>
   );
-}
+});
 
 export function ServiceListScreen({ businessId }: { businessId: string }) {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<ServiceStatusFilter>('all');
@@ -76,131 +121,157 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
     if (query.hasNextPage && !query.isFetchingNextPage)
       void query.fetchNextPage();
   };
-  const header = (
-    <View style={styles.header}>
-      <ListPageHeader
-        title="Serviços"
-        summary={
-          query.isSuccess
-            ? `${totalCount} ${totalCount === 1 ? 'resultado' : 'resultados'}`
-            : 'Organize o que seu negócio oferece'
-        }
-        action={
-          <CompactCreateButton
-            accessibilityHint="Abre o formulário para adicionar um serviço."
-            icon="service"
-            label="Novo serviço"
+  const renderService = useCallback(
+    ({ item }: { item: Service }) => <ServiceRow service={item} />,
+    [],
+  );
+  const listEmpty = (
+    <EmptyState
+      action={
+        search || status !== 'all' ? (
+          <Button
+            label="Limpar busca e filtros"
+            onPress={() => {
+              setInput('');
+              setSearch('');
+              setStatus('all');
+            }}
+            variant="ghost"
+          />
+        ) : (
+          <Button
+            label="Cadastrar serviço"
             onPress={() => router.push('/services/new')}
           />
-        }
-      />
-      <SearchInput
-        label="Buscar serviços"
-        onChangeText={setInput}
-        placeholder="Nome ou descrição"
-        reserveMessageSpace={false}
-        value={input}
-      />
-      <SegmentedControl
-        label="Filtrar serviços"
-        onChange={setStatus}
-        options={[
-          { label: 'Todos', value: 'all' },
-          { label: 'Ativos', value: 'active' },
-          { label: 'Inativos', value: 'inactive' },
-        ]}
-        value={status}
-      />
-    </View>
+        )
+      }
+      description={
+        search || status !== 'all'
+          ? 'Revise a busca ou altere o filtro.'
+          : 'Seus serviços aparecerão aqui conforme você cadastrá-los.'
+      }
+      icon="service"
+      title={
+        search || status !== 'all'
+          ? 'Nenhum serviço encontrado'
+          : 'Nenhum serviço cadastrado'
+      }
+    />
   );
 
   return (
     <SafeAreaView
       edges={['top']}
-      style={[styles.page, { backgroundColor: colors.background }]}
+      style={[styles.page, { backgroundColor: colors.primary }]}
     >
-      {query.isLoading ? (
-        <View style={styles.content}>
-          {header}
-          <View
-            accessible
-            accessibilityLabel="Carregando serviços"
-            accessibilityLiveRegion="polite"
-            style={styles.loading}
-          >
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-            <Skeleton height={72} />
-          </View>
-        </View>
-      ) : query.isError ? (
-        <View style={styles.content}>
-          {header}
-          <InlineFeedback
-            message="Não foi possível carregar os serviços."
-            variant="error"
-          />
-          <Button
-            label="Tentar novamente"
-            onPress={() => void query.refetch()}
-            variant="secondary"
-          />
-        </View>
-      ) : (
-        <FlatList
-          contentContainerStyle={styles.listContent}
-          data={services}
-          keyExtractor={(service) => service.id}
-          ListEmptyComponent={
-            <EmptyState
-              action={
-                search || status !== 'all' ? (
-                  <Button
-                    label="Limpar busca e filtros"
-                    onPress={() => {
-                      setInput('');
-                      setSearch('');
-                      setStatus('all');
-                    }}
-                    variant="ghost"
-                  />
-                ) : (
-                  <Button
-                    label="Cadastrar serviço"
-                    onPress={() => router.push('/services/new')}
-                  />
-                )
-              }
-              description={
-                search || status !== 'all'
-                  ? 'Revise a busca ou altere o filtro.'
-                  : 'Seus serviços aparecerão aqui conforme você cadastrá-los.'
-              }
-              icon="search"
-              title={
-                search || status !== 'all'
-                  ? 'Nenhum serviço encontrado'
-                  : 'Nenhum serviço cadastrado'
-              }
-            />
-          }
-          ListFooterComponent={
-            query.isFetchingNextPage ? (
-              <ActivityIndicator
-                accessibilityLabel="Carregando mais serviços"
-                color={colors.primary}
-                style={styles.footer}
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <View style={styles.bandStage}>
+          <View style={styles.titleRow}>
+            <View style={styles.headerTitle}>
+              <ProtectedPageHeader
+                foregroundColor={colors.textInverse}
+                title="Serviços"
               />
-            ) : null
-          }
-          ItemSeparatorComponent={Divider}
-          ListHeaderComponent={header}
-          onEndReached={loadMore}
-          onEndReachedThreshold={0.35}
-          renderItem={({ item }) => <ServiceRow service={item} />}
-          style={styles.list}
+            </View>
+            <AnimatedPressable
+              accessibilityHint="Abre o formulário para adicionar um serviço."
+              accessibilityLabel="Novo serviço"
+              accessibilityRole="button"
+              haptic="selection"
+              onPress={() => router.push('/services/new')}
+              style={[
+                styles.createButton,
+                { backgroundColor: colors.textInverse },
+              ]}
+            >
+              <Icon name="add" rawColor={colors.primary} size="small" />
+              <Text color="primary" numberOfLines={1} variant="badge">
+                Novo serviço
+              </Text>
+            </AnimatedPressable>
+          </View>
+          <Text style={{ color: colors.textInverse }} variant="bodySmall">
+            {query.isSuccess
+              ? `${totalCount} ${totalCount === 1 ? 'serviço cadastrado' : 'serviços cadastrados'}`
+              : 'Organize o que seu negócio oferece'}
+          </Text>
+        </View>
+        <SearchInput
+          label="Buscar serviços"
+          labelColor="textInverse"
+          onChangeText={setInput}
+          placeholder="Nome ou descrição"
+          reserveMessageSpace={false}
+          value={input}
         />
-      )}
+      </View>
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
+        <View style={styles.filters}>
+          <SegmentedControl
+            label="Filtrar serviços"
+            onChange={setStatus}
+            options={[
+              { label: 'Todos', value: 'all' },
+              { label: 'Ativos', value: 'active' },
+              { label: 'Inativos', value: 'inactive' },
+            ]}
+            value={status}
+          />
+        </View>
+        {query.isLoading ? (
+          <View style={styles.content}>
+            <View
+              accessible
+              accessibilityLabel="Carregando serviços"
+              accessibilityLiveRegion="polite"
+              style={styles.loading}
+            >
+              <Skeleton height={72} />
+              <Skeleton height={72} />
+              <Skeleton height={72} />
+            </View>
+          </View>
+        ) : query.isError ? (
+          <View style={styles.content}>
+            <InlineFeedback
+              message="Não foi possível carregar os serviços."
+              variant="error"
+            />
+            <Button
+              label="Tentar novamente"
+              onPress={() => void query.refetch()}
+              variant="secondary"
+            />
+          </View>
+        ) : (
+          <FlatList
+            contentContainerStyle={styles.listContent}
+            data={services}
+            keyExtractor={(service) => service.id}
+            showsVerticalScrollIndicator={false}
+            ListEmptyComponent={listEmpty}
+            ListFooterComponent={
+              query.isFetchingNextPage ? (
+                <ActivityIndicator
+                  accessibilityLabel="Carregando mais serviços"
+                  color={colors.primary}
+                  style={styles.footer}
+                />
+              ) : null
+            }
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.35}
+            renderItem={renderService}
+            style={styles.list}
+          />
+        )}
+      </View>
       <ProtectedBottomNavigation selected="services" />
     </SafeAreaView>
   );
@@ -208,11 +279,46 @@ export function ServiceListScreen({ businessId }: { businessId: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  bandStage: {
+    alignSelf: 'center',
+    gap: spacing.xs,
+    maxWidth: sizes.contentMaxWidth,
+    width: '100%',
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  headerTitle: { flex: 1, minWidth: 0 },
+  createButton: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+  },
+  body: { flex: 1 },
+  filters: {
+    alignSelf: 'center',
+    maxWidth: sizes.contentMaxWidth,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    width: '100%',
+  },
   list: { flex: 1 },
   content: {
     alignSelf: 'center',
     flex: 1,
-    gap: spacing.lg,
+    gap: spacing.md,
     maxWidth: sizes.contentMaxWidth,
     padding: spacing.md,
     width: '100%',
@@ -221,13 +327,35 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexGrow: 1,
     maxWidth: sizes.contentMaxWidth,
-    padding: spacing.md,
-    paddingBottom: spacing.xl,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+    paddingBottom: 112,
+    paddingTop: spacing.md,
     width: '100%',
   },
-  header: { gap: spacing.lg, marginBottom: spacing.lg },
   loading: { gap: spacing.sm },
-  trailing: { alignItems: 'flex-end', flexShrink: 0, gap: spacing.xs },
-  price: { flexShrink: 0 },
+  serviceRow: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
+  serviceIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  serviceCopy: { flex: 1, gap: spacing.sm, minWidth: 0 },
+  serviceHeading: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  serviceName: { flex: 1, minWidth: 0 },
+  serviceMeta: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  duration: { alignItems: 'center', flexDirection: 'row', gap: spacing.xs },
+  price: { flexShrink: 0, marginLeft: 'auto' },
   footer: { padding: spacing.lg },
 });

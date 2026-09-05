@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react-native';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import { ClientDetailsScreen } from '@/features/clients/ClientDetailsScreen';
 import { useClient } from '@/features/clients/hooks';
@@ -112,6 +114,19 @@ it('keeps the cadastral data available below the summary', async () => {
   expect(screen.getByText('Informações')).toBeTruthy();
 
   await screen.unmount();
+});
+
+it('keeps the approved identity band and quick contact hierarchy', () => {
+  const source = readFileSync(
+    join(process.cwd(), 'src/features/clients/ClientDetailsScreen.tsx'),
+    'utf8',
+  );
+
+  expect(source).toContain('width: windowWidth + 4');
+  expect(source).toContain('styles.quickActions');
+  expect(source).toContain('name="phone"');
+  expect(source).toContain('name="whatsapp"');
+  expect(source).toContain('name="email"');
 });
 
 it('reads a dash while the relationship data is still loading', async () => {

@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 import { createSupabaseClient } from '@/lib/supabase';
+import { secureAuthStorage } from '@/lib/authStorage';
 
 jest.mock('@supabase/supabase-js', () => ({
   createClient: jest.fn(() => ({ auth: {} })),
@@ -17,6 +18,7 @@ describe('Supabase client', () => {
           autoRefreshToken: true,
           persistSession: true,
           detectSessionInUrl: false,
+          storage: secureAuthStorage,
         }),
       }),
     );

@@ -23,14 +23,18 @@ it('keeps the status bar icon style synchronized with the active theme', () => {
 it('matches the grouped Clients structure with shared controls', () => {
   const list = source('src/features/quotes/QuoteListScreen.tsx');
   const clients = source('src/features/clients/ClientListScreen.tsx');
-  expect(list).toContain('<ListPageHeader');
+  expect(list).toContain('<ProtectedPageHeader');
   expect(list).toContain('title="Orçamentos"');
-  expect(clients).toContain('<ListPageHeader');
+  // As duas listas usam a faixa de identidade e mantêm os controles animados
+  // fora do ListHeaderComponent para evitar remontagem de worklets.
+  expect(clients).toContain('<ProtectedPageHeader');
   expect(clients).toContain('title="Clientes"');
   expect(list).toContain('<SearchInput');
   expect(clients).toContain('<SearchInput');
   expect(list).toContain('<SegmentedControl');
   expect(list).toContain('scrollable');
+  expect(list).toContain('width: windowWidth + 4');
+  expect(list).not.toContain('ListHeaderComponent=');
   // A lista de orçamentos virtualiza por linha: o agrupamento visual vem das
   // bordas/raios da própria linha, não de um Card envolvendo todos os itens.
   expect(list).toContain('data={quotes}');

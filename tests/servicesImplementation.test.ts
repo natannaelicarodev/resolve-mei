@@ -30,6 +30,13 @@ describe('services implementation invariants', () => {
     expect(screen).toContain('new Map<string, Service>()');
   });
 
+  it('keeps animated filters outside FlatList lifecycle', () => {
+    const screen = source('src/features/services/ServiceListScreen.tsx');
+    expect(screen).toContain('width: windowWidth + 4');
+    expect(screen).toContain('<SegmentedControl');
+    expect(screen).not.toContain('ListHeaderComponent=');
+  });
+
   it('never puts business ownership in editable updates', () => {
     const api = source('src/features/services/api.ts');
     const schemas = source('src/features/services/schemas.ts');

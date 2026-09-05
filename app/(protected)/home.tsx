@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
 
-import { useMyBusiness } from '@/features/business/hooks';
+import { consumeOnboardingFocus } from '@/features/business/api';
+import type { Business } from '@/features/business/api';
+import { businessQueryKey, useMyBusiness } from '@/features/business/hooks';
 import { useActiveClientCount } from '@/features/clients/hooks';
 import { DaylightHomeScreen } from '@/features/daylight/DaylightHomeScreen';
 import { createAvatarSignedUrl } from '@/features/profile/avatar';
@@ -22,6 +24,7 @@ export default function HomeRoute() {
   markRender('HomeRoute');
   const { user } = useAuth();
   const userId = user?.id ?? '';
+  const queryClient = useQueryClient();
   const business = useMyBusiness(userId);
   const businessId = business.data?.id ?? '';
 
@@ -55,6 +58,34 @@ export default function HomeRoute() {
         (item) => item.overdue || item.scheduledOn === agenda.data?.today,
       ).length + agenda.data.financialDueToday.length
     : undefined;
+  const consumeFocus = useMutation({
+    mutationFn: () => {
+      if (!userId || !businessId) throw new Error('Missing business identity');
+      return consumeOnboardingFocus(userId, businessId);
+    },
+    onMutate: async () => {
+      const key = businessQueryKey(userId);
+      const previous = queryClient.getQueryData<Business | null>(key);
+      queryClient.setQueryData<Business | null>(key, (current) =>
+        current
+          ? {
+              ...current,
+              onboarding_focus_consumed_at: new Date().toISOString(),
+            }
+          : current,
+      );
+      return { previous };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previous !== undefined)
+        queryClient.setQueryData(businessQueryKey(userId), context.previous);
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: businessQueryKey(userId) }),
+  });
+  const handleConsumeFocus = useCallback(() => {
+    if (!consumeFocus.isPending) consumeFocus.mutate();
+  }, [consumeFocus]);
 
   const fullName = profile.data?.full_name?.trim();
   const firstName = fullName ? fullName.split(/\s+/)[0] : undefined;
@@ -99,6 +130,12 @@ export default function HomeRoute() {
       hasLogo={Boolean(business.data?.logo_path)}
       highlightQuote={highlightQuote}
       loading={business.isLoading}
+      onboardingPriority={business.data?.onboarding_priority}
+      onboardingFocusVisible={Boolean(
+        business.data?.onboarding_priority &&
+        !business.data?.onboarding_focus_consumed_at,
+      )}
+      onConsumeOnboardingFocus={handleConsumeFocus}
       serviceCount={services.data?.pages[0]?.totalCount}
       sentQuoteCount={sentQuotes.data?.pages[0]?.totalCount}
       pendingLoading={draftQuotes.isLoading || sentQuotes.isLoading}

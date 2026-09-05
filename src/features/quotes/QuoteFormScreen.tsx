@@ -2,9 +2,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router, useNavigation } from 'expo-router';
 import type { Href } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
 import { Controller, useFieldArray, useForm, useWatch } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import {
   Button,
@@ -26,7 +27,7 @@ import { useClients } from '@/features/clients/hooks';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { useServices } from '@/features/services/hooks';
 import { normalizeError } from '@/lib/errors';
-import { spacing } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { quotesQueryKey } from './hooks';
 import {
   calculateQuoteTotals,
@@ -83,6 +84,8 @@ function QuoteForm({
   businessId: string;
   quote?: QuoteWithItems;
 }) {
+  const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const queryClient = useQueryClient();
   const navigation = useNavigation();
   const mounted = useRef(true);
@@ -208,13 +211,51 @@ function QuoteForm({
     })();
 
   return (
-    <Screen keyboardAvoiding safeAreaEdges={['top', 'bottom']}>
-      <ProtectedPageHeader
-        back
-        backFallback={'/quotes' as Href}
-        title={quote ? 'Editar orçamento' : 'Novo orçamento'}
-      />
-      <Card>
+    <Screen
+      background="subtle"
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
+      keyboardAvoiding
+      safeAreaColor={colors.primary}
+      safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
+    >
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <ProtectedPageHeader
+          back
+          backFallback={'/quotes' as Href}
+          foregroundColor={colors.textInverse}
+          title={quote ? 'Editar orçamento' : 'Novo orçamento'}
+        />
+        <View style={styles.intro}>
+          <View
+            style={[styles.introIcon, { backgroundColor: colors.textInverse }]}
+          >
+            <Icon
+              name={quote ? 'edit' : 'quote'}
+              rawColor={colors.primary}
+              size="large"
+            />
+          </View>
+          <View style={styles.introCopy}>
+            <Text style={{ color: colors.textInverse }} variant="sectionTitle">
+              {quote ? 'Revise a proposta' : 'Monte uma proposta clara'}
+            </Text>
+            <Text style={{ color: colors.textInverse }} variant="bodySmall">
+              Selecione o cliente, organize os itens e confira o total.
+            </Text>
+          </View>
+        </View>
+      </View>
+      <Card style={styles.firstCard} variant="elevated">
         <Text variant="cardTitle">Cliente</Text>
         <Select
           error={form.formState.errors.clientId?.message}
@@ -289,7 +330,7 @@ function QuoteForm({
           />
         ) : null}
       </Card>
-      <Card>
+      <Card variant="elevated">
         <Text variant="cardTitle">Itens</Text>
         <Button
           label={
@@ -362,7 +403,10 @@ function QuoteForm({
           variant="secondary"
         />
         {fields.fields.map((field, index) => (
-          <View key={field.id} style={styles.item}>
+          <View
+            key={field.id}
+            style={[styles.item, { backgroundColor: colors.backgroundSubtle }]}
+          >
             <Controller
               control={form.control}
               name={`items.${index}.name`}
@@ -429,7 +473,7 @@ function QuoteForm({
           />
         ) : null}
       </Card>
-      <Card>
+      <Card variant="elevated">
         <Controller
           control={form.control}
           name="validUntil"
@@ -471,10 +515,23 @@ function QuoteForm({
             />
           )}
         />
-        <Text>Subtotal: {centsToMoneyInput(totals.subtotalCents)}</Text>
-        <Text variant="cardTitle">
-          Total: {centsToMoneyInput(totals.totalCents)}
-        </Text>
+        <View
+          style={[
+            styles.totalSummary,
+            { backgroundColor: colors.primarySubtle },
+          ]}
+        >
+          <View style={styles.totalRow}>
+            <Text color="textSecondary">Subtotal</Text>
+            <Text>{centsToMoneyInput(totals.subtotalCents)}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text variant="label">Total</Text>
+            <Text color="primary" variant="sectionTitle">
+              {centsToMoneyInput(totals.totalCents)}
+            </Text>
+          </View>
+        </View>
       </Card>
       {form.formState.errors.root?.message ? (
         <InlineFeedback
@@ -518,7 +575,46 @@ function QuoteForm({
 }
 
 const styles = StyleSheet.create({
-  item: { gap: spacing.sm, paddingVertical: spacing.sm },
+  content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    marginTop: -spacing.md,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  intro: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  introIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  introCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  firstCard: { marginTop: -40 },
+  item: {
+    borderRadius: radii.control,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
   picker: { gap: spacing.sm },
   optionList: { gap: 0, overflow: 'hidden', padding: 0 },
+  totalSummary: {
+    borderRadius: radii.control,
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  totalRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
 });

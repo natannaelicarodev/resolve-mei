@@ -4,7 +4,14 @@ import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button, InlineFeedback, Input, Text } from '@/components/ui';
+import {
+  Button,
+  Icon,
+  IconButton,
+  InlineFeedback,
+  Input,
+  Text,
+} from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
 import { spacing, useTheme } from '@/theme';
 import { signIn } from './api';
@@ -33,8 +40,10 @@ export function SignInScreen() {
   };
   return (
     <AuthShell
-      title="Bem-vindo de volta"
+      heroSubtitle="Clientes, serviços e orçamentos organizados em um só lugar."
+      heroTitle="Seu negócio, sob controle."
       subtitle="Entre para continuar cuidando do seu negócio."
+      title="Bem-vindo de volta"
     >
       <Controller
         control={control}
@@ -65,35 +74,47 @@ export function SignInScreen() {
             onChangeText={field.onChange}
             returnKeyType="done"
             secureTextEntry={!showPassword}
+            trailing={
+              <IconButton
+                accessibilityLabel={
+                  showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                }
+                icon={
+                  <Icon
+                    color="textSecondary"
+                    name={showPassword ? 'hide' : 'preview'}
+                    size="medium"
+                  />
+                }
+                onPress={() => setShowPassword((current) => !current)}
+              />
+            }
             value={field.value}
           />
         )}
       />
-      <Button
-        accessibilityLabel={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-        label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
-        onPress={() => setShowPassword((current) => !current)}
-        size="small"
-        variant="ghost"
-      />
       {errors.root?.message ? (
         <InlineFeedback message={errors.root.message} variant="error" />
       ) : null}
+      <Link
+        accessibilityRole="link"
+        href="/forgot-password"
+        style={[styles.forgotLink, { color: colors.primary }]}
+      >
+        Esqueci minha senha
+      </Link>
       <Button
         label="Entrar"
         loading={isSubmitting}
         onPress={() => void handleSubmit(submit)()}
       />
-      <Link
-        accessibilityRole="link"
-        href="/forgot-password"
-        style={[styles.link, { color: colors.primary }]}
-      >
-        Esqueci minha senha
-      </Link>
-      <Text>
-        Primeiro acesso?{' '}
-        <Link href="/sign-up" style={[styles.link, { color: colors.primary }]}>
+      <Text color="textSecondary" style={styles.accountAction}>
+        Ainda não tem uma conta?{' '}
+        <Link
+          accessibilityRole="link"
+          href="/sign-up"
+          style={[styles.link, { color: colors.primary }]}
+        >
           Criar conta
         </Link>
       </Text>
@@ -101,5 +122,11 @@ export function SignInScreen() {
   );
 }
 const styles = StyleSheet.create({
+  accountAction: { alignSelf: 'center', textAlign: 'center' },
+  forgotLink: {
+    alignSelf: 'flex-end',
+    marginTop: -(spacing.sm + spacing.xs),
+    paddingVertical: spacing.xs,
+  },
   link: { paddingVertical: spacing.sm },
 });

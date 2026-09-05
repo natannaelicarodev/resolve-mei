@@ -239,21 +239,26 @@ export function EmptyState({
   title,
   description,
   icon = 'archive',
+  illustration,
   action,
 }: {
   title: string;
   description: string;
   icon?: IconName;
+  /** Replaces the tinted glyph with richer artwork, e.g. a `daylight` Illustration. */
+  illustration?: ReactNode;
   action?: ReactNode;
 }) {
   const { colors } = useTheme();
   return (
     <View style={styles.state}>
-      <View
-        style={[styles.stateIcon, { backgroundColor: colors.primarySubtle }]}
-      >
-        <Icon name={icon} rawColor={colors.primary} size="large" />
-      </View>
+      {illustration ?? (
+        <View
+          style={[styles.stateIcon, { backgroundColor: colors.primarySubtle }]}
+        >
+          <Icon name={icon} rawColor={colors.primary} size="large" />
+        </View>
+      )}
       <Text align="center" variant="cardTitle">
         {title}
       </Text>

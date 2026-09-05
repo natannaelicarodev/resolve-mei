@@ -6,7 +6,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import type { ScrollViewProps } from 'react-native';
+import type { ColorValue, ScrollViewProps } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Edge } from 'react-native-safe-area-context';
 
@@ -20,6 +20,7 @@ export interface ScreenProps extends PropsWithChildren<ScrollViewProps> {
   contentWidth?: 'default' | 'wide';
   scrollRef?: Ref<ScrollView>;
   safeAreaEdges?: readonly Edge[];
+  safeAreaColor?: ColorValue;
 }
 
 export function Screen({
@@ -31,6 +32,7 @@ export function Screen({
   contentWidth = 'default',
   scrollRef,
   safeAreaEdges = ['top', 'bottom'],
+  safeAreaColor,
   ...props
 }: ScreenProps) {
   const { colors } = useTheme();
@@ -46,6 +48,7 @@ export function Screen({
       ref={scrollRef}
       contentContainerStyle={[styles.scrollContent, contentContainerStyle]}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
       {...props}
     >
       {content}
@@ -68,9 +71,10 @@ export function Screen({
         styles.safeArea,
         {
           backgroundColor:
-            background === 'subtle'
+            safeAreaColor ??
+            (background === 'subtle'
               ? colors.backgroundSubtle
-              : colors.background,
+              : colors.background),
         },
       ]}
     >

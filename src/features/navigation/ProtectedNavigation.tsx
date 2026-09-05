@@ -38,7 +38,13 @@ type ProtectedDestination =
 
 const CREATE_GLYPH_DURATION_MS = 220;
 
-function CreateGlyph({ active = false }: { active?: boolean }) {
+export function CreateGlyph({
+  active = false,
+  color,
+}: {
+  active?: boolean;
+  color?: string;
+}) {
   const morph = useSharedValue(0);
 
   useEffect(() => {
@@ -66,10 +72,18 @@ function CreateGlyph({ active = false }: { active?: boolean }) {
       style={[styles.createGlyph, glyphStyle]}
     >
       <Reanimated.View
-        style={[styles.createGlyphPlusHorizontal, horizontalStyle]}
+        style={[
+          styles.createGlyphPlusHorizontal,
+          color && { backgroundColor: color },
+          horizontalStyle,
+        ]}
       />
       <Reanimated.View
-        style={[styles.createGlyphPlusVertical, verticalStyle]}
+        style={[
+          styles.createGlyphPlusVertical,
+          color && { backgroundColor: color },
+          verticalStyle,
+        ]}
       />
     </Reanimated.View>
   );
@@ -606,6 +620,7 @@ export function ProtectedBottomNavigation({
 
 export function ProtectedPageHeader({
   title,
+  foregroundColor,
   back = false,
   backFallback = '/home',
   alwaysUseBackFallback = false,
@@ -613,6 +628,7 @@ export function ProtectedPageHeader({
   settings = false,
 }: {
   title: string;
+  foregroundColor?: string;
   back?: boolean;
   backFallback?: Href;
   alwaysUseBackFallback?: boolean;
@@ -645,20 +661,41 @@ export function ProtectedPageHeader({
       {back ? (
         <IconButton
           accessibilityLabel="Voltar"
-          icon={<Icon color="textPrimary" name="back" size="large" />}
+          icon={
+            <Icon
+              color="textPrimary"
+              name="back"
+              rawColor={foregroundColor}
+              size="large"
+            />
+          }
           onPress={() => {
             backRequested.current = true;
             setBackRequestId((current) => current + 1);
           }}
         />
       ) : null}
-      <Text numberOfLines={1} style={styles.pageTitle} variant="sectionTitle">
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.pageTitle,
+          foregroundColor ? { color: foregroundColor } : null,
+        ]}
+        variant="sectionTitle"
+      >
         {title}
       </Text>
       {settings ? (
         <IconButton
           accessibilityLabel="Abrir configurações"
-          icon={<Icon color="textPrimary" name="settings" size="large" />}
+          icon={
+            <Icon
+              color="textPrimary"
+              name="settings"
+              rawColor={foregroundColor}
+              size="large"
+            />
+          }
           onPress={() => router.push('/settings')}
         />
       ) : null}

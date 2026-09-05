@@ -1,23 +1,32 @@
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AnimatedPressable } from '@/components/motion';
 import {
   Badge,
   Button,
-  CompactCreateButton,
+  Card,
   EmptyState,
   Icon,
   InlineFeedback,
-  ListPageHeader,
   SearchInput,
   SegmentedControl,
   Skeleton,
   Text,
 } from '@/components/ui';
-import { ProtectedBottomNavigation } from '@/features/navigation/ProtectedNavigation';
+import {
+  ProtectedBottomNavigation,
+  ProtectedPageHeader,
+} from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
 import { radii, sizes, spacing, useTheme } from '@/theme';
 import type { Quote, QuoteStatusFilter } from './api';
@@ -40,17 +49,7 @@ const STATUS_FILTERS: readonly {
   { label: 'Aprovados', value: 'approved' },
 ];
 
-function QuoteRow({
-  item,
-  divided,
-  first,
-  last,
-}: {
-  item: Quote;
-  divided: boolean;
-  first: boolean;
-  last: boolean;
-}) {
+const QuoteRow = memo(function QuoteRow({ item }: { item: Quote }) {
   const { colors } = useTheme();
   const display = getDisplayQuoteStatus(item.status, item.valid_until);
   const timing = quoteTimingLabel(display, item.issued_on, item.valid_until);
@@ -70,10 +69,8 @@ function QuoteRow({
         ? colors.warning
         : undefined;
   return (
-    <AnimatedPressable
+    <Card
       accessibilityLabel={`${formatQuoteNumber(item.quote_number)}, ${item.client_name_snapshot}, ${quoteStatusLabels[display]}, ${timing}, ${formatMoney(item.total_cents)}`}
-      accessibilityRole="button"
-      haptic="selection"
       onPress={() =>
         router.push({
           pathname: '/quotes/[id]',
@@ -81,72 +78,59 @@ function QuoteRow({
         } as unknown as Href)
       }
       style={[
-        styles.row,
-        {
-          backgroundColor: colors.surface,
-          borderColor: colors.borderSubtle,
-          borderLeftWidth: StyleSheet.hairlineWidth,
-          borderRightWidth: StyleSheet.hairlineWidth,
-        },
-        first && {
-          borderTopLeftRadius: radii.card,
-          borderTopRightRadius: radii.card,
-          borderTopWidth: StyleSheet.hairlineWidth,
-        },
-        last && {
-          borderBottomLeftRadius: radii.card,
-          borderBottomRightRadius: radii.card,
-          borderBottomWidth: StyleSheet.hairlineWidth,
-        },
-        divided && {
-          borderTopColor: colors.borderSubtle,
-          borderTopWidth: StyleSheet.hairlineWidth,
-        },
+        styles.quoteCard,
         urgencyEdge && {
           borderLeftColor: urgencyEdge,
           borderLeftWidth: 3,
-          paddingLeft: spacing.md - 3,
         },
       ]}
+      variant="interactive"
     >
-      <View style={styles.rowCopy}>
-        <View style={styles.rowTop}>
-          <Text numberOfLines={1} style={styles.quoteTitle} variant="label">
-            #{formatQuoteNumber(item.quote_number)} ·{' '}
-            {item.client_name_snapshot}
-          </Text>
-          <Badge
-            label={quoteStatusLabels[display]}
-            variant={
-              display === 'approved'
-                ? 'success'
-                : display === 'rejected' || display === 'canceled'
-                  ? 'danger'
-                  : 'neutral'
-            }
-          />
-        </View>
-        <Text color={urgencyTone} numberOfLines={1} variant="caption">
-          {timing}
-        </Text>
-        <Text
-          adjustsFontSizeToFit
-          color="primary"
-          minimumFontScale={0.78}
-          numberOfLines={1}
-          style={styles.quoteValue}
+      <View style={styles.row}>
+        <View
+          style={[styles.quoteIcon, { backgroundColor: colors.primarySubtle }]}
         >
-          {formatMoney(item.total_cents)}
-        </Text>
+          <Icon color="primary" name="quote" size="large" />
+        </View>
+        <View style={styles.rowCopy}>
+          <View style={styles.rowTop}>
+            <Text numberOfLines={1} style={styles.quoteTitle} variant="label">
+              #{formatQuoteNumber(item.quote_number)} ·{' '}
+              {item.client_name_snapshot}
+            </Text>
+            <Badge
+              label={quoteStatusLabels[display]}
+              variant={
+                display === 'approved'
+                  ? 'success'
+                  : display === 'rejected' || display === 'canceled'
+                    ? 'danger'
+                    : 'neutral'
+              }
+            />
+          </View>
+          <Text color={urgencyTone} numberOfLines={1} variant="caption">
+            {timing}
+          </Text>
+          <Text
+            adjustsFontSizeToFit
+            color="primary"
+            minimumFontScale={0.78}
+            numberOfLines={1}
+            style={styles.quoteValue}
+          >
+            {formatMoney(item.total_cents)}
+          </Text>
+        </View>
       </View>
-      <Icon color="textMuted" name="forward" size="medium" />
-    </AnimatedPressable>
+    </Card>
   );
-}
+});
 
 export function QuoteListScreen({ businessId }: { businessId: string }) {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const [input, setInput] = useState('');
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<QuoteStatusFilter>('all');
@@ -162,115 +146,146 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
     return [...unique.values()];
   }, [query.data?.pages]);
   const totalCount = query.data?.pages[0]?.totalCount ?? 0;
-  const header = (
-    <View style={styles.header}>
-      <ListPageHeader
-        title="Orçamentos"
-        summary={
-          query.isSuccess
-            ? totalCount === 0
-              ? 'Nenhum encontrado'
-              : `${totalCount} ${totalCount === 1 ? 'encontrado' : 'encontrados'}`
-            : 'Consulte e organize seus orçamentos'
-        }
-        action={
-          <CompactCreateButton
-            accessibilityHint="Abre o formulário para criar um orçamento."
-            label="Novo orçamento"
-            icon="quote"
+  const loadMore = () => {
+    if (query.hasNextPage && !query.isFetchingNextPage)
+      void query.fetchNextPage();
+  };
+  const renderQuote = useCallback(
+    ({ item }: { item: Quote }) => <QuoteRow item={item} />,
+    [],
+  );
+  const listEmpty = (
+    <EmptyState
+      action={
+        search || status !== 'all' ? (
+          <Button
+            label="Limpar busca e filtros"
+            onPress={() => {
+              setInput('');
+              setSearch('');
+              setStatus('all');
+            }}
+            variant="ghost"
+          />
+        ) : (
+          <Button
+            label="Criar orçamento"
             onPress={() => router.push('/quotes/new')}
           />
-        }
-      />
-      <SearchInput
-        label="Buscar orçamentos"
-        placeholder="Número ou cliente"
-        value={input}
-        onChangeText={setInput}
-        reserveMessageSpace={false}
-      />
-      <SegmentedControl
-        label="Filtrar orçamentos"
-        onChange={setStatus}
-        options={STATUS_FILTERS}
-        scrollable
-        value={status}
-      />
-    </View>
+        )
+      }
+      description={
+        search || status !== 'all'
+          ? 'Revise a busca ou altere o filtro.'
+          : 'Seus orçamentos aparecerão aqui conforme você criá-los.'
+      }
+      icon="quote"
+      title={
+        search || status !== 'all'
+          ? 'Nenhum orçamento encontrado'
+          : 'Nenhum orçamento criado'
+      }
+    />
   );
   return (
     <SafeAreaView
       edges={['top']}
-      style={[styles.page, { backgroundColor: colors.background }]}
+      style={[styles.page, { backgroundColor: colors.primary }]}
     >
-      {query.isLoading ? (
-        <View style={styles.content}>
-          {header}
-          <Skeleton height={84} />
-          <Skeleton height={84} />
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <View style={styles.bandStage}>
+          <View style={styles.titleRow}>
+            <View style={styles.headerTitle}>
+              <ProtectedPageHeader
+                foregroundColor={colors.textInverse}
+                title="Orçamentos"
+              />
+            </View>
+            <AnimatedPressable
+              accessibilityHint="Abre o formulário para criar um orçamento."
+              accessibilityLabel="Novo orçamento"
+              accessibilityRole="button"
+              haptic="selection"
+              onPress={() => router.push('/quotes/new')}
+              style={[
+                styles.createButton,
+                { backgroundColor: colors.textInverse },
+              ]}
+            >
+              <Icon name="add" rawColor={colors.primary} size="small" />
+              <Text color="primary" numberOfLines={1} variant="badge">
+                Novo orçamento
+              </Text>
+            </AnimatedPressable>
+          </View>
+          <Text style={{ color: colors.textInverse }} variant="bodySmall">
+            {query.isSuccess
+              ? `${totalCount} ${totalCount === 1 ? 'encontrado' : 'encontrados'}`
+              : 'Acompanhe propostas e decisões dos clientes'}
+          </Text>
         </View>
-      ) : query.isError ? (
-        <View style={styles.content}>
-          {header}
-          <InlineFeedback
-            message="Não foi possível carregar os orçamentos."
-            variant="error"
-          />
-          <Button
-            label="Tentar novamente"
-            variant="secondary"
-            onPress={() => void query.refetch()}
-          />
-        </View>
-      ) : (
-        <FlatList
-          contentContainerStyle={styles.list}
-          data={quotes}
-          keyExtractor={(quote) => quote.id}
-          ListHeaderComponent={header}
-          onRefresh={() => void query.refetch()}
-          refreshing={query.isRefetching && !query.isFetchingNextPage}
-          onEndReached={() => {
-            if (query.hasNextPage && !query.isFetchingNextPage)
-              void query.fetchNextPage();
-          }}
-          onEndReachedThreshold={0.35}
-          ListFooterComponent={
-            query.isFetchingNextPage ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : null
-          }
-          ListEmptyComponent={
-            <EmptyState
-              action={
-                <Button
-                  label="Criar orçamento"
-                  onPress={() => router.push('/quotes/new')}
-                />
-              }
-              description={
-                search || status !== 'all'
-                  ? 'Tente alterar a busca ou os filtros.'
-                  : 'Seus orçamentos aparecerão aqui conforme você criá-los.'
-              }
-              icon="quote"
-              title={
-                search || status !== 'all'
-                  ? 'Nenhum orçamento encontrado'
-                  : 'Você ainda não criou nenhum orçamento.'
-              }
-            />
-          }
-          renderItem={({ item: quote, index }) => (
-            <QuoteRow
-              divided={index > 0}
-              first={index === 0}
-              item={quote}
-              last={index === quotes.length - 1}
-            />
-          )}
+        <SearchInput
+          label="Buscar orçamentos"
+          labelColor="textInverse"
+          placeholder="Número ou cliente"
+          value={input}
+          onChangeText={setInput}
+          reserveMessageSpace={false}
         />
-      )}
+      </View>
+      <View style={[styles.body, { backgroundColor: colors.background }]}>
+        <View style={styles.filters}>
+          <SegmentedControl
+            label="Filtrar orçamentos"
+            onChange={setStatus}
+            options={STATUS_FILTERS}
+            scrollable
+            value={status}
+          />
+        </View>
+        {query.isLoading ? (
+          <View style={styles.content}>
+            <Skeleton height={84} />
+            <Skeleton height={84} />
+          </View>
+        ) : query.isError ? (
+          <View style={styles.content}>
+            <InlineFeedback
+              message="Não foi possível carregar os orçamentos."
+              variant="error"
+            />
+            <Button
+              label="Tentar novamente"
+              variant="secondary"
+              onPress={() => void query.refetch()}
+            />
+          </View>
+        ) : (
+          <FlatList
+            contentContainerStyle={styles.list}
+            data={quotes}
+            keyExtractor={(quote) => quote.id}
+            showsVerticalScrollIndicator={false}
+            onRefresh={() => void query.refetch()}
+            refreshing={query.isRefetching && !query.isFetchingNextPage}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.35}
+            ListFooterComponent={
+              query.isFetchingNextPage ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : null
+            }
+            ListEmptyComponent={listEmpty}
+            renderItem={renderQuote}
+          />
+        )}
+      </View>
       <ProtectedBottomNavigation selected="quotes" />
     </SafeAreaView>
   );
@@ -278,12 +293,48 @@ export function QuoteListScreen({ businessId }: { businessId: string }) {
 
 const styles = StyleSheet.create({
   page: { flex: 1 },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  bandStage: {
+    alignSelf: 'center',
+    gap: spacing.xs,
+    maxWidth: sizes.contentMaxWidth,
+    width: '100%',
+  },
+  titleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
+  },
+  headerTitle: { flex: 1, minWidth: 0 },
+  createButton: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    flexDirection: 'row',
+    gap: spacing.xs,
+    minHeight: 40,
+    paddingHorizontal: spacing.md,
+  },
+  body: { flex: 1 },
+  filters: {
+    alignSelf: 'center',
+    maxWidth: sizes.contentMaxWidth,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+    width: '100%',
+  },
   content: {
     alignSelf: 'center',
     flex: 1,
     gap: spacing.lg,
     maxWidth: sizes.contentMaxWidth,
-    padding: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
     width: '100%',
   },
   list: {
@@ -294,13 +345,18 @@ const styles = StyleSheet.create({
     paddingBottom: 112,
     width: '100%',
   },
-  header: { gap: spacing.lg, marginBottom: spacing.lg },
+  quoteCard: { padding: spacing.md },
   row: {
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
-    minHeight: 104,
-    padding: spacing.md,
+  },
+  quoteIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
   },
   rowCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
   rowTop: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },

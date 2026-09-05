@@ -4,10 +4,13 @@ import { StyleSheet, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
 
 import { radii, sizes, spacing, typography, useTheme } from '@/theme';
+import type { ColorToken } from '@/theme';
 import { Text } from './Text';
 
 export interface InputProps extends TextInputProps {
   label: string;
+  /** Overrides the label's color, e.g. `textInverse` over a colored band. */
+  labelColor?: ColorToken;
   error?: string;
   helperText?: string;
   showCounter?: boolean;
@@ -20,6 +23,7 @@ export interface InputProps extends TextInputProps {
 export const Input = forwardRef<TextInput, InputProps>(function Input(
   {
     label,
+    labelColor = 'textPrimary',
     error,
     helperText,
     showCounter = false,
@@ -44,7 +48,7 @@ export const Input = forwardRef<TextInput, InputProps>(function Input(
   const message = error ?? helperText;
   return (
     <View style={styles.wrapper}>
-      <Text nativeID={id} variant="label">
+      <Text color={labelColor} nativeID={id} variant="label">
         {label}
       </Text>
       <View style={styles.field}>

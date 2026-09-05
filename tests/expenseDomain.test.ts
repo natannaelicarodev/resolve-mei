@@ -2,6 +2,7 @@ import {
   currentMonth,
   expenseCategoryLabels,
   monthLabel,
+  compactMonthLabel,
   moveMonth,
 } from '@/features/expenses/domain';
 
@@ -19,4 +20,6 @@ it('provides a label for every closed expense category', () => {
   expect(Object.keys(expenseCategoryLabels)).toHaveLength(7);
   expect(expenseCategoryLabels.outros).toBe('Outros');
   expect(monthLabel('2026-08-01')).toMatch(/agosto/i);
+  expect(monthLabel('2026-08-01')).toBe('agosto 2026');
+  expect(compactMonthLabel('2026-09-01')).toBe('set 2026');
 });

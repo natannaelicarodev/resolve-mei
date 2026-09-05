@@ -1,12 +1,16 @@
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
   Button,
+  Card,
   Chip,
   ConfirmationDialog,
   DateInput,
   Dialog,
+  FormSection,
+  Icon,
   InlineFeedback,
   Input,
   MoneyInput,
@@ -15,6 +19,7 @@ import {
   Switch,
   Text,
 } from '@/components/ui';
+import { AnimatedPressable } from '@/components/motion';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { formatQuoteNumber } from '@/features/quotes/domain';
 import {
@@ -27,7 +32,7 @@ import {
   maskBigIntMoneyInput,
   moneyInputToCentsText,
 } from '@/features/receivables/domain';
-import { spacing } from '@/theme';
+import { radii, sizes, spacing, useTheme } from '@/theme';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { ExpenseReceiptSection } from './ExpenseReceiptSection';
 import {
@@ -53,6 +58,8 @@ export function ExpenseFormScreen({
   expenseId?: string;
   duplicateExpenseId?: string;
 }) {
+  const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const existing = useExpense(
     userId,
     businessId,
@@ -68,6 +75,7 @@ export function ExpenseFormScreen({
   const [description, setDescription] = useState('');
   const [quoteId, setQuoteId] = useState<string | null>(null);
   const [recurring, setRecurring] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [loadedExpenseId, setLoadedExpenseId] = useState<string>();
@@ -86,6 +94,8 @@ export function ExpenseFormScreen({
     setDescription(value.description ?? '');
     setQuoteId(value.quoteId);
     setRecurring(value.recurring);
+    // Esconder dado ja preenchido faria o usuario procurar por ele.
+    if (value.quoteId || value.recurring) setLinkOpen(true);
     setDirty(false);
   }
   const parsedDate = parseDateForDatabase(date);
@@ -120,81 +130,155 @@ export function ExpenseFormScreen({
   }
   return (
     <Screen
-      contentContainerStyle={styles.content}
+      background="subtle"
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
       keyboardAvoiding
+      safeAreaColor={colors.primary}
       safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
     >
-      <ProtectedPageHeader
-        alwaysUseBackFallback
-        back
-        backFallback={'/expenses' as never}
-        dismissToBackFallback
-        title={expenseId ? 'Editar despesa' : 'Nova despesa'}
-      />
-      <Text color="textSecondary">
-        Registre apenas gastos que já aconteceram.
-      </Text>
-      <MoneyInput
-        label="Valor"
-        onChangeText={(value) => {
-          setAmount(maskBigIntMoneyInput(value));
-          setDirty(true);
-        }}
-        value={amount}
-      />
-      <DateInput
-        label="Data da despesa"
-        onChangeText={(value) => {
-          setDate(maskDateInput(value));
-          setDirty(true);
-        }}
-        value={date}
-        error={
-          parsedDate && parsedDate > getTodayDatabaseDate()
-            ? 'A data não pode estar no futuro.'
-            : undefined
-        }
-      />
-      <Select
-        label="Categoria"
-        onPress={() => setCategoryOpen(true)}
-        value={expenseCategoryLabels[category]}
-      />
-      <Input
-        label={category === 'outros' ? 'Descrição' : 'Descrição (opcional)'}
-        maxLength={500}
-        multiline
-        onChangeText={(value) => {
-          setDescription(value);
-          setDirty(true);
-        }}
-        showCounter
-        value={description}
-        error={
-          category === 'outros' && !description.trim()
-            ? 'Obrigatória para Outros.'
-            : undefined
-        }
-      />
-      <Select
-        label="Orçamento (opcional)"
-        onPress={() => setQuoteOpen(true)}
-        placeholder="Sem vínculo"
-        value={
-          selectedQuote
-            ? `#${formatQuoteNumber(selectedQuote.quote_number)} · ${selectedQuote.client_name_snapshot}`
-            : undefined
-        }
-      />
-      <Switch
-        description="Esta marcação não cria lançamentos automáticos."
-        label="Despesa recorrente"
-        onValueChange={(value) => {
-          setRecurring(value);
-          setDirty(true);
-        }}
-        value={recurring}
-      />
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <ProtectedPageHeader
+          alwaysUseBackFallback
+          back
+          backFallback={'/expenses' as never}
+          dismissToBackFallback
+          foregroundColor={colors.textInverse}
+          title={expenseId ? 'Editar despesa' : 'Nova despesa'}
+        />
+        <View style={styles.intro}>
+          <View
+            style={[styles.introIcon, { backgroundColor: colors.textInverse }]}
+          >
+            <Icon
+              name={expenseId ? 'edit' : 'money'}
+              rawColor={colors.primary}
+              size="large"
+            />
+          </View>
+          <View style={styles.introCopy}>
+            <Text style={{ color: colors.textInverse }} variant="sectionTitle">
+              {expenseId ? 'Atualize o lançamento' : 'Registre um gasto'}
+            </Text>
+            <Text style={{ color: colors.textInverse }} variant="bodySmall">
+              Registre apenas gastos que já aconteceram.
+            </Text>
+          </View>
+        </View>
+      </View>
+      <Card style={styles.formCard} variant="elevated">
+        <FormSection title="Despesa">
+          <View
+            style={[
+              styles.amountField,
+              {
+                backgroundColor: colors.primarySubtle,
+                borderColor: colors.primary,
+              },
+            ]}
+          >
+            <MoneyInput
+              label="Valor"
+              onChangeText={(value) => {
+                setAmount(maskBigIntMoneyInput(value));
+                setDirty(true);
+              }}
+              value={amount}
+            />
+          </View>
+          <DateInput
+            label="Data da despesa"
+            onChangeText={(value) => {
+              setDate(maskDateInput(value));
+              setDirty(true);
+            }}
+            value={date}
+            error={
+              parsedDate && parsedDate > getTodayDatabaseDate()
+                ? 'A data não pode estar no futuro.'
+                : undefined
+            }
+          />
+          <Select
+            label="Categoria"
+            onPress={() => setCategoryOpen(true)}
+            value={expenseCategoryLabels[category]}
+          />
+          <Input
+            label={category === 'outros' ? 'Descrição' : 'Descrição (opcional)'}
+            maxLength={500}
+            multiline
+            onChangeText={(value) => {
+              setDescription(value);
+              setDirty(true);
+            }}
+            showCounter
+            value={description}
+            error={
+              category === 'outros' && !description.trim()
+                ? 'Obrigatória para Outros.'
+                : undefined
+            }
+          />
+        </FormSection>
+      </Card>
+      {/* O vínculo é opcional e conceitualmente separado do lançamento em si.
+          Recolhido, o formulário não parece maior do que é; expandir ao toque
+          comunica "isto é opcional" melhor que um rótulo dizendo isso. */}
+      <Card variant="elevated">
+        <AnimatedPressable
+          accessibilityLabel="Vínculo e recorrência"
+          accessibilityRole="button"
+          accessibilityState={{ expanded: linkOpen }}
+          haptic="selection"
+          onPress={() => setLinkOpen((open) => !open)}
+          style={styles.linkHeader}
+        >
+          <View style={styles.linkCopy}>
+            <Text variant="cardTitle">Vínculo e recorrência</Text>
+            <Text color="textSecondary" variant="bodySmall">
+              {selectedQuote
+                ? `#${formatQuoteNumber(selectedQuote.quote_number)} · ${selectedQuote.client_name_snapshot}`
+                : recurring
+                  ? 'Marcada como recorrente'
+                  : 'Opcional'}
+            </Text>
+          </View>
+          <Icon color="textMuted" name={linkOpen ? 'expand' : 'forward'} />
+        </AnimatedPressable>
+        {linkOpen ? (
+          <>
+            <Select
+              label="Orçamento (opcional)"
+              onPress={() => setQuoteOpen(true)}
+              placeholder="Sem vínculo"
+              value={
+                selectedQuote
+                  ? `#${formatQuoteNumber(selectedQuote.quote_number)} · ${selectedQuote.client_name_snapshot}`
+                  : undefined
+              }
+            />
+            <Switch
+              description="Esta marcação não cria lançamentos automáticos."
+              label="Despesa recorrente"
+              onValueChange={(value) => {
+                setRecurring(value);
+                setDirty(true);
+              }}
+              value={recurring}
+            />
+          </>
+        ) : null}
+      </Card>
       {mutations.save.isError ? (
         <InlineFeedback
           message={expenseErrorMessage(mutations.save.error)}
@@ -281,5 +365,39 @@ export function ExpenseFormScreen({
 }
 const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    marginTop: -spacing.md,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  intro: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  introIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 48,
+    justifyContent: 'center',
+    width: 48,
+  },
+  introCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  formCard: { marginTop: -40 },
+  amountField: {
+    borderRadius: radii.control,
+    borderWidth: 1,
+    padding: spacing.md,
+  },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  linkHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: sizes.touchTarget,
+  },
+  linkCopy: { flex: 1, gap: 2, minWidth: 0 },
 });

@@ -27,8 +27,10 @@ import {
 } from './DaylightPrimitives';
 import type { Shortcut } from './DaylightPrimitives';
 import { Illustration } from './Illustration';
+import { OnboardingFocusArtwork } from './OnboardingFocusArtwork';
 import { dayRadii, daySizes, daySpace, dayType, useDayTheme } from './theme';
 import type { DayPalette } from './theme';
+import type { OnboardingPriority } from '@/features/business/schemas';
 
 const quoteMarkStyle = {
   alignItems: 'center',
@@ -88,6 +90,9 @@ export interface DaylightHomeScreenProps {
   agendaLoading?: boolean;
   reconnectCount?: number;
   reconnectLoading?: boolean;
+  onboardingPriority?: OnboardingPriority | null;
+  onboardingFocusVisible?: boolean;
+  onConsumeOnboardingFocus?: () => void;
 }
 
 interface RecentQuote {
@@ -253,6 +258,9 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
   agendaLoading = false,
   reconnectCount,
   reconnectLoading = false,
+  onboardingPriority,
+  onboardingFocusVisible = false,
+  onConsumeOnboardingFocus,
   avatarUrl,
   businessName,
   clientCount,
@@ -315,11 +323,86 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
   }, [draftQuoteCount, highlightQuote?.status, sentQuoteCount, suggestion]);
 
   const hero = useMemo(() => {
+    if (onboardingFocusVisible && onboardingPriority) {
+      if (
+        onboardingPriority === 'quotes' ||
+        onboardingPriority === 'collections'
+      ) {
+        const collecting = onboardingPriority === 'collections';
+        if (serviceCount === 0)
+          return {
+            artwork: 'service' as const,
+            body: collecting
+              ? 'Cadastre o que você vende para criar a proposta e acompanhar o recebimento.'
+              : 'Cadastre o que você vende para montar sua primeira proposta.',
+            button: 'Cadastrar serviço',
+            consumeOnPress: false,
+            contextual: true,
+            creates: true,
+            route: '/services/new',
+            title: collecting
+              ? 'Prepare seu primeiro recebimento'
+              : 'Comece seu primeiro orçamento',
+          };
+        if (clientCount === 0)
+          return {
+            artwork: 'client' as const,
+            body: collecting
+              ? 'Adicione um cliente para enviar a proposta e acompanhar o que falta receber.'
+              : 'Adicione para quem você vai enviar sua primeira proposta.',
+            button: 'Cadastrar cliente',
+            consumeOnPress: false,
+            contextual: true,
+            creates: true,
+            route: '/clients/new',
+            title: collecting
+              ? 'Prepare seu primeiro recebimento'
+              : 'Comece seu primeiro orçamento',
+          };
+        return {
+          artwork: 'quote' as const,
+          body: collecting
+            ? 'Crie e envie uma proposta para acompanhar cobranças e recebimentos.'
+            : 'Seu catálogo e seus clientes estão prontos para a primeira proposta.',
+          button: 'Criar orçamento',
+          consumeOnPress: true,
+          contextual: true,
+          creates: true,
+          route: '/quotes/new',
+          title: collecting
+            ? 'Comece a acompanhar recebimentos'
+            : 'Crie seu primeiro orçamento',
+        };
+      }
+      if (onboardingPriority === 'agenda')
+        return {
+          artwork: 'business' as const,
+          body: 'Veja seus compromissos e mantenha prazos e serviços em dia.',
+          button: 'Abrir agenda',
+          consumeOnPress: true,
+          contextual: true,
+          creates: false,
+          route: '/agenda',
+          title: 'Organize sua agenda',
+        };
+      return {
+        artwork: 'stats' as const,
+        body: 'Registre suas primeiras movimentações para acompanhar custos e lucro.',
+        button: 'Ver resultado',
+        consumeOnPress: true,
+        contextual: true,
+        creates: false,
+        route: '/result',
+        title: 'Entenda seu resultado',
+      };
+    }
     if (highlightQuote?.status === 'draft')
       return {
         artwork: 'quoteHeroDraft' as const,
         body: `${highlightQuote.clientName} · Orçamento #${String(highlightQuote.quoteNumber).padStart(6, '0')}`,
         button: 'Continuar',
+        consumeOnPress: false,
+        contextual: false,
         creates: false,
         route: `/quotes/${highlightQuote.id}`,
         title: 'Continue seu orçamento',
@@ -329,19 +412,29 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
         artwork: 'quoteHero' as const,
         body: `A proposta de ${highlightQuote.clientName} está aguardando resposta.`,
         button: 'Acompanhar',
+        consumeOnPress: false,
+        contextual: false,
         creates: false,
         route: `/quotes/${highlightQuote.id}`,
         title: 'Acompanhe a proposta',
       };
     return {
-      artwork: 'quoteHero' as const,
+      artwork: 'quoteHeroNew' as const,
       body: 'Escolha o cliente, some os serviços e envie pelo WhatsApp.',
       button: 'Novo orçamento',
+      consumeOnPress: false,
+      contextual: false,
       creates: true,
       route: '/quotes/new',
       title: 'Comece um orçamento',
     };
-  }, [highlightQuote]);
+  }, [
+    clientCount,
+    highlightQuote,
+    onboardingFocusVisible,
+    onboardingPriority,
+    serviceCount,
+  ]);
 
   const visibleRecentQuotes = useMemo(
     () => recentQuotes.filter((quote) => quote.id !== highlightQuote?.id),
@@ -429,6 +522,15 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
                   <Card
                     style={[styles.hero, stackedHero && styles.heroStacked]}
                   >
+                    {hero.contextual ? (
+                      <Tappable
+                        accessibilityLabel="Dispensar sugestão inicial"
+                        onPress={() => onConsumeOnboardingFocus?.()}
+                        style={styles.heroDismiss}
+                      >
+                        <Icon color="textMuted" name="close" size="small" />
+                      </Tappable>
+                    ) : null}
                     <View
                       style={[
                         styles.heroCopy,
@@ -439,7 +541,10 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
                       <Text style={styles.heroBody}>{hero.body}</Text>
                       <Tappable
                         accessibilityLabel={hero.button}
-                        onPress={() => router.push(hero.route as never)}
+                        onPress={() => {
+                          if (hero.consumeOnPress) onConsumeOnboardingFocus?.();
+                          router.push(hero.route as never);
+                        }}
                         style={styles.heroButton}
                       >
                         {hero.creates ? (
@@ -463,11 +568,21 @@ export const DaylightHomeScreen = memo(function DaylightHomeScreen({
                       pointerEvents="none"
                       style={[
                         styles.heroArtwork,
+                        hero.contextual &&
+                          !stackedHero &&
+                          styles.heroArtworkContextual,
                         stackedHero && styles.heroArtworkStacked,
                       ]}
                     >
                       <HeroArtwork>
-                        <Illustration name={hero.artwork} bare size={142} />
+                        {hero.contextual && onboardingPriority ? (
+                          <OnboardingFocusArtwork
+                            priority={onboardingPriority}
+                            size={120}
+                          />
+                        ) : (
+                          <Illustration name={hero.artwork} bare size={142} />
+                        )}
                       </HeroArtwork>
                     </View>
                   </Card>
@@ -974,9 +1089,24 @@ const createStyles = (day: DayPalette, colors: ThemeColors) =>
       position: 'absolute',
       right: daySpace.xs,
     },
+    heroArtworkContextual: {
+      bottom: undefined,
+      right: -daySpace.xs,
+      top: daySpace.xxxl,
+    },
     heroArtworkStacked: {
       bottom: -daySpace.sm,
       right: daySpace.md,
+    },
+    heroDismiss: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: daySizes.touchTarget,
+      minWidth: daySizes.touchTarget,
+      position: 'absolute',
+      right: daySpace.xs,
+      top: daySpace.xs,
+      zIndex: 2,
     },
     operationalGroup: {
       backgroundColor: day.surfaceMuted,

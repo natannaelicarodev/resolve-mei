@@ -5,6 +5,8 @@ storeDir: .pnpm-store
 nodeLinker: hoisted
 
 allowBuilds:
+  onnxruntime-node: true
+  sharp: true
   unrs-resolver: true
 
 minimumReleaseAgeExclude:

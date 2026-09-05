@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import type { Href } from 'expo-router';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { Platform, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import {
   Badge,
@@ -16,7 +17,7 @@ import {
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { FadeInView } from '@/components/motion';
-import { motion, spacing, useTheme } from '@/theme';
+import { motion, radii, spacing, useTheme } from '@/theme';
 import { duplicateQuote, transitionQuote } from './api';
 import {
   allowedQuoteTransitions,
@@ -102,6 +103,7 @@ export function QuoteDetailsScreen({
   quoteId: string;
 }) {
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const query = useQuote(userId, businessId, quoteId);
   const [pendingStatus, setPendingStatus] = useState<QuoteStatus | null>(null);
   const [confirmingDuplicate, setConfirmingDuplicate] = useState(false);
@@ -235,26 +237,51 @@ export function QuoteDetailsScreen({
         setPdfAction(null);
     }
   };
-  const header = (
-    <ProtectedPageHeader
-      alwaysUseBackFallback
-      back
-      backFallback={'/quotes' as Href}
-      dismissToBackFallback
-      title="Detalhes do orçamento"
-    />
+  const identityBand = (
+    <View
+      style={[
+        styles.identityBand,
+        { backgroundColor: colors.primary, width: windowWidth + 4 },
+      ]}
+    >
+      <ProtectedPageHeader
+        alwaysUseBackFallback
+        back
+        backFallback={'/quotes' as Href}
+        dismissToBackFallback
+        foregroundColor={colors.textInverse}
+        title="Detalhes do orçamento"
+      />
+      <Text style={{ color: colors.textInverse }} variant="bodySmall">
+        Acompanhe a proposta, compartilhe o PDF e avance cada etapa.
+      </Text>
+    </View>
   );
   if (query.isLoading)
     return (
-      <Screen safeAreaEdges={['top', 'bottom']}>
-        {header}
+      <Screen
+        background="subtle"
+        contentContainerStyle={styles.screenContent}
+        safeAreaColor={colors.primary}
+        safeAreaEdges={['top', 'bottom']}
+        style={{ backgroundColor: colors.primary }}
+      >
+        <StatusBar style="light" />
+        {identityBand}
         <SkeletonBlock label="Carregando orçamento" />
       </Screen>
     );
   if (query.isError || !query.data)
     return (
-      <Screen safeAreaEdges={['top', 'bottom']}>
-        {header}
+      <Screen
+        background="subtle"
+        contentContainerStyle={styles.screenContent}
+        safeAreaColor={colors.primary}
+        safeAreaEdges={['top', 'bottom']}
+        style={{ backgroundColor: colors.primary }}
+      >
+        <StatusBar style="light" />
+        {identityBand}
         <InlineFeedback
           message="Não foi possível carregar este orçamento."
           variant="error"
@@ -272,32 +299,60 @@ export function QuoteDetailsScreen({
     pendingStatus === 'canceled' || pendingStatus === 'rejected';
   return (
     <Screen
-      contentContainerStyle={styles.screenContent}
+      background="subtle"
+      contentContainerStyle={[
+        styles.screenContent,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
+      safeAreaColor={colors.primary}
       safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
     >
-      {header}
-      <FadeInView distance={motion.distance.medium} scaleFrom={motion.enterScale}>
-        <Card style={styles.hero} variant="summary">
-        <View style={styles.copy}>
+      <StatusBar style="light" />
+      {identityBand}
+      <FadeInView
+        distance={motion.distance.medium}
+        scaleFrom={motion.enterScale}
+      >
+        <Card style={styles.hero} variant="elevated">
+          <View style={styles.heroHeading}>
+            <View
+              style={[
+                styles.heroIcon,
+                { backgroundColor: colors.primarySubtle },
+              ]}
+            >
+              <Icon color="primary" name="quote" size="large" />
+            </View>
+            <View style={styles.copy}>
+              <Text color="textSecondary" variant="caption">
+                ORÇAMENTO
+              </Text>
+              <Text variant="cardTitle">
+                Orçamento #{formatQuoteNumber(quote.quote_number)}
+              </Text>
+              <Text color="textSecondary">{quote.client_name_snapshot}</Text>
+            </View>
+            <Badge
+              label={quoteStatusLabels[displayStatus]}
+              variant={
+                displayStatus === 'approved'
+                  ? 'success'
+                  : displayStatus === 'rejected' || displayStatus === 'canceled'
+                    ? 'danger'
+                    : 'neutral'
+              }
+            />
+          </View>
           <Text color="textSecondary" variant="caption">
-            ORÇAMENTO
+            VALOR TOTAL
           </Text>
-          <Text variant="cardTitle">
-            Orçamento #{formatQuoteNumber(quote.quote_number)}
-          </Text>
-          <Text color="textSecondary">{quote.client_name_snapshot}</Text>
-        </View>
-        <Badge
-          label={quoteStatusLabels[displayStatus]}
-          variant={
-            displayStatus === 'approved'
-              ? 'success'
-              : displayStatus === 'rejected' || displayStatus === 'canceled'
-                ? 'danger'
-                : 'neutral'
-          }
-        />
-          <Text style={styles.heroTotal} variant="sectionTitle">
+          <Text
+            accessibilityLabel={`Valor total: ${formatMoney(quote.total_cents)}`}
+            color="primary"
+            style={styles.heroTotal}
+            variant="financial"
+          >
             {formatMoney(quote.total_cents)}
           </Text>
         </Card>
@@ -578,10 +633,29 @@ export function QuoteDetailsScreen({
 
 const styles = StyleSheet.create({
   screenContent: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.md,
+    minHeight: 168,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
   hero: {
+    gap: spacing.sm,
+    marginTop: -64,
+  },
+  heroHeading: {
     alignItems: 'center',
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  heroIcon: {
+    alignItems: 'center',
+    borderRadius: radii.control,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
   },
   heroTotal: { width: '100%' },
   copy: { flex: 1, gap: spacing.xs, minWidth: 0 },

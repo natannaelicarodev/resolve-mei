@@ -77,7 +77,7 @@ it('renders unique accumulated pages and opens details', async () => {
   });
   const screen = await renderList();
   expect(screen.getAllByText('Consultoria')).toHaveLength(1);
-  expect(screen.getByText('21 resultados')).toBeTruthy();
+  expect(screen.getByText('21 serviços cadastrados')).toBeTruthy();
   fireEvent.press(screen.getByLabelText(/Consultoria/));
   expect(router.push).toHaveBeenCalledWith({
     pathname: '/services/[id]',

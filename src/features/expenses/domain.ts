@@ -49,8 +49,9 @@ export interface MonthlyFinancialEntry {
   occurredOn: string;
   quoteNumber: number;
   clientName: string;
-  paymentMethod: 'cash'|'pix'|'debit_card'|'credit_card'|'bank_transfer'|'other';
-  type: 'receipt'|'refund';
+  paymentMethod:
+    'cash' | 'pix' | 'debit_card' | 'credit_card' | 'bank_transfer' | 'other';
+  type: 'receipt' | 'refund';
   amountCents: string;
 }
 
@@ -86,7 +87,20 @@ export function monthLabel(month: string) {
     month: 'long',
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${month}T00:00:00Z`));
+  })
+    .format(new Date(`${month}T00:00:00Z`))
+    .replace(' de ', ' ');
+}
+
+export function compactMonthLabel(month: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+    .format(new Date(`${month}T00:00:00Z`))
+    .replace('.', '')
+    .replace(' de ', ' ');
 }
 
 export function expenseErrorMessage(error: unknown) {

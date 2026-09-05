@@ -105,7 +105,7 @@ export function ProfessionalProfileForm({
         Dados profissionais
       </Text>
       {business.isLoading ? (
-        <Card>
+        <Card variant="elevated">
           <Skeleton height={20} width="45%" />
           <Skeleton height={56} />
           <Skeleton height={56} />
@@ -239,6 +239,7 @@ function ProfessionalBusinessForm({
   return (
     <>
       <BusinessFormFields
+        cardVariant="elevated"
         control={control}
         disabled={mutation.isPending || showSuccess}
         focusField={focusField}

@@ -33,6 +33,14 @@ dependency. Verify Expo SDK 57 compatibility and obtain user approval before
 adding or changing any application package. Preserve existing navigation and
 behavior unless the task explicitly requests a change.
 
+# BRAND IDENTITY DECISIONS
+
+Read `TAVI_BRAND_DECISIONS.md` before touching anything related to the Tavi
+mascot or the app store icon — colors, gradients, shading, or the deliberate
+gap between the icon's premium finish and the flat-color rules the rest of
+the interface follows. Do not "fix" that gap without a new documented
+decision.
+
 # REACT NATIVE PERFORMANCE
 
 For every investigation of slowness, freezing, startup time, dropped frames,

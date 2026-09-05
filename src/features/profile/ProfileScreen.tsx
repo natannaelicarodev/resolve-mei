@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import type { ImagePickerAsset } from 'expo-image-picker';
+import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import {
@@ -9,6 +10,7 @@ import {
   ScrollView,
   StyleSheet,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +24,7 @@ import {
   Button,
   Card,
   ConfirmationDialog,
+  Icon,
   InlineFeedback,
   Input,
   Screen,
@@ -35,7 +38,7 @@ import {
   ProtectedPageHeader,
 } from '@/features/navigation/ProtectedNavigation';
 import { useAuth } from '@/providers/AuthProvider';
-import { spacing, useTheme } from '@/theme';
+import { radii, spacing, useTheme } from '@/theme';
 import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { getMyProfile, profileQueryKey, updateMyProfile } from './api';
 import { createAvatarSignedUrl, getProfileInitial } from './avatar';
@@ -93,6 +96,7 @@ export function ProfileScreen() {
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const queryClient = useQueryClient();
   const cancelNavigation = useRef<(() => void) | null>(null);
   const submissionLocked = useRef(false);
@@ -217,22 +221,63 @@ export function ProfileScreen() {
   return (
     <SafeAreaView
       edges={['top']}
-      style={[styles.safeArea, { backgroundColor: colors.background }]}
+      style={[styles.safeArea, { backgroundColor: colors.primary }]}
     >
-      <Screen keyboardAvoiding safeAreaEdges={[]} scrollRef={scrollRef}>
-        <ProtectedPageHeader title="Perfil" settings />
-        <FadeInView style={styles.header}>
-          <Text color="textSecondary">
-            Mantenha seus dados atualizados: eles aparecem nos seus documentos.
-          </Text>
-        </FadeInView>
+      <StatusBar style="light" />
+      <Screen
+        background="subtle"
+        contentContainerStyle={[
+          styles.content,
+          { backgroundColor: colors.backgroundSubtle },
+        ]}
+        keyboardAvoiding
+        safeAreaEdges={[]}
+        scrollRef={scrollRef}
+        style={{ backgroundColor: colors.primary }}
+      >
+        <View
+          style={[
+            styles.identityBand,
+            { backgroundColor: colors.primary, width: windowWidth + 4 },
+          ]}
+        >
+          <ProtectedPageHeader
+            foregroundColor={colors.textInverse}
+            title="Perfil"
+            settings
+          />
+          <FadeInView style={styles.identity}>
+            <View
+              style={[
+                styles.identityIcon,
+                { backgroundColor: colors.textInverse },
+              ]}
+            >
+              <Icon name="profile" rawColor={colors.primary} size="large" />
+            </View>
+            <View style={styles.identityCopy}>
+              <Text
+                numberOfLines={1}
+                style={{ color: colors.textInverse }}
+                variant="sectionTitle"
+              >
+                {query.data?.full_name || 'Seu perfil profissional'}
+              </Text>
+              <Text style={{ color: colors.textInverse }} variant="bodySmall">
+                Seus dados aparecem nos documentos enviados aos clientes.
+              </Text>
+            </View>
+          </FadeInView>
+        </View>
 
-        <SegmentedControl
-          label="Seção do perfil"
-          onChange={(value) => setTab(value)}
-          options={tabs}
-          value={tab}
-        />
+        <Card style={styles.sectionSelector} variant="elevated">
+          <SegmentedControl
+            label="Seção do perfil"
+            onChange={(value) => setTab(value)}
+            options={tabs}
+            value={tab}
+          />
+        </Card>
 
         <StepTransition
           direction={tab === 'personal' ? 'back' : 'forward'}
@@ -243,7 +288,7 @@ export function ProfileScreen() {
               query.isLoading ? (
                 <ProfileSkeleton />
               ) : (
-                <Card>
+                <Card variant="elevated">
                   <Text variant="cardTitle">Dados pessoais</Text>
                   <PersonalImageField
                     currentUrl={image.data}
@@ -333,6 +378,28 @@ export function ProfileScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  header: { gap: spacing.sm },
+  content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.md,
+    marginTop: -spacing.md,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  identity: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  identityIcon: {
+    alignItems: 'center',
+    borderRadius: radii.circular,
+    height: 56,
+    justifyContent: 'center',
+    width: 56,
+  },
+  identityCopy: { flex: 1, gap: spacing.xs, minWidth: 0 },
+  sectionSelector: { marginTop: -40 },
   section: { gap: spacing.lg },
 });

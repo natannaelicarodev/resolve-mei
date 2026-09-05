@@ -1,5 +1,5 @@
 import type { ExpenseMonth } from '@/features/expenses/domain';
-import { centsDecimal,expensesCsv,monthlySummaryHtml,receiptsCsv } from '@/features/expenses/monthlyExport';
+import { centsDecimal,expensesCsv,monthlySummaryHtml,neutralizeCsvFormula,receiptsCsv } from '@/features/expenses/monthlyExport';
 const data:ExpenseMonth={month:'2026-09-01',receivedCents:'10000',expenseCents:'3025',resultCents:'6975',byCategory:[{category:'material',amountCents:'3025'}],financialEntries:[
   {id:'1',occurredOn:'2026-09-02',quoteNumber:7,clientName:'José, Silva',paymentMethod:'pix',type:'receipt',amountCents:'12000'},
   {id:'2',occurredOn:'2026-09-03',quoteNumber:7,clientName:'José, Silva',paymentMethod:'pix',type:'refund',amountCents:'2000'},
@@ -16,3 +16,17 @@ it('renders a private printable summary with exact totals and timestamp',()=>{
  expect(html).toContain('ResolveMEI');expect(html).toContain('R$ 100,00');expect(html).toContain('R$ 30,25');expect(html).toContain('R$ 69,75');expect(html).toContain('Gerado em');expect(html).not.toContain('José');
 });
 it('formats cents without floating point or BRL display symbols',()=>{expect(centsDecimal('1')).toBe('0.01');expect(centsDecimal('123456')).toBe('1234.56');expect(centsDecimal('25',true)).toBe('-0.25');});
+it.each(['=1+1', '+SUM(A1)', '-2+3', '@IMPORT', '  =1+1', '\t+1'])(
+  'neutralizes a spreadsheet formula beginning with %s',
+  (value) => expect(neutralizeCsvFormula(value)).toBe(`'${value}`),
+);
+it('preserves ordinary CSV values',()=>{
+ expect(neutralizeCsvFormula('Cliente normal')).toBe('Cliente normal');
+ expect(neutralizeCsvFormula('10.00')).toBe('10.00');
+});
+it('neutralizes user text while preserving generated negative accounting values',()=>{
+ const malicious:ExpenseMonth={...data,financialEntries:[{...data.financialEntries[1]!,clientName:'-2+3'}]};
+ const output=receiptsCsv(malicious);
+ expect(output).toContain('"\'-2+3"');
+ expect(output).toContain('"-20.00"');
+});

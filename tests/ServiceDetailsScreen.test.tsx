@@ -73,9 +73,10 @@ it('shows real details without empty placeholders', async () => {
   const screen = await renderDetails();
   expect(screen.getByText('Consultoria')).toBeTruthy();
   expect(screen.getByText('R$ 150,00')).toBeTruthy();
-  // A duração subiu para o resumo do topo, junto do preço, e ali carrega o
-  // próprio rótulo em vez de depender de um par rótulo/valor separado.
-  expect(screen.getByText('Duração estimada: 1 h 30 min')).toBeTruthy();
+  // A duração continua no resumo, agora em um tile próprio para não competir
+  // visualmente com o preço principal.
+  expect(screen.getByText('Duração estimada')).toBeTruthy();
+  expect(screen.getByText('1 h 30 min')).toBeTruthy();
   expect(screen.getByText('Planejamento completo')).toBeTruthy();
 });
 

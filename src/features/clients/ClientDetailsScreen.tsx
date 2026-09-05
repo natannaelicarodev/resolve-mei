@@ -1,7 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 
 import {
   Button,
@@ -12,12 +13,13 @@ import {
   SkeletonBlock,
   Text,
   Badge,
+  Icon,
 } from '@/components/ui';
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { FadeInView } from '@/components/motion';
 import { formatBigIntMoney } from '@/features/receivables/domain';
 import { useRelationshipOverview } from '@/features/relationships/hooks';
-import { motion, spacing } from '@/theme';
+import { motion, radii, spacing, useTheme } from '@/theme';
 import { setClientStatus } from './api';
 import { openClientContact } from './contact';
 import { formatClientDocument, formatPhone } from './format';
@@ -27,9 +29,10 @@ import { useAuth } from '@/providers/AuthProvider';
 import { ClientRelationshipSection } from '@/features/relationships/ClientRelationshipSection';
 
 function Detail({ label, value }: { label: string; value?: string | null }) {
+  const { colors } = useTheme();
   if (!value) return null;
   return (
-    <View style={styles.detail}>
+    <View style={[styles.detail, { borderBottomColor: colors.borderSubtle }]}>
       <Text color="textSecondary" variant="caption">
         {label}
       </Text>
@@ -47,6 +50,8 @@ export function ClientDetailsScreen({
   businessName?: string;
   clientId: string;
 }) {
+  const { colors } = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
   const { user } = useAuth();
   const userId = user?.id ?? '';
   const query = useClient(userId, businessId, clientId);
@@ -114,14 +119,35 @@ export function ClientDetailsScreen({
   };
   const nextStatus = client.status === 'active' ? 'inactive' : 'active';
   return (
-    <Screen safeAreaEdges={['top', 'bottom']}>
-      <ProtectedPageHeader
-        alwaysUseBackFallback
-        back
-        backFallback="/clients"
-        dismissToBackFallback
-        title="Detalhes do cliente"
-      />
+    <Screen
+      background="subtle"
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.backgroundSubtle },
+      ]}
+      safeAreaColor={colors.primary}
+      safeAreaEdges={['top', 'bottom']}
+      style={{ backgroundColor: colors.primary }}
+    >
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.identityBand,
+          { backgroundColor: colors.primary, width: windowWidth + 4 },
+        ]}
+      >
+        <ProtectedPageHeader
+          alwaysUseBackFallback
+          back
+          backFallback="/clients"
+          dismissToBackFallback
+          foregroundColor={colors.textInverse}
+          title="Detalhes do cliente"
+        />
+        <Text style={{ color: colors.textInverse }} variant="bodySmall">
+          Contato, histórico e informações do relacionamento em um só lugar.
+        </Text>
+      </View>
       {/* O resumo vem antes do cadastro porque a pergunta ao abrir um cliente
           é "quando foi a última vez e quanto já rendeu", não "qual o CPF".
           Consome a mesma consulta da seção de relacionamento abaixo, que o
@@ -130,8 +156,15 @@ export function ClientDetailsScreen({
         distance={motion.distance.medium}
         scaleFrom={motion.enterScale}
       >
-        <Card style={styles.summary} variant="summary">
+        <Card style={styles.summary} variant="elevated">
           <View style={styles.heading}>
+            <View
+              style={[styles.avatar, { backgroundColor: colors.primarySubtle }]}
+            >
+              <Text color="primary" variant="sectionTitle">
+                {client.name.trim().charAt(0).toLocaleUpperCase('pt-BR')}
+              </Text>
+            </View>
             <View style={styles.headingCopy}>
               <Text color="textSecondary" variant="caption">
                 {client.type === 'person' ? 'PESSOA' : 'EMPRESA'}
@@ -143,41 +176,61 @@ export function ClientDetailsScreen({
             )}
           </View>
           <View style={styles.summaryStats}>
-            <View style={styles.summaryStat}>
-              <Text color="textSecondary" variant="caption">
-                Último atendimento
-              </Text>
-              <Text variant="label">
-                {relationship.data
-                  ? elapsedLabel(relationship.data.daysSince ?? undefined)
-                  : '—'}
-              </Text>
+            <View
+              style={[
+                styles.summaryStat,
+                { backgroundColor: colors.backgroundSubtle },
+              ]}
+            >
+              <Icon color="primary" name="duration" size="small" />
+              <View style={styles.statCopy}>
+                <Text color="textSecondary" variant="caption">
+                  Último atendimento
+                </Text>
+                <Text variant="label">
+                  {relationship.data
+                    ? elapsedLabel(relationship.data.daysSince ?? undefined)
+                    : '—'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.summaryStat}>
-              <Text color="textSecondary" variant="caption">
-                Recebido
-              </Text>
-              <Text color="success" variant="label">
-                {relationship.data
-                  ? formatBigIntMoney(relationship.data.receivedCents)
-                  : '—'}
-              </Text>
+            <View
+              style={[
+                styles.summaryStat,
+                { backgroundColor: colors.successSurface },
+              ]}
+            >
+              <Icon color="success" name="money" size="small" />
+              <View style={styles.statCopy}>
+                <Text color="textSecondary" variant="caption">
+                  Recebido
+                </Text>
+                <Text color="success" variant="label">
+                  {relationship.data
+                    ? formatBigIntMoney(relationship.data.receivedCents)
+                    : '—'}
+                </Text>
+              </View>
             </View>
           </View>
         </Card>
       </FadeInView>
-      <View style={styles.actions}>
+      <View style={styles.quickActions}>
         {client.phone ? (
           <>
             <Button
+              icon={<Icon color="primary" name="phone" size="small" />}
               label="Ligar"
               size="small"
+              style={styles.quickAction}
               variant="secondary"
               onPress={() => void contact('phone', client.phone!)}
             />
             <Button
+              icon={<Icon color="primary" name="whatsapp" size="small" />}
               label="WhatsApp"
               size="small"
+              style={styles.quickAction}
               variant="secondary"
               onPress={() => void contact('whatsapp', client.phone!)}
             />
@@ -185,8 +238,10 @@ export function ClientDetailsScreen({
         ) : null}
         {client.email ? (
           <Button
+            icon={<Icon color="primary" name="email" size="small" />}
             label="E-mail"
             size="small"
+            style={styles.quickAction}
             variant="secondary"
             onPress={() => void contact('email', client.email!)}
           />
@@ -198,8 +253,7 @@ export function ClientDetailsScreen({
           message="Não foi possível abrir o aplicativo de contato neste dispositivo."
         />
       ) : null}
-      <Card>
-        <Text variant="cardTitle">Informações</Text>
+      <Card title="Informações" variant="elevated">
         <Detail
           label={client.type === 'person' ? 'CPF' : 'CNPJ'}
           value={
@@ -230,23 +284,27 @@ export function ClientDetailsScreen({
           message="Não foi possível alterar o status."
         />
       ) : null}
-      <Button
-        label="Editar cliente"
-        onPress={() =>
-          router.push({
-            pathname: '/clients/[id]/edit',
-            params: { id: client.id },
-          })
-        }
-      />
-      <Button
-        label={
-          client.status === 'active' ? 'Inativar cliente' : 'Ativar cliente'
-        }
-        loading={status.isPending}
-        variant={client.status === 'active' ? 'danger' : 'secondary'}
-        onPress={() => setStatusConfirmationVisible(true)}
-      />
+      <View style={styles.footerActions}>
+        <Button
+          haptic="selection"
+          icon={<Icon name="edit" rawColor={colors.textInverse} size="small" />}
+          label="Editar cliente"
+          onPress={() =>
+            router.push({
+              pathname: '/clients/[id]/edit',
+              params: { id: client.id },
+            })
+          }
+        />
+        <Button
+          label={
+            client.status === 'active' ? 'Inativar cliente' : 'Ativar cliente'
+          }
+          loading={status.isPending}
+          variant={client.status === 'active' ? 'danger' : 'secondary'}
+          onPress={() => setStatusConfirmationVisible(true)}
+        />
+      </View>
       <ConfirmationDialog
         confirmLabel={nextStatus === 'inactive' ? 'Inativar' : 'Ativar'}
         description={`Confirma a alteração de status de ${client.name}?`}
@@ -265,11 +323,42 @@ export function ClientDetailsScreen({
 }
 
 const styles = StyleSheet.create({
-  summary: { gap: spacing.md },
+  content: { paddingHorizontal: spacing.lg },
+  identityBand: {
+    alignSelf: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.md,
+    minHeight: 168,
+    paddingBottom: 56,
+    paddingHorizontal: spacing.lg,
+  },
+  summary: { gap: spacing.md, marginTop: -64 },
+  avatar: {
+    alignItems: 'center',
+    borderRadius: radii.pill,
+    height: 52,
+    justifyContent: 'center',
+    width: 52,
+  },
   summaryStats: { flexDirection: 'row', gap: spacing.md },
-  summaryStat: { flex: 1, gap: 2, minWidth: 0 },
+  summaryStat: {
+    alignItems: 'flex-start',
+    borderRadius: radii.control,
+    flex: 1,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    minHeight: 72,
+    padding: spacing.sm,
+  },
+  statCopy: { flex: 1, gap: 2, minWidth: 0 },
   heading: { alignItems: 'center', flexDirection: 'row', gap: spacing.md },
   headingCopy: { flex: 1, gap: spacing.xs },
-  actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  detail: { gap: 2 },
+  quickActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  quickAction: { flexGrow: 1, minWidth: 96 },
+  detail: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    gap: spacing.xs,
+    paddingBottom: spacing.sm,
+  },
+  footerActions: { gap: spacing.sm },
 });

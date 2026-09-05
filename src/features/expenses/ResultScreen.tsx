@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import {
+  Badge,
   Button,
   Card,
   Checkbox,
@@ -16,7 +18,7 @@ import {
 import { ProtectedPageHeader } from '@/features/navigation/ProtectedNavigation';
 import { formatBigIntMoney } from '@/features/receivables/domain';
 import { FadeInView } from '@/components/motion';
-import { motion, spacing, useTheme } from '@/theme';
+import { getThemeShadows, motion, spacing, useTheme } from '@/theme';
 import {
   currentMonth,
   expenseCategoryLabels,
@@ -28,6 +30,55 @@ import {
   exportMonthlyResult,
   type MonthlyExportSelection,
 } from './monthlyExport';
+
+const NOTCH_RADIUS = 10;
+
+// Borda serrilhada de recibo: uma fileira de círculos na cor de fundo da
+// página, sobrepostos à base da faixa — cada círculo "morde" um semicírculo
+// da faixa por baixo. Evita path SVG dinâmico, que não renderizava de forma
+// confiável entre plataformas; círculos são `View`s comuns com borderRadius,
+// muito mais previsíveis em RN.
+function ReceiptEdge({
+  bandColor,
+  pageColor,
+  width,
+}: {
+  bandColor: string;
+  pageColor: string;
+  width: number;
+}) {
+  const diameter = NOTCH_RADIUS * 2;
+  // Arredonda para cima e soma uma mordida extra: as pontas ficam parcialmente
+  // fora da largura visível em vez de sobrar um trecho reto de faixa antes da
+  // primeira/depois da última — o excesso é cortado por `overflow: hidden`.
+  const count = Math.max(1, Math.ceil(width / diameter)) + 1;
+  return (
+    <View
+      style={[
+        styles.edge,
+        { backgroundColor: bandColor, height: NOTCH_RADIUS, width },
+      ]}
+    >
+      {Array.from({ length: count }, (_, index) => (
+        <View
+          key={index}
+          style={[
+            styles.edgeNotch,
+            {
+              backgroundColor: pageColor,
+              borderRadius: NOTCH_RADIUS,
+              height: diameter,
+              left: index * diameter - NOTCH_RADIUS,
+              top: 0,
+              width: diameter,
+            },
+          ]}
+        />
+      ))}
+    </View>
+  );
+}
+
 export function ResultScreen({
   userId,
   businessId,
@@ -37,7 +88,9 @@ export function ResultScreen({
   businessId: string;
   businessName: string;
 }) {
-  const { colors } = useTheme();
+  const { colors, resolvedTheme } = useTheme();
+  const shadows = getThemeShadows(resolvedTheme);
+  const { width: windowWidth } = useWindowDimensions();
   const [month, setMonth] = useState(currentMonth());
   const [exportVisible, setExportVisible] = useState(false);
   const [exporting, setExporting] = useState(false);
@@ -102,46 +155,110 @@ export function ResultScreen({
       if (isCurrent()) setExporting(false);
     }
   };
+  const bandColor = colors.primary;
+  const bandForeground = colors.textInverse;
+  const profit = data ? BigInt(data.resultCents) >= 0n : true;
   return (
     <Screen
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { backgroundColor: colors.background },
+      ]}
       safeAreaEdges={['top', 'bottom']}
+      safeAreaColor={bandColor}
+      style={{ backgroundColor: bandColor }}
     >
-      <ProtectedPageHeader
-        alwaysUseBackFallback
-        back
-        backFallback={'/expenses' as never}
-        dismissToBackFallback
-        title="Resultado"
-      />
-      <View style={styles.month}>
-        <IconButton
-          accessibilityLabel="Mês anterior"
-          icon={<Icon color="textSecondary" name="previous" />}
-          onPress={() => setMonth(moveMonth(month, -1))}
-        />
-        <Text style={styles.label} variant="cardTitle">
-          {monthLabel(month)}
-        </Text>
-        <IconButton
-          accessibilityLabel="Próximo mês"
-          disabled={month >= currentMonth()}
-          icon={<Icon color="textSecondary" name="forward" />}
-          onPress={() => setMonth(moveMonth(month, 1))}
-        />
+      <StatusBar style="light" />
+      <View
+        style={[
+          styles.band,
+          { backgroundColor: bandColor, width: windowWidth + 4 },
+        ]}
+      >
+        <View style={styles.headerRow}>
+          <View style={styles.headerTitle}>
+            <ProtectedPageHeader
+              alwaysUseBackFallback
+              back
+              backFallback={'/expenses' as never}
+              dismissToBackFallback
+              foregroundColor={bandForeground}
+              title="Resultado"
+            />
+          </View>
+          <IconButton
+            accessibilityLabel="Exportar para contador"
+            icon={<Icon name="share" rawColor={bandForeground} />}
+            onPress={() => setExportVisible(true)}
+            style={styles.exportButton}
+          />
+        </View>
+        <View style={styles.month}>
+          <IconButton
+            accessibilityLabel="Mês anterior"
+            icon={<Icon name="previous" rawColor={bandForeground} />}
+            onPress={() => setMonth(moveMonth(month, -1))}
+          />
+          <Text
+            style={[styles.monthLabel, { color: bandForeground }]}
+            variant="label"
+          >
+            {monthLabel(month)}
+          </Text>
+          <IconButton
+            accessibilityLabel="Próximo mês"
+            disabled={month >= currentMonth()}
+            icon={<Icon name="forward" rawColor={bandForeground} />}
+            onPress={() => setMonth(moveMonth(month, 1))}
+          />
+        </View>
+        {data ? (
+          <FadeInView
+            distance={motion.distance.medium}
+            scaleFrom={motion.enterScale}
+          >
+            <View style={styles.resultStage}>
+              <Text style={{ color: bandForeground }} variant="bodySmall">
+                Resultado líquido
+              </Text>
+              <Text
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}
+                numberOfLines={1}
+                style={{ color: bandForeground }}
+                variant="display"
+              >
+                {formatBigIntMoney(data.resultCents)}
+              </Text>
+              <Badge
+                icon={
+                  <Icon
+                    name={profit ? 'trendUp' : 'trendDown'}
+                    rawColor={profit ? colors.success : colors.danger}
+                    size="small"
+                  />
+                }
+                label={profit ? 'Lucro' : 'Prejuízo'}
+                variant={profit ? 'success' : 'danger'}
+              />
+            </View>
+          </FadeInView>
+        ) : (
+          <View style={styles.resultStage}>
+            <Text style={{ color: bandForeground }} variant="bodySmall">
+              Resultado líquido
+            </Text>
+            <Text style={{ color: bandForeground }} variant="display">
+              {formatBigIntMoney('0')}
+            </Text>
+          </View>
+        )}
       </View>
-      <Button
-        label="Exportar"
-        variant="secondary"
-        disabled={!data || query.isLoading}
-        onPress={() => setExportVisible(true)}
+      <ReceiptEdge
+        bandColor={bandColor}
+        pageColor={colors.background}
+        width={windowWidth + 4}
       />
-      {exportFeedback ? (
-        <InlineFeedback
-          message={exportFeedback.message}
-          variant={exportFeedback.variant}
-        />
-      ) : null}
       {query.isLoading ? (
         <SkeletonBlock label="Calculando resultado" lines={2} />
       ) : query.isError || !data ? (
@@ -156,9 +273,11 @@ export function ResultScreen({
           />
         </>
       ) : (
-        <>
-          <FadeInView distance={motion.distance.medium} scaleFrom={motion.enterScale}>
-            <Card style={styles.card} variant="summary">
+        <View style={styles.detailsGroup}>
+          <Card style={[styles.card, shadows.raised]} variant="summary">
+            <Text color="textSecondary" variant="caption">
+              Detalhes
+            </Text>
             <View style={styles.row}>
               <Text color="textSecondary">Recebido líquido</Text>
               <Text color="success" variant="label">
@@ -171,28 +290,28 @@ export function ResultScreen({
                 {formatBigIntMoney(data.expenseCents)}
               </Text>
             </View>
-            <View
-              style={[styles.total, { borderTopColor: colors.borderSubtle }]}
-            >
-              <Text variant="label">Resultado líquido</Text>
-              <Text
-                color={BigInt(data.resultCents) >= 0n ? 'success' : 'danger'}
-                variant="sectionTitle"
-              >
-                {formatBigIntMoney(data.resultCents)}
-              </Text>
-            </View>
-            </Card>
-          </FadeInView>
+          </Card>
           <View style={styles.section}>
             <Text variant="sectionTitle">Despesas por categoria</Text>
             {data.byCategory.length ? (
-              data.byCategory.map((item) => (
-                <View key={item.category} style={styles.row}>
-                  <Text>{expenseCategoryLabels[item.category]}</Text>
-                  <Text>{formatBigIntMoney(item.amountCents)}</Text>
-                </View>
-              ))
+              <Card style={styles.card}>
+                {data.byCategory.map((item, index) => (
+                  <View key={item.category}>
+                    {index > 0 ? (
+                      <View
+                        style={[
+                          styles.divider,
+                          { backgroundColor: colors.borderSubtle },
+                        ]}
+                      />
+                    ) : null}
+                    <View style={styles.row}>
+                      <Text>{expenseCategoryLabels[item.category]}</Text>
+                      <Text>{formatBigIntMoney(item.amountCents)}</Text>
+                    </View>
+                  </View>
+                ))}
+              </Card>
             ) : (
               <EmptyState
                 description="As despesas do período aparecerão agrupadas por categoria."
@@ -201,7 +320,13 @@ export function ResultScreen({
               />
             )}
           </View>
-        </>
+          {exportFeedback ? (
+            <InlineFeedback
+              message={exportFeedback.message}
+              variant={exportFeedback.variant}
+            />
+          ) : null}
+        </View>
       )}
       <Dialog
         visible={exportVisible}
@@ -248,13 +373,36 @@ export function ResultScreen({
   );
 }
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: spacing.lg },
+  content: { gap: spacing.lg, paddingHorizontal: spacing.lg },
+  edge: {
+    alignSelf: 'center',
+    marginTop: -spacing.lg,
+    overflow: 'hidden',
+  },
+  edgeNotch: { position: 'absolute' },
+  band: {
+    alignSelf: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  headerRow: { alignItems: 'center', flexDirection: 'row' },
+  headerTitle: { flex: 1, minWidth: 0 },
+  exportButton: { marginLeft: spacing.xs },
   month: {
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    marginTop: spacing.sm,
   },
-  label: { textTransform: 'capitalize' },
+  monthLabel: { textTransform: 'capitalize' },
+  resultStage: {
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingTop: spacing.md,
+  },
+  detailsGroup: { gap: spacing.lg, marginTop: -NOTCH_RADIUS },
   card: { gap: spacing.sm },
   row: {
     alignItems: 'center',
@@ -262,16 +410,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: spacing.sm,
     justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
   },
-  total: {
-    alignItems: 'center',
-    borderTopWidth: 1,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    justifyContent: 'space-between',
-    paddingTop: spacing.md,
-  },
+  divider: { height: StyleSheet.hairlineWidth },
   section: { gap: spacing.md },
   exportActions: {
     flexDirection: 'row',

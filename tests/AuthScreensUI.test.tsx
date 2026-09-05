@@ -40,12 +40,12 @@ it('keeps login data after an error and toggles password visibility', async () =
 
 it('updates password requirements progressively during sign-up', async () => {
   const screen = await render(<SignUpScreen />);
-  expect(screen.getByText('• 8 ou mais caracteres')).toBeTruthy();
+  expect(screen.getByLabelText('8 ou mais caracteres: pendente')).toBeTruthy();
   await fireEvent.changeText(screen.getByLabelText('Senha'), 'Senha123');
-  expect(screen.getByText('• 8 ou mais caracteres')).toBeTruthy();
-  expect(screen.getByText('• Uma letra minúscula')).toBeTruthy();
-  expect(screen.getByText('• Uma letra maiúscula')).toBeTruthy();
-  expect(screen.getByText('• Um número')).toBeTruthy();
+  expect(screen.getByLabelText('8 ou mais caracteres: atendido')).toBeTruthy();
+  expect(screen.getByLabelText('Uma letra minúscula: atendido')).toBeTruthy();
+  expect(screen.getByLabelText('Uma letra maiúscula: atendido')).toBeTruthy();
+  expect(screen.getByLabelText('Um número: atendido')).toBeTruthy();
   expect(signUp).not.toHaveBeenCalled();
   await screen.unmount();
 });

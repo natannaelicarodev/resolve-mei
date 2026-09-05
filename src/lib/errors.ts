@@ -33,6 +33,14 @@ export function normalizeError(error: unknown): AppError {
     return { code: 'auth', message: 'Confirme seu e-mail antes de entrar.' };
   }
 
+  if (isErrorWithCode(error, 'onboarding_migration_required')) {
+    return {
+      code: 'storage',
+      message:
+        'Atualização do sistema pendente. Aplique a migração do onboarding e tente novamente.',
+    };
+  }
+
   if (isErrorWithStatus(error, 429)) {
     return {
       code: 'auth',

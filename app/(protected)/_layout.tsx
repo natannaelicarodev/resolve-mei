@@ -98,10 +98,7 @@ const ProtectedStack = memo(function ProtectedStack({
       <Stack.Screen name="agenda" options={{ headerShown: false }} />
       <Stack.Screen name="expenses" options={{ headerShown: false }} />
       <Stack.Screen name="result" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding"
-        options={{ title: 'Perfil profissional', headerBackVisible: false }}
-      />
+      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
       <Stack.Screen name="settings" options={{ headerShown: false }} />
     </Stack>

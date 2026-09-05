@@ -1,11 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { Controller, useForm, useWatch } from 'react-hook-form';
+import { useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { Button, Checkbox, InlineFeedback, Input, Text } from '@/components/ui';
+import {
+  Button,
+  Checkbox,
+  Icon,
+  IconButton,
+  InlineFeedback,
+  Input,
+  Text,
+} from '@/components/ui';
 import { normalizeError } from '@/lib/errors';
-import { useTheme } from '@/theme';
+import { spacing, useTheme } from '@/theme';
 import { signUp } from './api';
 import { AuthShell } from './AuthShell';
 import { signUpSchema } from './schemas';
@@ -14,6 +23,8 @@ import { PasswordRequirements } from './PasswordRequirements';
 
 export function SignUpScreen() {
   const { colors } = useTheme();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const {
     control,
     handleSubmit,
@@ -44,8 +55,10 @@ export function SignUpScreen() {
   };
   return (
     <AuthShell
-      title="Crie sua conta"
+      heroSubtitle="Organize clientes, serviços e orçamentos desde o primeiro dia."
+      heroTitle="Comece com uma rotina mais simples."
       subtitle="Comece seu perfil profissional em poucos minutos."
+      title="Crie sua conta"
     >
       <Controller
         control={control}
@@ -86,7 +99,22 @@ export function SignUpScreen() {
             label="Senha"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            secureTextEntry={!showPassword}
+            trailing={
+              <IconButton
+                accessibilityLabel={
+                  showPassword ? 'Ocultar senha' : 'Mostrar senha'
+                }
+                icon={
+                  <Icon
+                    color="textSecondary"
+                    name={showPassword ? 'hide' : 'preview'}
+                    size="medium"
+                  />
+                }
+                onPress={() => setShowPassword((current) => !current)}
+              />
+            }
             value={field.value}
           />
         )}
@@ -101,7 +129,24 @@ export function SignUpScreen() {
             label="Confirmar senha"
             onBlur={field.onBlur}
             onChangeText={field.onChange}
-            secureTextEntry
+            secureTextEntry={!showConfirmPassword}
+            trailing={
+              <IconButton
+                accessibilityLabel={
+                  showConfirmPassword
+                    ? 'Ocultar confirmação de senha'
+                    : 'Mostrar confirmação de senha'
+                }
+                icon={
+                  <Icon
+                    color="textSecondary"
+                    name={showConfirmPassword ? 'hide' : 'preview'}
+                    size="medium"
+                  />
+                }
+                onPress={() => setShowConfirmPassword((current) => !current)}
+              />
+            }
             value={field.value}
           />
         )}
@@ -126,13 +171,24 @@ export function SignUpScreen() {
         loading={isSubmitting}
         onPress={() => void handleSubmit(submit)()}
       />
-      <Text>
-        Já possui conta?{' '}
-        <Link href="/sign-in" style={[styles.link, { color: colors.primary }]}>
+      <Text color="textSecondary" style={styles.accountAction}>
+        Já possui uma conta?{' '}
+        <Link
+          accessibilityRole="link"
+          href="/sign-in"
+          style={[styles.link, { color: colors.primary }]}
+        >
           Entrar
         </Link>
       </Text>
     </AuthShell>
   );
 }
-const styles = StyleSheet.create({ link: {} });
+const styles = StyleSheet.create({
+  accountAction: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+    textAlign: 'center',
+  },
+  link: { paddingVertical: spacing.sm },
+});

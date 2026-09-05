@@ -44,7 +44,7 @@ export interface QuoteReceivable {
 }
 
 export function normalizeCents(value: string) {
-  if (!/^\d+$/.test(value)) throw new Error('INVALID_CENTS');
+  if (!/^-?\d+$/.test(value)) throw new Error('INVALID_CENTS');
   return BigInt(value).toString();
 }
 

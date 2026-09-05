@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
-import { Text } from '@/components/ui';
-import { spacing, useTheme } from '@/theme';
+import { Icon, Text } from '@/components/ui';
+import { radii, spacing, useTheme } from '@/theme';
 
 export const passwordRequirementChecks = [
   { label: '8 ou mais caracteres', test: (value: string) => value.length >= 8 },
@@ -21,19 +21,39 @@ export function PasswordRequirements({ password }: { password: string }) {
   return (
     <View
       accessibilityLabel="Requisitos da senha"
-      style={[styles.container, { borderLeftColor: colors.borderStrong }]}
+      style={[
+        styles.container,
+        {
+          backgroundColor: colors.backgroundSubtle,
+          borderColor: colors.borderSubtle,
+        },
+      ]}
     >
+      <Text color="textSecondary" variant="label">
+        Sua senha precisa ter:
+      </Text>
       {passwordRequirementChecks.map((requirement) => {
         const met = requirement.test(password);
         return (
-          <Text
+          <View
             accessibilityLabel={`${requirement.label}: ${met ? 'atendido' : 'pendente'}`}
-            color={met ? 'success' : 'textMuted'}
+            accessible
             key={requirement.label}
-            variant="caption"
+            style={styles.requirement}
           >
-            • {requirement.label}
-          </Text>
+            <Icon
+              color={met ? 'success' : 'textMuted'}
+              name={met ? 'success' : 'statusNeutral'}
+              size="small"
+            />
+            <Text
+              color={met ? 'success' : 'textMuted'}
+              style={styles.requirementText}
+              variant="caption"
+            >
+              {requirement.label}
+            </Text>
+          </View>
         );
       })}
     </View>
@@ -42,8 +62,15 @@ export function PasswordRequirements({ password }: { password: string }) {
 
 const styles = StyleSheet.create({
   container: {
-    borderLeftWidth: 2,
-    gap: spacing.xs,
-    paddingLeft: spacing.sm,
+    borderRadius: radii.control,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: spacing[2],
+    padding: spacing[3],
   },
+  requirement: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  requirementText: { flex: 1 },
 });

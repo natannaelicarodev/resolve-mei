@@ -14,6 +14,8 @@ module.exports = {
     // Mapping the module outright is more reliable than jest.mock, which the
     // package's own re-exports can sidestep.
     '^react-native-gesture-handler$': '<rootDir>/tests/mocks/gestureHandler.js',
+    '^react-native-gesture-handler/ReanimatedSwipeable$':
+      '<rootDir>/tests/mocks/reanimatedSwipeable.js',
   },
   transformIgnorePatterns: [
     'node_modules/(?!(.pnpm|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|expo-router|@react-navigation/.*|react-navigation|react-native-safe-area-context|react-native-screens|react-native-svg|lucide-react-native))',

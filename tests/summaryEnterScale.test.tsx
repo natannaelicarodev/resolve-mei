@@ -19,6 +19,7 @@ const SUMMARY_SCREENS = [
   'src/features/quotes/QuoteDetailsScreen.tsx',
   'src/features/service-orders/ServiceOrderDetailsScreen.tsx',
   'src/features/expenses/ResultScreen.tsx',
+  'src/features/expenses/ExpenseListScreen.tsx',
 ];
 
 /** Telas mantidas deliberadamente simples: entram sem escala. */

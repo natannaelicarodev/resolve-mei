@@ -57,7 +57,7 @@ export function SuccessTransition({
       >
         <Icon name="success" rawColor={colors.success} size="medium" />
       </Animated.View>
-      <Text color="success" variant="label">
+      <Text color="success" style={styles.message} variant="label">
         {message}
       </Text>
     </Animated.View>
@@ -69,7 +69,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     gap: spacing.sm,
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
+    width: '100%',
   },
   icon: {
     alignItems: 'center',
@@ -78,4 +79,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: 40,
   },
+  message: { flex: 1, minWidth: 0 },
 });

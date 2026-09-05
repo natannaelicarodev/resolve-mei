@@ -43,6 +43,8 @@ const business: Business = {
   pix_key: 'ana@pix.com',
   logo_path: 'user-1/logo.webp',
   onboarding_completed: true,
+  onboarding_priority: null,
+  onboarding_focus_consumed_at: null,
   created_at: '2026-08-25T00:00:00Z',
   updated_at: '2026-08-25T00:00:00Z',
 };

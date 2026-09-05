@@ -63,7 +63,9 @@ export function formatAppointmentDate(date: string, time?: string | null) {
 
 export function maskTimeInput(value: string) {
   const digits = value.replace(/\D/g, '').slice(0, 4);
-  return digits.length <= 2 ? digits : `${digits.slice(0, 2)}:${digits.slice(2)}`;
+  return digits.length <= 2
+    ? digits
+    : `${digits.slice(0, 2)}:${digits.slice(2)}`;
 }
 
 export function parseTimeForDatabase(value: string) {
@@ -74,6 +76,63 @@ export function parseTimeForDatabase(value: string) {
   const minute = Number(match[2]);
   if (hour > 23 || minute > 59) return undefined;
   return `${match[1]}:${match[2]}:00`;
+}
+
+export interface CalendarDay {
+  date: string;
+  day: number;
+  inMonth: boolean;
+}
+
+/** Mês atual no fuso do negócio, formato `YYYY-MM-01` — mesma convenção usada em Despesas. */
+export function currentCalendarMonth(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value ?? '';
+  return `${value('year')}-${value('month')}-01`;
+}
+
+export function moveCalendarMonth(month: string, offset: number) {
+  const [year = 1970, value = 1] = month.split('-').map(Number);
+  const result = new Date(Date.UTC(year, value - 1 + offset, 1));
+  return `${result.getUTCFullYear()}-${String(result.getUTCMonth() + 1).padStart(2, '0')}-01`;
+}
+
+export function calendarMonthLabel(month: string) {
+  return new Intl.DateTimeFormat('pt-BR', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
+    .format(new Date(`${month}T00:00:00Z`))
+    .replace(' de ', ' ');
+}
+
+/**
+ * Grade de semanas completas (domingo a sábado) cobrindo o mês: dias de fora
+ * do mês entram para preencher a primeira e a última semana, mas marcados
+ * `inMonth: false` — não são tocáveis nem contam visitas.
+ */
+export function calendarGrid(month: string): CalendarDay[] {
+  const [year = 1970, value = 1] = month.split('-').map(Number);
+  const firstOfMonth = new Date(Date.UTC(year, value - 1, 1));
+  const daysInMonth = new Date(Date.UTC(year, value, 0)).getUTCDate();
+  const leadingBlanks = firstOfMonth.getUTCDay();
+  const totalCells = Math.ceil((leadingBlanks + daysInMonth) / 7) * 7;
+  const toDateKey = (date: Date) =>
+    `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}-${String(date.getUTCDate()).padStart(2, '0')}`;
+  return Array.from({ length: totalCells }, (_, index) => {
+    const date = new Date(Date.UTC(year, value - 1, index - leadingBlanks + 1));
+    return {
+      date: toDateKey(date),
+      day: date.getUTCDate(),
+      inMonth: date.getUTCMonth() === value - 1,
+    };
+  });
 }
 
 export function agendaErrorMessage(error: unknown) {

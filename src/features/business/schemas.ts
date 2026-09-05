@@ -71,6 +71,14 @@ export const businessSchema = z
 
 export type BusinessFormData = z.infer<typeof businessSchema>;
 
+export const onboardingPriorities = [
+  'quotes',
+  'collections',
+  'agenda',
+  'profit',
+] as const;
+export type OnboardingPriority = (typeof onboardingPriorities)[number];
+
 export function normalizeBusinessInput(input: BusinessFormData) {
   return {
     business_name: input.businessName.trim(),
