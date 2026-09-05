@@ -1,0 +1,14 @@
+{
+  "build": {
+    "profiling": {
+      "distribution": "internal",
+      "env": {
+        "TAVI_PROFILEABLE_BUILD": "1"
+      },
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    }
+  }
+}
