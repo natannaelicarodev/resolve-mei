@@ -51,6 +51,27 @@ háptico, estado pressionado e rótulos de acessibilidade. Como a melhora excede
 largamente a variação entre as três rodadas, a hipótese foi confirmada. Os dados
 por rodada e o protocolo estão em `docs/performance/agenda-system-trace.md`.
 
+### Isolamento da lista de compromissos
+
+Depois do calendário, a hierarquia acessível no Samsung A15 foi dividida por
+seção: calendário ~96 views, navegação inferior compartilhada ~41, lista das duas
+visitas ~24, filtros de status ~13 e cabeçalho/faixa ~5. Os wrappers restantes do
+shell não formavam uma seção funcional isolável. Como a navegação é compartilhada
+e necessária ao próprio teste Home→Agenda, a lista foi o maior alvo específico da
+Agenda.
+
+O A/B diagnóstico omitiu somente o grupo das duas visitas, mantendo calendário,
+filtros, cabeçalho e dados. A contagem anexada caiu exatamente de 216 para 192
+views. Em três rodadas Home→Agenda, o maior `doFrame` passou de 56,60–58,10 ms
+para 44,11–50,52 ms; `Record View#draw()` passou de 42,56–45,93 ms para
+35,47–39,65 ms. As medianas melhoraram 20,7% e 15,6%, respectivamente.
+
+**Decisão:** hipótese confirmada como atribuição de custo, mas variante rejeitada
+como produto. A lista é funcionalmente essencial e foi restaurada. Mesmo sua
+remoção completa deixa 35–40 ms de desenho, evidência de que o custo remanescente
+está distribuído pela árvore, sobretudo calendário e infraestrutura compartilhada,
+e não concentrado apenas nas linhas de compromisso.
+
 ## Regra para novos experimentos
 
 Alterar uma única hipótese, repetir as três rodadas por direção e comparar com o
