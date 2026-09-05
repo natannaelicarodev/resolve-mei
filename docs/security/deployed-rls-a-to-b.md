@@ -46,6 +46,15 @@ harness informou `p_timezone`, mas a função implantada recebe `p_period`. O
 PostgREST rejeitou a assinatura antes de executar autorização; classificá-la
 como bloqueio de RLS seria incorreto.
 
+### Follow-up do harness — encerrado
+
+A incompatibilidade foi investigada separadamente. As migrations implantadas, o
+tipo gerado em `src/types/database.ts` e a chamada usada pelo aplicativo
+concordam em `p_period`; não existe divergência entre código e banco. O erro ficou
+restrito ao harness temporário, que foi removido depois da execução. Qualquer
+nova bateria deve usar `p_business_id` e `p_period` ao chamar
+`get_home_dashboard`.
+
 ## Resultado das escritas
 
 Para cliente, orçamento, ordem, evidência, recebimento e despesa, a conta B
