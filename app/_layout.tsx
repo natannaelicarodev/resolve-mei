@@ -12,6 +12,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
+import { BootIntroGate } from '@/features/boot/BootIntroGate';
 import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
 
@@ -27,16 +28,14 @@ export default function RootLayout() {
     Poppins_700Bold,
   });
 
-  useEffect(() => {
-    if (fontsLoaded || fontError) void SplashScreen.hideAsync();
-  }, [fontError, fontsLoaded]);
-
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <AppErrorBoundary>
       <AppProviders>
-        <ThemedAppRoot />
+        <BootIntroGate>
+          <ThemedAppRoot />
+        </BootIntroGate>
       </AppProviders>
     </AppErrorBoundary>
   );
