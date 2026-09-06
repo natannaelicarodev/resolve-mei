@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360" fill="none">
+  <g
+    stroke="#8EC5DE"
+    stroke-width="10"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  >
+    <path
+      id="head"
+      d="M76 153 C65 179 64 240 78 269 C93 300 126 310 160 310 C194 310 227 300 242 269 C256 240 255 179 244 153"
+    />
+    <path
+      id="helmet-dome"
+      d="M78 147 C84 103 109 72 143 64 C154 61 166 61 177 64 C211 72 236 103 242 147"
+    />
+    <path id="helmet-brim" d="M62 153 C104 140 216 140 258 153" />
+    <path
+      id="helmet-details"
+      d="M160 62 L160 139 M113 82 C103 101 98 120 98 143 M207 82 C217 101 222 120 222 143"
+    />
+    <path id="eyes" d="M127 190 L127 220 M193 190 L193 220" />
+    <path
+      id="shoulders"
+      d="M91 294 C69 303 56 319 52 340 M229 294 C251 303 264 319 268 340"
+    />
+  </g>
+</svg>

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tavi — comparação do símbolo monoline</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background: #121a1f;
+        color: #f2f7fa;
+        font-family: Arial, sans-serif;
+      }
+      main {
+        width: 1200px;
+        min-height: 720px;
+        margin: 0 auto;
+        padding: 48px;
+      }
+      header {
+        margin-bottom: 32px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 30px;
+      }
+      p {
+        margin: 0;
+        color: #a8bac4;
+        font-size: 16px;
+      }
+      .comparison {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 32px;
+      }
+      figure {
+        display: flex;
+        min-height: 520px;
+        margin: 0;
+        padding: 24px;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #2a3941;
+        border-radius: 24px;
+        background: #121a1f;
+      }
+      figcaption {
+        position: absolute;
+        top: 20px;
+        left: 24px;
+        color: #a8bac4;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .approved {
+        width: 360px;
+        height: 360px;
+        object-fit: contain;
+        border-radius: 80px;
+      }
+      .monoline {
+        width: 360px;
+        height: 405px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Tavi — consistência do símbolo</h1>
+        <p>Ícone final aprovado versus simplificação monoline para animação.</p>
+      </header>
+      <section class="comparison">
+        <figure>
+          <figcaption>Ícone aprovado</figcaption>
+          <img
+            class="approved"
+            src="../../assets/images/icon-master.png"
+            alt="Ícone final aprovado do Tavi"
+          />
+        </figure>
+        <figure>
+          <figcaption>Símbolo monoline</figcaption>
+          <img
+            class="monoline"
+            src="../../assets/images/tavi-monoline.svg"
+            alt="Símbolo monoline simplificado do Tavi"
+          />
+        </figure>
+      </section>
+    </main>
+  </body>
+</html>

@@ -179,7 +179,7 @@
       "source": "agents-inc/skills",
       "sourceType": "github",
       "skillPath": "src/skills/api-baas-supabase/SKILL.md",
-      "computedHash": "1e0dbab1df4d69ad79f9846f200bb4ed8ac522f84b2d28d68ab9a135d31985c0"
+      "computedHash": "1e0dbab1df4e69ad79f9846f200bb4ed8ac522f84b2d28d68ab9a135d31985c0"
     },
     "api-baas-turso": {
       "source": "agents-inc/skills",
@@ -936,6 +936,18 @@
       "sourceType": "github",
       "skillPath": "src/skills/shared-tooling-typescript-config/SKILL.md",
       "computedHash": "11f7b310fe8bb913453a28130c488fdfa1ae2d761702595b850afa0b58635371"
+    },
+    "supabase": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase/SKILL.md",
+      "computedHash": "a6260582f48df8ba53380bb9b9e870ed2ae5fe147799e90ed783b8aa25167d50"
+    },
+    "supabase-postgres-best-practices": {
+      "source": "supabase/agent-skills",
+      "sourceType": "github",
+      "skillPath": "skills/supabase-postgres-best-practices/SKILL.md",
+      "computedHash": "128fac78002d916c8ca908245d398e634f540d8bcf20915b2b2359aeb18eba59"
     },
     "ui-ux-design": {
       "source": "samhvw8/dot-claude",
