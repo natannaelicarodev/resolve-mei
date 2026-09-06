@@ -94,7 +94,11 @@ function DrawingPath({
     <AnimatedPath
       animatedProps={animatedProps}
       d={d}
+      stroke={SYMBOL_COLORS.stroke}
       strokeDasharray={`${length} ${length}`}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={8}
     />
   );
 }

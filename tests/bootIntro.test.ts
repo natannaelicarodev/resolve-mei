@@ -9,6 +9,10 @@ describe('Tavi boot introduction', () => {
 
     expect(symbol).toContain("stroke: '#8EC5DE'");
     expect(symbol).toContain("backgroundColor: '#121A1F'");
+    expect(symbol).toContain('stroke={SYMBOL_COLORS.stroke}');
+    expect(symbol).toContain('strokeLinecap="round"');
+    expect(symbol).toContain('strokeLinejoin="round"');
+    expect(symbol).toContain('strokeWidth={8}');
     expect(symbol).toContain('length: 430.542');
     expect(symbol).toContain('length: 258.892');
     expect(symbol).toContain('length: 197.533');
