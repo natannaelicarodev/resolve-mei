@@ -2,6 +2,7 @@ Object.assign(process.env, {
   EXPO_PUBLIC_APP_ENV: 'development',
   EXPO_PUBLIC_SUPABASE_URL: 'https://test-project.supabase.co',
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_test_value_only_123456',
+  EXPO_PUBLIC_CLIENT_QUOTE_BASE_URL: 'https://quotes.example/q',
 });
 
 jest.mock('@react-native-async-storage/async-storage', () =>

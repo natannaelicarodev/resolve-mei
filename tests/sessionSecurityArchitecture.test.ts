@@ -9,10 +9,8 @@ it('keeps avatar URLs and the protected tree bound to the current user', () => {
   const home = source('app/(protected)/home.tsx');
   const profile = source('src/features/profile/ProfileScreen.tsx');
   const layout = source('app/(protected)/_layout.tsx');
-  expect(home).toContain("'private',\n      userId,\n      'profile-avatar'");
-  expect(profile).toContain(
-    "'private',\n      userId,\n      'profile-avatar'",
-  );
+  expect(home).toMatch(/'private',\s*userId,\s*'profile-avatar'/);
+  expect(profile).toMatch(/'private',\s*userId,\s*'profile-avatar'/);
   expect(layout).toContain('userId={user?.id}');
   expect(layout).toContain('key={userId}');
   expect(profile).toContain('query.data?.id === userId');

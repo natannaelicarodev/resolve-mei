@@ -5,9 +5,9 @@ import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
 import { useReducedMotionPreference } from '@/components/motion';
-import { SYMBOL_COLORS, TaviMonolineSymbol } from './TaviMonolineSymbol';
+import { TaviWordmark, WORDMARK_COLORS } from './TaviWordmark';
 
-const BOOT_INTRO_DURATION_MS = 1_100;
+const BOOT_INTRO_DURATION_MS = 2_800;
 
 export function BootIntroOverlay({ onComplete }: { onComplete: () => void }) {
   const { preferenceReady, reducedMotion } = useReducedMotionPreference();
@@ -59,7 +59,7 @@ export function BootIntroOverlay({ onComplete }: { onComplete: () => void }) {
       style={styles.overlay}
       testID="boot-intro"
     >
-      <TaviMonolineSymbol
+      <TaviWordmark
         completed={preferenceReady && reducedMotion}
         progress={progress}
       />
@@ -70,7 +70,7 @@ export function BootIntroOverlay({ onComplete }: { onComplete: () => void }) {
 const styles = StyleSheet.create({
   overlay: {
     alignItems: 'center',
-    backgroundColor: SYMBOL_COLORS.backgroundColor,
+    backgroundColor: WORDMARK_COLORS.backgroundColor,
     bottom: 0,
     justifyContent: 'center',
     left: 0,

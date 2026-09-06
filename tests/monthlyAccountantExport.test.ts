@@ -12,8 +12,8 @@ it('escapes expenses and preserves headers in an empty month',()=>{
  expect(receiptsCsv({...data,financialEntries:[]})).toBe('\uFEFF"data","orcamento","cliente","forma_pagamento","tipo","valor_reais"\r\n');
 });
 it('renders a private printable summary with exact totals and timestamp',()=>{
- const html=monthlySummaryHtml(data,'ResolveMEI',new Date('2026-09-05T15:30:00Z'));
- expect(html).toContain('ResolveMEI');expect(html).toContain('R$ 100,00');expect(html).toContain('R$ 30,25');expect(html).toContain('R$ 69,75');expect(html).toContain('Gerado em');expect(html).not.toContain('José');
+ const html=monthlySummaryHtml(data,'Oficina Aurora',new Date('2026-09-05T15:30:00Z'));
+ expect(html).toContain('Oficina Aurora');expect(html).toContain('R$ 100,00');expect(html).toContain('R$ 30,25');expect(html).toContain('R$ 69,75');expect(html).toContain('Gerado em');expect(html).not.toContain('José');
 });
 it('formats cents without floating point or BRL display symbols',()=>{expect(centsDecimal('1')).toBe('0.01');expect(centsDecimal('123456')).toBe('1234.56');expect(centsDecimal('25',true)).toBe('-0.25');});
 it.each(['=1+1', '+SUM(A1)', '-2+3', '@IMPORT', '  =1+1', '\t+1'])(

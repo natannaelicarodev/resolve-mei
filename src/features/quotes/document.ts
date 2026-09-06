@@ -253,7 +253,7 @@ export function renderQuoteDocumentHtml(data: QuoteDocumentData) {
 </head>
 <body>
   <header class="header">
-    <div><div class="brand">ResolveMEI</div><h1>Orçamento</h1></div>
+    <div><div class="brand">Tavi</div><h1>Orçamento</h1></div>
     <div class="number-block"><span>Número</span><strong>#${formatQuoteNumber(data.number)}</strong><span class="status ${data.status}">${escapeQuoteHtml(status)}</span></div>
   </header>
   <section class="grid">
@@ -266,7 +266,7 @@ export function renderQuoteDocumentHtml(data: QuoteDocumentData) {
     <div>${data.notes ? `<div class="notes"><h2 class="section-title">Observações</h2><p>${escapeQuoteHtml(data.notes)}</p></div>` : ''}</div>
     <div class="summary"><h2 class="section-title">Resumo</h2><div class="summary-row"><span>Subtotal</span><span>${escapeQuoteHtml(formatMoney(data.subtotalCents))}</span></div>${data.discountCents > 0 ? `<div class="summary-row"><span>Desconto</span><span>− ${escapeQuoteHtml(formatMoney(data.discountCents))}</span></div>` : ''}<div class="summary-row grand-total"><span>Total</span><span>${escapeQuoteHtml(formatMoney(data.totalCents))}</span></div></div>
   </section>
-  <footer class="footer"><span>Gerado com ResolveMEI · ${escapeQuoteHtml(data.issuer.phone)}</span><span>Página <span class="page-number"></span></span></footer>
+  <footer class="footer"><span>Gerado com Tavi · ${escapeQuoteHtml(data.issuer.phone)}</span><span>Página <span class="page-number"></span></span></footer>
 </body>
 </html>`;
 }

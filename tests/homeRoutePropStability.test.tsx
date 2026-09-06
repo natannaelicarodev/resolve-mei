@@ -25,7 +25,7 @@ jest.mock('@/providers/AuthProvider', () => ({
 jest.mock('@/features/business/hooks', () => ({
   businessQueryKey: (userId: string) => ['private', userId, 'business'],
   useMyBusiness: jest.fn(() => ({
-    data: { id: 'business-1', business_name: 'ResolveMEI' },
+    data: { id: 'business-1', business_name: 'Oficina Aurora' },
     isLoading: false,
   })),
 }));

@@ -14,12 +14,12 @@ describe('Home render diagnostics', () => {
   it('records the Home screen renders for a stable parent update', async () => {
     const screen = await render(
       <ThemeProvider>
-        <DaylightHomeScreen businessName="ResolveMEI" />
+        <DaylightHomeScreen businessName="Oficina Aurora" />
       </ThemeProvider>,
     );
     await screen.rerender(
       <ThemeProvider>
-        <DaylightHomeScreen businessName="ResolveMEI" />
+        <DaylightHomeScreen businessName="Oficina Aurora" />
       </ThemeProvider>,
     );
 

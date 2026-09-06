@@ -4,6 +4,7 @@ import { Redirect, Stack, usePathname } from 'expo-router';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { ErrorFallback } from '@/components/ErrorFallback';
 import { decideProtectedRoute } from '@/features/auth/routeGuards';
+import { useBootDestinationReady } from '@/features/boot/BootIntroGate';
 import { useMyBusiness } from '@/features/business/hooks';
 import { logDevelopmentError } from '@/lib/errors';
 import { useAuth } from '@/providers/AuthProvider';
@@ -56,6 +57,7 @@ function ProtectedRouteGate({
   userId?: string;
 }) {
   const pathname = usePathname();
+  const markDestinationReady = useBootDestinationReady();
   const decision = decideProtectedRoute({
     authLoading,
     hasUser,
@@ -64,6 +66,9 @@ function ProtectedRouteGate({
     onboardingCompleted,
     pathname,
   });
+  useEffect(() => {
+    if (decision !== 'loading') markDestinationReady();
+  }, [decision, markDestinationReady]);
   if (decision === 'loading')
     return <LoadingScreen label="Preparando seu perfil..." />;
   if (decision === 'sign-in') return <Redirect href="/sign-in" />;

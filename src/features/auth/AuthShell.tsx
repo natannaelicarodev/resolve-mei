@@ -20,7 +20,7 @@ import { radii, spacing, useTheme } from '@/theme';
  * sobe por cima dele (raio grande só no topo, margem negativa) — composição
  * de referência aprovada (dribbble.com/shots/33604959, "Jobsly" no
  * Dribbble). A referência usa gradiente no painel; `TAVI_BRAND_DECISIONS.md`
- * reserva gradiente/brilho ao ícone de loja, então o painel aqui é
+ * reserva gradiente/brilho ao ícone de loja, então o painel aqui usa
  * `colors.primary` sólido. A referência também tem botões de login social —
  * fora do escopo, o app só tem e-mail/senha. Wide (tablet/web) mantém o
  * layout lado a lado que já existia: a referência é pensada para celular, e
@@ -44,38 +44,25 @@ export function AuthShell({
   heroSubtitle?: string;
   footer?: ReactNode;
 }>) {
-  const { colors, resolvedTheme } = useTheme();
+  const { colors } = useTheme();
   const wide = useWindowDimensions().width >= 760;
 
-  const brandMark = (
+  const brandMark = (tintColor: string) => (
     <Image
-      accessibilityLabel="Logotipo do ResolveMEI"
+      accessibilityLabel="Logotipo do Tavi"
       resizeMode="contain"
-      source={
-        resolvedTheme === 'light'
-          ? require('../../../assets/resolve-mei-mark.png')
-          : require('../../../assets/resolve-mei-logo.png')
-      }
-      style={styles.logo}
+      source={require('../../../assets/images/tavi-wordmark.png')}
+      style={[styles.wordmark, { tintColor }]}
     />
   );
   const brand = (
     <View style={styles.brand}>
-      {brandMark}
-      <Text color="primary" variant="sectionTitle">
-        ResolveMEI
-      </Text>
+      {brandMark(colors.primary)}
     </View>
   );
-  // O painel mobile é `colors.primary` (mesma cor do botão de ação
-  // principal, para bater com a referência) — texto no tom `primary` do
-  // tema ficaria da mesma cor do fundo, então essa variante usa branco.
-  const brandOnPrimary = (
+  const brandMobile = (
     <View style={styles.brand}>
-      {brandMark}
-      <Text style={{ color: colors.textInverse }} variant="sectionTitle">
-        ResolveMEI
-      </Text>
+      {brandMark(colors.textInverse)}
     </View>
   );
 
@@ -141,7 +128,7 @@ export function AuthShell({
         {topAction ? (
           <View style={styles.topActionRow}>{topAction}</View>
         ) : null}
-        {brandOnPrimary}
+        {brandMobile}
         {heroTitle ? (
           <View style={styles.mobileHero}>
             <Text style={{ color: colors.textInverse }} variant="display">
@@ -212,7 +199,7 @@ const styles = StyleSheet.create({
   heading: { gap: spacing.sm },
   form: { gap: spacing.md },
   brand: { alignItems: 'center', flexDirection: 'row', gap: spacing.sm },
-  logo: { height: 40, width: 40 },
+  wordmark: { height: 40, width: 88 },
 
   // Mobile: painel colorido, cartão branco sobreposto por cima. O painel só
   // carrega o link de topo e a marca — o título da tela é o H1 do próprio

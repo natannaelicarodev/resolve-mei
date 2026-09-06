@@ -17,6 +17,7 @@ import { AppProviders } from '@/providers/AppProviders';
 import { useTheme } from '@/theme';
 
 void SplashScreen.preventAutoHideAsync();
+SplashScreen.setOptions({ fade: false });
 
 export default function RootLayout() {
   // Poppins é a única família do app. Quatro pesos cobrem toda a rampa

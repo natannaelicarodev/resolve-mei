@@ -15,7 +15,7 @@ it('shows account information and allows logout cancellation', async () => {
   } as unknown as ReturnType<typeof useAuth>);
   const screen = await render(<SettingsScreen />);
   expect(screen.getByText('ana@example.com')).toBeTruthy();
-  expect(screen.getByText(/ResolveMEI 1\.0\.0/)).toBeTruthy();
+  expect(screen.getByText(/Tavi 1\.0\.0/)).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Sair da conta' }));
   expect(screen.getByText('Sair da conta?')).toBeTruthy();
   await fireEvent.press(screen.getByRole('button', { name: 'Cancelar' }));

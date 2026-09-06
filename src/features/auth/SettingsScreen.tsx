@@ -127,7 +127,7 @@ export function SettingsScreen() {
           </Card>
           <Card title="Sobre">
             <Text color="textSecondary">
-              ResolveMEI {Constants.expoConfig?.version ?? '1.0.0'}
+              Tavi {Constants.expoConfig?.version ?? '1.0.0'}
             </Text>
           </Card>
         </View>

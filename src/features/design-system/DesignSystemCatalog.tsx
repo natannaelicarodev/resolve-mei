@@ -96,7 +96,7 @@ export function DesignSystemCatalog({
   return (
     <Screen background="subtle">
       <FadeInView>
-        <Text variant="pageTitle">Fundação ResolveMEI</Text>
+        <Text variant="pageTitle">Fundação Tavi</Text>
         <Text color="textSecondary">Catálogo técnico com dados fictícios.</Text>
       </FadeInView>
 

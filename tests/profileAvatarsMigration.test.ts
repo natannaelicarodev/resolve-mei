@@ -12,7 +12,7 @@ const sql = fs.readFileSync(
 it('defines a private, size-limited avatar bucket and an owned profile path', () => {
   expect(sql).toContain('add column if not exists avatar_path text');
   expect(sql).toContain("'^' || id::text || '/[^/]+$'");
-  expect(sql).toContain("'avatars',\n  'avatars',\n  false,\n  5242880");
+  expect(sql).toMatch(/'avatars',\s*'avatars',\s*false,\s*5242880/);
   expect(sql).toContain("array['image/jpeg', 'image/png', 'image/webp']");
 });
 

@@ -1,4 +1,4 @@
-# Handoff — Home do ResolveMEI
+# Handoff — Home do Tavi
 
 Contexto para continuar o trabalho a partir do estado atual do repositório.
 Tudo abaixo foi verificado no código, não é suposição.

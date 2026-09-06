@@ -65,7 +65,7 @@ export function PublicQuoteScreen() {
   useEffect(() => {
     let active = true;
     if (typeof document !== 'undefined') {
-      document.title = 'Orçamento · ResolveMEI';
+      document.title = 'Orçamento · Tavi';
       const ensureMeta = (name: string, content: string) => {
         let element = document.querySelector(`meta[name="${name}"]`);
         if (!element) {
@@ -154,7 +154,7 @@ export function PublicQuoteScreen() {
             <Icon color="textInverse" name="quote" size="medium" />
           </View>
           <View>
-            <Text variant="sectionTitle">ResolveMEI</Text>
+            <Text variant="sectionTitle">Tavi</Text>
             <Text color="textSecondary" variant="caption">
               Orçamento para consulta e resposta
             </Text>

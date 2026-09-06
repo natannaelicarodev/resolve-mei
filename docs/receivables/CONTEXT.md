@@ -1,6 +1,6 @@
 # Recebimentos — Fase 4
 
-O ResolveMEI registra manualmente dinheiro que entrou ou foi devolvido fora do
+O Tavi registra manualmente dinheiro que entrou ou foi devolvido fora do
 aplicativo. Não existe gateway, cobrança, Pix automático, cartão processado no
 app ou confirmação enviada ao cliente.
 

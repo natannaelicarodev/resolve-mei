@@ -68,7 +68,7 @@ it('drives the chip colour from the same progress as the mark', () => {
   expect(source).toContain('interpolateColor(');
   expect(source).toContain('opacity: progress.value');
   // Movimento reduzido salta direto para o estado final.
-  expect(source).toContain('reducedMotion\n      ? target');
+  expect(source).toMatch(/reducedMotion\s*\?\s*target/);
 });
 
 it('flattens to a pill-shaped surface', async () => {

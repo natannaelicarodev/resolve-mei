@@ -16,7 +16,7 @@ describe('public quote client contract', () => {
       value: { origin: 'https://local.example' },
     });
     const url = buildPublicQuoteUrl(token);
-    expect(url).toBe(`https://local.example/q#token=${token}`);
+    expect(url).toBe(`https://quotes.example/q#token=${token}`);
     expect(url?.split('#')[0]).not.toContain(token);
     expect(url).not.toContain('?token=');
   });

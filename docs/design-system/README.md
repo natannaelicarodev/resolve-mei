@@ -1,4 +1,4 @@
-# Design system ResolveMEI
+# Design system Tavi
 
 ## Pesquisa de produto e decisão visual
 
@@ -100,7 +100,7 @@ As combinações principais foram escolhidas para WCAG AA: grafite sobre fundos 
 
 ### Temas
 
-O ResolveMEI oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies carvão-azuladas, sem preto absoluto, neon ou linguagem visual de fintech.
+O Tavi oferece `Sistema`, `Claro` e `Escuro`. A escolha é persistida apenas neste dispositivo com AsyncStorage e não integra perfil, API ou Supabase. `Sistema` acompanha `useColorScheme`; as primitives consomem cores semânticas pelo `ThemeProvider`. O tema escuro usa superfícies carvão-azuladas, sem preto absoluto, neon ou linguagem visual de fintech.
 
 ## Redesign estrutural v3
 
@@ -119,9 +119,9 @@ O Family foi usado somente como referência estratégica de redução de ruído,
 
 ## Referência Nucleus UI Lite
 
-O arquivo completo foi inspecionado pelo plugin do Figma antes da revisão visual da Home. A implementação usa a gramática e os estados dos componentes, mantendo conteúdo, marca, cores semânticas e fluxos próprios do ResolveMEI.
+O arquivo completo foi inspecionado pelo plugin do Figma antes da revisão visual da Home. A implementação usa a gramática e os estados dos componentes, mantendo conteúdo, marca, cores semânticas e fluxos próprios do Tavi.
 
-| Componente verificado         | Node ID    | Aplicação no ResolveMEI                          |
+| Componente verificado         | Node ID    | Aplicação no Tavi                                |
 | ----------------------------- | ---------- | ------------------------------------------------ |
 | Controls / Buttons            | `1:11`     | estados normal, pressionado e desabilitado       |
 | Primary block button          | `1:7`      | referência de altura, hierarquia e área de toque |

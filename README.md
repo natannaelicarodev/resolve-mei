@@ -1,4 +1,4 @@
-# ResolveMEI
+# Tavi
 
 ## Design system
 

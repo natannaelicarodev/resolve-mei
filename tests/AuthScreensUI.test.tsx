@@ -1,4 +1,6 @@
 import { fireEvent, render } from '@testing-library/react-native';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import { ForgotPasswordScreen } from '@/features/auth/ForgotPasswordScreen';
 import { SignInScreen } from '@/features/auth/SignInScreen';
@@ -17,10 +19,21 @@ jest.mock('expo-router', () => ({
 
 beforeEach(() => jest.clearAllMocks());
 
+it('keeps the approved blue auth header with the Tavi wordmark', () => {
+  const source = readFileSync(
+    resolve('src/features/auth/AuthShell.tsx'),
+    'utf8',
+  );
+
+  expect(source).toContain('{brandMark(colors.textInverse)}');
+  expect(source).toContain('backgroundColor: colors.primary');
+  expect(source).toContain('style="light"');
+});
+
 it('keeps login data after an error and toggles password visibility', async () => {
   jest.mocked(signIn).mockRejectedValue(new Error('technical detail'));
   const screen = await render(<SignInScreen />);
-  expect(screen.getByLabelText('Logotipo do ResolveMEI')).toBeTruthy();
+  expect(screen.getByLabelText('Logotipo do Tavi')).toBeTruthy();
   await fireEvent.changeText(
     screen.getByLabelText('E-mail'),
     'ana@example.com',

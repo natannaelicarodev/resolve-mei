@@ -4,8 +4,8 @@ describe('relationship messages', () => {
   it('replaces every approved variable before the owner reviews the text', () => {
     expect(relationshipMessage(
       'Olá, {cliente}. {empresa}: {data}.',
-      { clientName:'Ana', businessName:'ResolveMEI', lastCompletedAt:'2026-08-31T15:00:00-03:00' },
-    )).toBe('Olá, Ana. ResolveMEI: 31/08/2026.');
+      { clientName:'Ana', businessName:'Oficina Aurora', lastCompletedAt:'2026-08-31T15:00:00-03:00' },
+    )).toBe('Olá, Ana. Oficina Aurora: 31/08/2026.');
   });
 
   it('builds a Brazilian wa.me link with an encoded, editable message', () => {

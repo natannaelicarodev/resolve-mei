@@ -4,6 +4,7 @@ const valid = {
   EXPO_PUBLIC_APP_ENV: 'staging',
   EXPO_PUBLIC_SUPABASE_URL: 'https://project.supabase.co',
   EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'sb_publishable_example_123456789',
+  EXPO_PUBLIC_CLIENT_QUOTE_BASE_URL: 'https://quotes.example/q',
 };
 
 describe('public environment', () => {
